@@ -38,7 +38,7 @@
 
 | 分析项目 | 分析方法 | 规则文件 | 替代的人工操作 |
 |----------|----------|----------|---------------|
-| 水位变化趋势 | 指数平滑/ARIMA | monitor/trend-detection.md | 人工画趋势图判断 |
+| 水位变化趋势 | 指数平滑/ARIMA | ../../_shared/algorithms/time-series-forecast.md | 人工画趋势图判断 |
 | 位移速率 | 线性回归 | ../../_shared/algorithms/displacement-rate.md | 人工计算位移量 |
 | 异常检测 | MAD/孤立森林 | data-governance/anomaly-detection.md | 人工凭经验判断 |
 | 缺陷预测 | 历史趋势回归 | defect-prediction.md | 无（纯新增能力） |
