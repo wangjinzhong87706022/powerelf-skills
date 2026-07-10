@@ -1,0 +1,21 @@
+{
+  "experiment": 0,
+  "score": 10,
+  "max_score": 10,
+  "pass_rate": 100.0,
+  "status": "baseline",
+  "description": "original skill — upgraded evals v2 (fixed)",
+  "evals": {
+    "EVAL 1": true,
+    "EVAL 2": true,
+    "EVAL 3": true,
+    "EVAL 4": true,
+    "EVAL 5": true,
+    "EVAL 6": true,
+    "EVAL 7": true,
+    "EVAL 8": true,
+    "EVAL 9": true,
+    "EVAL 10": true
+  },
+  "failed": []
+}

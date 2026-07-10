@@ -1,0 +1,164 @@
+---
+name: powerelf-inspection
+description: "水利工程智能巡检：传感器数据异常检测+巡检报告生成+质量评分"
+version: 6.0.0
+author: Powerelf Team
+metadata:
+  hermes:
+    tags: [water-conservancy, inspection, patrol, defect]
+    related_skills: [powerelf-early-warning, powerelf-monitor]
+prerequisites:
+  env_vars: [POWERELF_DB_HOST, POWERELF_DB_NAME, POWERELF_DB_USER, POWERELF_DB_PASSWORD]
+---
+
+# 智能巡检 Skill v6
+
+**第一反应：调工具，不要自己写 SQL。**
+
+## 工具命令
+
+```bash
+# 传感器巡检（15项分析，生成报告）
+python3 impl/inspection_analyzer.py --db "mysql+pymysql://user:pass@host:3306/powerelf_srm_yml" --days 30
+
+# 巡检结果分析（质量评分/缺陷趋势/路线效率）
+python3 impl/inspection_tool.py --mode quality --db "..." --start 2026-01-01 --end 2026-12-31
+python3 impl/inspection_tool.py --mode full --db "..." --start 2026-01-01 --end 2026-12-31
+python3 impl/inspection_tool.py --mode registry --db "..."
+```
+
+## 数据库连接
+
+```
+连接: mysql+pymysql://${POWERELF_DB_USER}:${POWERELF_DB_PASSWORD}@${POWERELF_DB_HOST}:3306/${POWERELF_DB_NAME}
+
+环境变量:
+  POWERELF_DB_HOST     数据库地址 (默认 localhost)
+  POWERELF_DB_NAME     数据库名 (默认 powerelf_srm_yml)
+  POWERELF_DB_USER     用户名
+  POWERELF_DB_PASSWORD 密码
+```
+
+## 传感器数据速查
+
+| 数据 | 表 | 关键字段 | 时间范围 |
+|------|-----|----------|----------|
+| 水库水位 | `st_rsvr_r` | rz(水位m), inq(入库), otq(出库) | 2026-01~05 |
+| 河道水位 | `st_river_r` | z(水位m), q(流量) | — |
+| 雨量 | `st_pptn_r` | p(雨量mm), dr(历时) | 2025-12~05 |
+| 渗压 | `st_pressure_r` | water_pressure(kPa), ext_temperature | 2026-05 |
+| 渗流 | `st_percolation_r` | percolation(L/s) | 2026-05 |
+| GNSS位移 | `dsm_dfr_srvrds_srhrds` | speed_gh(mm/d), wgs84_delta_h | 2025-12~06 |
+| 闸门 | `rei_gate_r` | gtophgt(开高), gtq(流量) | 2026-05 |
+| 泵站 | `rei_pump_r` | uab/ia(电压/电流), freq(频率) | 2026-05 |
+| 水质 | `wq_pcp_d` | ph, dox(溶解氧), nh3n(氨氮) | 2026-05 |
+| 墒情 | `st_soil_moisture_r` | soil_water10cm~100cm | 2026-05 |
+| 白蚁 | `st_termite_monitor_r` | pest_density, damage_level | 2026-05 |
+| 降雨预报 | `f_rnfl_h` | rn(预报雨量mm), temp | 未来72h |
+| 天气预警 | `weather_warn` | docabstract, warn_status | — |
+
+## 巡检业务速查
+
+| 数据 | 表 | 关键字段 |
+|------|-----|----------|
+| 巡检任务 | `business_check_task` | status(1待/2中/3完成), exceed_time(0正常/1超时), bad_num, check_percent |
+| 巡检缺陷 | `business_check_error` | problem, status("0"未处理) |
+| 巡检路线 | `business_check_route` | select_id(逗号分隔巡检点ID), max_time |
+| 设备状态 | `eq_equip_base` | status(0离线/1在线/2异常), category |
+| 设备缺陷 | `eq_equip_defect` | type(1事故/2重大/3一般), handle_status(0~4) |
+| 预警规则 | `ew_info_rules` | extend(JSON阈值), level_r(1~3级) |
+| 告警记录 | `ew_info_message` | level_r, message_confirm |
+| 测站信息 | `att_st_base` | code, type(PP雨量/RR水库), longitude, latitude |
+| 大坝断面 | `att_dam_section` | dam_code, percolation_st_id |
+
+## 15项分析维度
+
+`inspection_analyzer.py` 自动执行：
+
+1. 水库水情（趋势/统计/入库出库平衡）
+2. 雨量监测（24h累计/暴雨分级/短时强降雨）
+3. 渗压监测（连续上升/突变/MAD异常）
+4. 渗流监测（突变检测/统计异常）
+5. 位移监测（速率异常/累计超限/加速趋势）
+6. 闸门工情（开度突变/频繁波动/流量异常）
+7. 泵站工情（三相不平衡/频率异常）
+8. 水质监测（pH/溶解氧/氨氮/总氮/总磷）
+9. 土壤墒情（干旱评价/深层含水量）
+10. 白蚁监测（发现记录/危害等级/虫口密度）
+11. 巡检结果（完成率/超时率/漏检率）
+12. 设备状态（离线率/异常设备）
+13. 告警分析（I/II级告警/未确认积压）
+14. MAD统计异常（跨传感器统一检测）
+15. 多指标关联异常（水位+渗压+降雨交叉分析）
+
+## 阈值来源（优先级）
+
+1. `ew_info_rules` 表 — 预警阈值（水位/雨量等）
+2. `sys_data_source_registry.judge_rules` — 传感器判定阈值
+3. 代码内置默认值 — 兜底
+
+## 按需加载
+
+详细规则按需加载，不在入口加载：
+
+```
+"异常判定"/"复杂工况"       → rules/anomaly-and-complex-conditions.md
+"数据采集"/"注册表"         → rules/data-collection-strategy.md
+"规则进化"/"调阈值"         → rules/rule-evolution.md
+"巡检任务"/"状态流转"       → rules/task-lifecycle.md
+"缺陷"/"设备缺陷"/"违法行为" → rules/defect-classification.md
+"质量评分"/"评分模型"       → rules/quality-assessment.md
+"缺陷预测"/"趋势"          → rules/defect-prediction.md
+"路线优化"/"漏检"          → rules/route-optimization.md
+"智能巡检"/"工作流"         → rules/intelligent-inspection.md
+"API接口"                  → references/api-reference.md
+```
+
+## 边界规则
+
+以下情况**必须人工确认**，Agent 只能建议不能决策：
+
+| 场景 | 原因 |
+|------|------|
+| CRITICAL级发现（I级告警/白蚁重度/位移>1mm/d） | 涉及安全，需现场确认 |
+| 设备缺陷处理方案 | 需结合实际维修能力评估 |
+| 巡检路线调整建议 | 需考虑人员安排和实际地形 |
+| 汛期应急响应启动 | 需领导审批 |
+| 违法行为处理 | 需水政执法部门介入 |
+
+**反例（不要做的事）**：
+- 不要自动触发应急预案
+- 不要自动修改预警阈值
+- 不要自动确认告警
+- 不要在数据不足时给出确定性结论
+- 不要跳过现场确认直接判定"正常"
+
+## 巡检前检查清单
+
+执行巡检分析前，确认以下事项：
+
+- [ ] 明确巡检范围（哪些路线/测站/设备）
+- [ ] 确认时间范围（最近7天/30天/汛期）
+- [ ] 确认数据库连接正常
+- [ ] 确认传感器数据有更新（最新数据时间）
+
+## 巡检后检查清单
+
+巡检报告生成后，确认以下事项：
+
+- [ ] 所有CRITICAL发现已标注"需确认"
+- [ ] 所有WARNING发现已给出处理建议
+- [ ] 巡检建议可落地（有负责人、有截止时间）
+- [ ] 报告已发送给相关人员
+
+## 扩展数据源
+
+```sql
+INSERT INTO sys_data_source_registry (name, source_table, keywords, query_fields, default_hours, sort_order)
+VALUES ('水质监测', 'st_wq_r', '水质,pH,溶解氧', 'ph,dox,tm', 24, 35);
+```
+
+## 自我进化
+
+- 参数速查：`evolution/parameters.md`
+- 反馈日志：`evolution/feedback-log.md`

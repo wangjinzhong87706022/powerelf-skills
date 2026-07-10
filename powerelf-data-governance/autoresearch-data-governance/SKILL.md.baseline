@@ -1,0 +1,151 @@
+---
+name: powerelf-data-governance
+description: "水利工程数据治理：缺失检测、MAD异常检测、智能插值、设备离线监测、统计评分。规则内嵌，可独立判断。"
+version: 2.0.0
+author: Powerelf Team
+license: MIT
+platforms: [linux, windows, macos]
+metadata:
+  hermes:
+    tags: [water-conservancy, data-governance, quality, anomaly, interpolation]
+    related_skills: [powerelf-early-warning, powerelf-monitor]
+prerequisites:
+  env_vars: [POWERELF_DB_HOST, POWERELF_DB_NAME, POWERELF_DB_USER, POWERELF_DB_PASSWORD]
+---
+
+# 数据治理 Skill v2
+
+水利工程数据质量治理引擎。规则内嵌，Agent 可独立执行质量判断。
+
+## 数据库连接
+
+```
+连接: mysql+pymysql://${POWERELF_DB_USER}:${POWERELF_DB_PASSWORD}@${POWERELF_DB_HOST}:3306/${POWERELF_DB_NAME}
+
+环境变量:
+  POWERELF_DB_HOST     数据库地址 (默认 localhost)
+  POWERELF_DB_NAME     数据库名 (默认 powerelf_srm_yml)
+  POWERELF_DB_USER     用户名
+  POWERELF_DB_PASSWORD 密码
+```
+
+## 核心数据表
+
+| 表名 | 说明 | 关键字段 |
+|------|------|----------|
+| eq_data_missing_record | 数据缺失记录 | equipment_code, data_missing_datetime, data_missing_count, whether_add, filled_data_content(JSON), table_name |
+| eq_data_anomaly_record | 数据异常记录 | equipment_code, data_anomaly_datetime, whether_fix, fix_data_content(JSON), table_name |
+| eq_equip_offline_record | 设备离线记录 | equipment_code, offline_start_time, offline_end_time, total_offline_duration(秒) |
+| eq_equip_anomaly_record | 设备异常记录 | equipment_code, anomaly_start_time, anomaly_end_time, total_anomaly_duration(秒) |
+| stats_data_collection_daily | 每日采集统计 | collection_data_number, tm(日期), table_name |
+| stats_data_missing_daily | 每日缺失统计 | missing_data_number, tm(日期), table_name |
+| stats_data_anomaly_daily | 每日异常统计 | anomaly_data_number, tm(日期), table_name |
+| dg_equip_offline | 离线阈值配置 | st_type(站类型), tm(阈值min), frequency(采集频率min) |
+| eq_business_equip_relation | 设备-业务映射 | business_table, eq_id, st_id, st_type, frequency, offline_threshold |
+| eq_equip_base | 设备主数据 | name, code, type_flag, status(0=离线/1=在线/2=异常), st_base_id |
+
+## 能力概览
+
+| 子模块 | 文件 | 功能 |
+|--------|------|------|
+| 缺失检测 | `rules/missing-detection.md` | 期望周期数比较，连续缺失递增告警 |
+| 异常检测 | `rules/anomaly-detection.md` | 自适应窗口MAD，分指标阈值，变化率检测 |
+| 智能插值 | `rules/interpolation.md` | 四策略自适应选择，置信度评估 |
+| 离线监测 | `rules/offline-detection.md` | 三态判定，渐进式告警 |
+| 统计评分 | `rules/quality-scoring.md` | 四维度评分，时间衰减 |
+
+算法详解：`algorithms/mad-algorithm.md`、`algorithms/interpolation-strategies.md`、`algorithms/scoring-formulas.md`
+
+机器学习算法：
+- 多变量异常检测（孤立森林/DBSCAN/自编码器）：`algorithms/multivariate-anomaly.md`
+- 空间插值（Kriging/高斯过程/IDW）：`algorithms/spatial-interpolation.md`
+
+## 按需加载指令
+
+```
+"数据质量"/"质量总览"     → rules/quality-scoring.md
+"异常"/"异常检测"/"MAD"   → rules/anomaly-detection.md + algorithms/mad-algorithm.md
+"缺失"/"数据缺失"        → rules/missing-detection.md
+"插值"/"填补"/"修复"     → rules/interpolation.md + algorithms/interpolation-strategies.md
+"离线"/"设备状态"        → rules/offline-detection.md
+"评分"/"厂商排名"        → rules/quality-scoring.md + algorithms/scoring-formulas.md
+"孤立森林"/"DBSCAN"/"多变量异常" → algorithms/multivariate-anomaly.md
+"空间插值"/"Kriging"/"高斯过程"  → algorithms/spatial-interpolation.md
+```
+
+## 边界规则
+
+以下情况**必须人工确认**，Agent 只能建议不能决策：
+
+| 场景 | 原因 |
+|------|------|
+| 数据插值超过连续3天 | 插值结果不可靠，需现场复测 |
+| 设备离线超过7天 | 可能是设备故障而非通信问题 |
+| 多台设备同时异常 | 可能是系统性问题而非个别设备 |
+| 异常值在设计允许范围内 | 可能是正常工况，需专家判断 |
+| 厂商排名用于采购决策 | 需结合价格、售后等多维度评估 |
+
+**反例（不要做的事）**：
+- 不要自动插值后直接覆盖原始数据
+- 不要在没有确认的情况下将"异常"改为"正常"
+- 不要跳过缺失检测直接做质量评分
+- 不要对单条数据做全局性结论
+
+## 巡检前检查清单
+
+执行数据治理分析前，确认以下事项：
+
+- [ ] 明确分析的时间范围和目标
+- [ ] 确认要分析的传感器表和字段
+- [ ] 确认离线阈值配置是否合理（dg_equip_offline）
+- [ ] 确认设备-业务映射是否完整（eq_business_equip_relation）
+
+## 输出模板
+
+```
+## 数据质量报告
+
+### 总体评分: {score}/100 ({grade})
+
+| 维度 | 得分 | 说明 |
+|------|------|------|
+| 完整性 | {completeness}/30 | 缺失率 |
+| 准确性 | {accuracy}/30 | 异常率 |
+| 及时性 | {timeliness}/20 | 离线时长 |
+| 一致性 | {consistency}/20 | 采集频率 |
+
+### 关键发现
+- {finding_1}
+- {finding_2}
+
+### 待确认事项
+- {pending_1}
+
+### 行动建议
+| 优先级 | 动作 | 负责人 | 截止时间 |
+|--------|------|--------|----------|
+| {priority} | {action} | {owner} | {deadline} |
+```
+
+## 自我进化
+
+- 可调参数：`evolution/parameters.md`
+- 反馈日志：`evolution/feedback-log.md`
+
+---
+
+## API 附录
+
+| 端点 | 说明 |
+|------|------|
+| `GET /stats/data-stats/get-data-quality-overview` | 数据质量总览 |
+| `GET /stats/data-stats/get-data-quality-overview-by-granularity?granularity=1&startTime=&endTime=` | 按粒度趋势 |
+| `GET /stats/equip-stats/get-equip-overall-stats` | 设备评分总览 |
+| `GET /stats/equip-stats/get-equip-stats?dimension=dataMissing` | 五维度分析 |
+| `GET /stats/equip-stats/get-manufacturer-rank` | 厂商质量排名 |
+| `GET /eq/data-missing-record/page?eqCode=` | 缺失记录 |
+| `GET /eq/data-missing-record/get-data-anomaly-real-record` | 实时异常 |
+| `GET /eq/uip-offline-record/page?eqCode=` | 离线记录 |
+| `POST /stats/data-stats/start-data-missing-check` | 手动触发检测 |
+
+通用头：`Authorization: Bearer ${POWERELF_API_TOKEN}`、`tenant-id: 1`

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+
+# 如需忽略 autoresearch 评测产物，取消注释：
+# **/autoresearch*/results.json
+# **/autoresearch*/results.tsv

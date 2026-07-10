@@ -1,0 +1,17 @@
+{
+  "experiment": 0,
+  "score": 6,
+  "max_score": 6,
+  "pass_rate": 100.0,
+  "status": "baseline",
+  "description": "original skill + anomaly_detector.py",
+  "evals": {
+    "EVAL 1": true,
+    "EVAL 2": true,
+    "EVAL 3": true,
+    "EVAL 4": true,
+    "EVAL 5": true,
+    "EVAL 6": true
+  },
+  "failed": []
+}
