@@ -359,7 +359,6 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
         "field": field,
         "st_id": st_id,
         "days": days,
-        "method": method,
         "threshold": resolved_threshold,
         "data_points": anom_result["total_points"],
         analysis_key: analysis,
@@ -371,6 +370,7 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
         "judgment": judgment,
         "anomaly_details": anomaly_details[:10],  # 最多10条
         "explanation": explanation,
+        "method": method,
     }
 
 

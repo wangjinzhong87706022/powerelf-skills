@@ -162,7 +162,6 @@ if HAS_DETECTOR:
 # ============================================================
 
 def _run():
-    import inspect
     g = globals()
     tests = [(n, f) for n, f in g.items() if n.startswith("test_") and callable(f)]
     passed = failed = 0
