@@ -333,14 +333,25 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
             detail["time"] = str(df.loc[original_idx, tm_col])
         anomaly_details.append(detail)
 
-    # 解释集
-    explanation = (
-        f"对 {table}.{field} 做 {method_label} 离群检测: "
-        f"数据点{anom_result['total_points']}个, "
-        f"阈值={resolved_threshold}, "
-        f"发现{anom_result['anomaly_count']}个离群点。"
-        f"综合判定: {judgment['message']} (置信度{judgment['confidence']})"
-    )
+    # 解释集（mad 路径与历史版本逐字一致；iqr/percentile 用方法感知文案）
+    if method == "mad":
+        explanation = (
+            f"对 {table}.{field} 做 MAD 异常检测: "
+            f"数据点{anom_result['total_points']}个, "
+            f"中位数{anom_result['median']}, "
+            f"MAD={anom_result['mad']}, "
+            f"阈值={resolved_threshold}, "
+            f"发现{anom_result['anomaly_count']}个异常点。"
+            f"综合判定: {judgment['message']} (置信度{judgment['confidence']})"
+        )
+    else:
+        explanation = (
+            f"对 {table}.{field} 做 {method_label} 离群检测: "
+            f"数据点{anom_result['total_points']}个, "
+            f"阈值={resolved_threshold}, "
+            f"发现{anom_result['anomaly_count']}个离群点。"
+            f"综合判定: {judgment['message']} (置信度{judgment['confidence']})"
+        )
 
     return {
         "status": "OK",
