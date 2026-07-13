@@ -277,6 +277,10 @@ print(md)
 python3 impl/generate_report.py --date 2026-05-15
 ```
 
+> **报告交付前 QA 闸**：报告组装完毕，先过一遍
+> [`../_shared/references/analysis-qa-checklist.md`](../_shared/references/analysis-qa-checklist.md)
+> 的 4 类清单，完成置信度评级。
+
 > **报告结论文案**：生成数据质量/异常报告中的统计结论时，先过一遍
 > [`../_shared/references/statistical-caution.md`](../_shared/references/statistical-caution.md)
 > 的措辞自检清单（相关≠因果、假精度、幸存者偏差等）。
@@ -299,6 +303,8 @@ python3 impl/generate_report.py --date 2026-05-15
 "报告"/"日报"/"PDF"      → API: report.generate_daily_report_from_db(date)  # 一键生成
 "孤立森林"/"DBSCAN"/"多变量" → algorithms/multivariate-anomaly.md
 "空间插值"/"Kriging"     → algorithms/spatial-interpolation.md
+"首次遇表"/"数据画像"/"画像" → ../_shared/references/data-profiling.md + impl/profiler.py
+"交付"/"QA"/"质量闸"      → ../_shared/references/analysis-qa-checklist.md
 ```
 
 ## 边界规则
