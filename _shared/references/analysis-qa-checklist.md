@@ -119,4 +119,4 @@
 ---
 
 > **声明**：本文档为被动护栏，不执行代码级强制。Agent 根据清单逐条核对后自填结论，缺数据项标"无法核验"而非误判通过。
-> 数据画像方法论见 [`../data-profiling.md`](../data-profiling.md)，统计措辞护栏见 [`../statistical-caution.md`](../statistical-caution.md)。
+> 数据画像方法论见 [`./data-profiling.md`](./data-profiling.md)，统计措辞护栏见 [`./statistical-caution.md`](./statistical-caution.md)。
