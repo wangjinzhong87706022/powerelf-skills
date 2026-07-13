@@ -70,6 +70,46 @@ DAILY_REPORT_TEMPLATE = """# 数据质量日报 — {date}
 {suggestions}
 
 ---
+
+## 八、QA 自检
+
+> **报告交付前 QA 闸**：报告组装完毕，先过一遍
+> [`../_shared/references/analysis-qa-checklist.md`](../_shared/references/analysis-qa-checklist.md)
+> 的 4 类清单，完成置信度评级。
+
+### 数据质量
+
+- [ ] 数据新鲜度：最新数据与报告生成时间间隔 ≤ 预期阈值
+- [ ] 缺失值处理：空值率在 completeness_tier 阈值内，超限已标注
+- [ ] 去重逻辑：按主键去重规则已执行并说明
+- [ ] 过滤标注：离线/不合格数据已标注
+
+### 计算
+
+- [ ] 聚合粒度：时间聚合匹配报告周期
+- [ ] 分母正确性：比率指标分母为应在线设备数
+- [ ] 日期对齐：跨时段比较已对齐日历结构
+- [ ] JOIN 多对多：结果行数在预期内
+- [ ] 指标定义一致：同一指标全篇定义相同
+- [ ] 小计 = 总计：分区小计之和等于总计
+
+### 合理性
+
+- [ ] 量级 smell test：关键指标在合理范围内
+- [ ] 趋势连续：相邻时段/测站变化连续，跳变已解释
+- [ ] 交叉引用自洽：不同章节引用同一数值一致
+- [ ] 边界条件：最小/最大/零值合理
+
+### 呈现
+
+- [ ] 零基坐标：图表纵轴从零开始或标注截断
+- [ ] 数字格式：同一指标精度一致
+- [ ] Caveat 透明：数据质量局限已标注
+- [ ] 可复现：提供时间窗口、来源表、关键参数
+
+**置信度评级**：（Agent 自填：Ready to share / Share with caveats / Needs revision）
+
+---
 *报告生成时间: {generated_at}*
 *分析时间窗口: {start_time} ~ {end_time}*
 """
@@ -105,6 +145,16 @@ ANOMALY_REPORT_TEMPLATE = """# 数据异常分析报告 — {date}
 {suggestions}
 
 ---
+
+## 八、QA 自检
+
+> **报告交付前 QA 闸**：报告组装完毕，先过一遍
+> [`../_shared/references/analysis-qa-checklist.md`](../_shared/references/analysis-qa-checklist.md)
+> 的 4 类清单，完成置信度评级。
+
+**置信度评级**：（Agent 自填：Ready to share / Share with caveats / Needs revision）
+
+---
 *报告生成时间: {generated_at}*
 """
 
@@ -135,6 +185,16 @@ SCORE_REPORT_TEMPLATE = """# 设备质量评分报告 — {date}
 ## 四、改进建议
 
 {suggestions}
+
+---
+
+## 八、QA 自检
+
+> **报告交付前 QA 闸**：报告组装完毕，先过一遍
+> [`../_shared/references/analysis-qa-checklist.md`](../_shared/references/analysis-qa-checklist.md)
+> 的 4 类清单，完成置信度评级。
+
+**置信度评级**：（Agent 自填：Ready to share / Share with caveats / Needs revision）
 
 ---
 *报告生成时间: {generated_at}*
@@ -446,10 +506,19 @@ def generate_daily_report_from_db(date_str, conn=None, suggestions=None):
             if not suggestions:
                 suggestions.append("- 数据质量良好，无需特别处理")
 
-        return generate_daily_report(
+        report_md = generate_daily_report(
             date_str, overview, collection_data,
             anomalies, offline_records, score_result, suggestions
         )
+
+        # 挂载 confidence_tier 字段（默认 None，由 Agent 按 analysis-qa-checklist.md 填写）
+        result = {
+            "markdown": report_md,
+            "confidence_tier": None,  # Agent 自填：Ready to share / Share with caveats / Needs revision
+            "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+        return result
 
     finally:
         if own_conn:
