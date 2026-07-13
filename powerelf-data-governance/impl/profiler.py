@@ -45,12 +45,26 @@ _SKILL_ROOT = os.path.dirname(_HERE)                            # .../powerelf-d
 if _SKILL_ROOT not in sys.path:
     sys.path.insert(0, _SKILL_ROOT)
 from lib.profiling import profile_table                          # noqa: E402
-from lib.db import create_engine as _shared_create_engine        # noqa: E402
 
 
 # ============================================================
 # Schema / Sampling
 # ============================================================
+
+ALLOWED_TABLES = frozenset({
+    "st_rsvr_r", "st_river_r", "st_pptn_r", "st_pressure_r",
+    "st_percolation_r", "st_deformation_r", "st_gnss_r",
+    "st_seepage_r", "st_rain_r", "st_wind_r", "st_temp_r",
+    "st_strlevel_r", "st_strain_r", "st_tilt_r",
+    "st_environment_r",
+})
+ALLOWED_FIELDS = frozenset({
+    "rz", "z", "p", "water_pressure", "ext_pressure",
+    "percolation", "wgs84_delta_h", "inq", "otq",
+    "temperature", "humidity", "wind_speed", "wind_direction",
+    "strain", "tilt_x", "tilt_y", "displacement",
+})
+
 
 def get_schema_hints(engine, table):
     """通过 DESCRIBE <table> 获取列名 → 类型 hints。
@@ -150,12 +164,21 @@ def run_profiling(db_url, table, field=None, sample_size=10000, output_format="j
     Returns:
         dict: profile result
     """
+    if table not in ALLOWED_TABLES:
+        raise ValueError(f"非法表名: {table} (不在允许列表中)")
+    if field is not None and field not in ALLOWED_FIELDS:
+        raise ValueError(f"非法字段名: {field} (不在允许列表中)")
+
     engine = create_engine(db_url)
 
     # 1. 获取 schema hints
     schema_hints = get_schema_hints(engine, table)
 
-    # 2. 采样
+    # 2. 验证 field 是否在表实际列中（防止 SQL 注入）
+    if field is not None and field not in schema_hints:
+        raise ValueError(f"非法字段名: {field} (表 {table} 中不存在)")
+
+    # 3. 采样
     rows = load_sample(engine, table, field=field, sample_size=sample_size)
 
     if not rows:
