@@ -23,7 +23,19 @@ import pymysql
 
 
 DB_HOST = os.getenv("POWERELF_DB_HOST") or os.getenv("SRM_DB_HOST", "localhost")
-DB_PORT = int(os.getenv("POWERELF_DB_PORT") or os.getenv("SRM_DB_PORT", "3306"))
+
+# 防御：POWERELF_DB_PORT / SRM_DB_PORT 若被误填为非数字（历史曾把密码粘进端口字段），
+# 不应让整个 skill 在 import 期崩溃（ValueError）。回退到 3306 并告警，保住 fallback 链。
+_raw_port = os.getenv("POWERELF_DB_PORT") or os.getenv("SRM_DB_PORT", "3306")
+try:
+    DB_PORT = int(_raw_port)
+except ValueError:
+    warnings.warn(
+        f"POWERELF_DB_PORT/SRM_DB_PORT={_raw_port!r} 不是合法端口数，回退到 3306。"
+        "请检查 ~/.hermes/.env 是否把密码误填到了端口字段。",
+        RuntimeWarning,
+    )
+    DB_PORT = 3306
 DB_NAME = os.getenv("POWERELF_DB_NAME") or os.getenv("SRM_DB_NAME", "powerelf_srm_yml")
 DB_USER = os.getenv("POWERELF_DB_USER") or os.getenv("SRM_DB_USER", "root")
 DB_PASSWORD = os.getenv("POWERELF_DB_PASSWORD") or os.getenv("SRM_DB_PASSWORD", "")
