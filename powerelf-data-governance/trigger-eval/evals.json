@@ -1,0 +1,27 @@
+{
+  "skill_name": "powerelf-data-governance",
+  "note": "Trigger-routing eval. Built from docs/questions.md. should_trigger=true means the model SHOULD load powerelf-data-governance; false means it should route elsewhere (expected_skill names the intended target). Evaluated with hermes's exact <available_skills> block + Qwen3.6-27B model (hermes's actual routing surface).",
+  "evals": [
+    {"id": "P1",  "prompt": "XX水库最近7天的水位数据有没有异常？",                               "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "MAD异常检测"},
+    {"id": "P1b", "prompt": "最近一周的水位数据有没有异常值",                                   "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "MAD异常检测-无关键词"},
+    {"id": "P1c", "prompt": "河道水位数据最近有没有异常",                                      "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "MAD异常检测-河道陷阱"},
+    {"id": "P2",  "prompt": "帮我检测一下渗压数据的异常值",                                   "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "MAD异常检测"},
+    {"id": "P3",  "prompt": "这些水位数据里有异常值吗？用MAD算法跑一下",                       "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "MAD异常检测"},
+    {"id": "P4",  "prompt": "128号设备昨天的数据有没有缺失？",                                "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "缺失检测"},
+    {"id": "P5",  "prompt": "分析这段时间渗压数据的缺失模式，是周期性的还是随机的？",            "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "缺失模式"},
+    {"id": "P6",  "prompt": "帮我填补一下这段缺失的水位数据",                                 "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "插值修复"},
+    {"id": "P7",  "prompt": "哪些设备离线超过24小时了？",                                    "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "离线检测"},
+    {"id": "P8",  "prompt": "139号设备本月的数据质量评分是多少？",                            "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "质量评分"},
+    {"id": "P9",  "prompt": "这个传感器的数值连续好几天没变了，是不是卡住了？",                 "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "卡滞检测"},
+    {"id": "P10", "prompt": "生成昨天的数据质量日报",                                        "should_trigger": true,  "expected_skill": "powerelf-data-governance", "category": "报告生成"},
+
+    {"id": "N1",  "prompt": "XX水库当前水位是多少？",                                        "should_trigger": false, "expected_skill": "water-situation",          "category": "trap:水位查询"},
+    {"id": "N2",  "prompt": "这个水位超过警戒线了吗？",                                      "should_trigger": false, "expected_skill": "powerelf-early-warning",   "category": "trap:警戒预警"},
+    {"id": "N3",  "prompt": "展示一下最近一周的水位变化曲线",                                "should_trigger": false, "expected_skill": "water-visualization",     "category": "trap:趋势可视化"},
+    {"id": "N4",  "prompt": "今天雨量站降雨量多少？",                                        "should_trigger": false, "expected_skill": "rainfall",                "category": "trap:雨量查询"},
+    {"id": "N5",  "prompt": "闸门当前开度是多少？泵站是否在运行？",                           "should_trigger": false, "expected_skill": "gate-pump-operation",     "category": "trap:闸泵状态"},
+    {"id": "N6",  "prompt": "查一下st_rsvr_r表最近的数据",                                   "should_trigger": false, "expected_skill": "powerelf-chatbi",         "category": "trap:纯数据查询"},
+    {"id": "N7",  "prompt": "帮我发一个预警通知给相关负责人",                                "should_trigger": false, "expected_skill": "powerelf-early-warning",   "category": "trap:预警分发"},
+    {"id": "N8",  "prompt": "最近河道水位趋势怎么样，画个图看看",                            "should_trigger": false, "expected_skill": "water-situation",          "category": "trap:趋势画图"}
+  ]
+}

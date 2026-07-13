@@ -1,6 +1,6 @@
 ---
 name: powerelf-data-governance
-description: "数据异常分析报告/日报/评分报告一键生成，MAD异常检测、缺失检测、智能插值、离线监测、卡滞/相关性/极端事件检测、质量评分、数据回写。水利工程数据质量治理。"
+description: "监测数据（河道水位/水库水位/雨量/渗压）有没有异常值、缺失、离线、卡滞？→数据质量治理：MAD/缺失/离线检测、评分、插值、报告。数值/趋势/超警戒查询用 water-situation。"
 version: 2.0.0
 author: Powerelf Team
 license: MIT
@@ -60,6 +60,9 @@ metadata:
   POWERELF_DB_USER     用户名
   POWERELF_DB_PASSWORD 密码
 ```
+
+> 凭证由 hermes 启动时从 `~/.hermes/.env` 加载（约定见仓库根 `.env.example`，勿提交真实密码）。
+> ⚠️ `POWERELF_DB_PORT` 必须是数字：曾发生把密码误填进端口字段、`int()` 崩溃导致整个 skill import 失败的事故；`_shared/lib/db.py` 已加防崩回退（非数字端口回退 3306 + 告警）。
 
 ```python
 # 获取连接 — 无论 CWD 在哪里都能正确找到 lib 目录

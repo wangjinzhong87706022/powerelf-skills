@@ -1,0 +1,280 @@
+{
+  "model": "Qwen3.6-27B-Q4_K_S.gguf",
+  "n_runs_per_eval": 3,
+  "elapsed_seconds": 66.5,
+  "positive_trigger_rate": 0.9,
+  "negative_false_trigger_rate": 0.0,
+  "routing_accuracy": 0.944,
+  "summary": [
+    {
+      "id": "P1",
+      "prompt": "XX水库最近7天的水位数据有没有异常？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "MAD异常检测",
+      "choices": [
+        "water-situation",
+        "water-situation",
+        "water-situation"
+      ],
+      "voted": "water-situation",
+      "picked_data_governance": false,
+      "correct": false
+    },
+    {
+      "id": "P2",
+      "prompt": "帮我检测一下渗压数据的异常值",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "MAD异常检测",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P3",
+      "prompt": "这些水位数据里有异常值吗？用MAD算法跑一下",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "MAD异常检测",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P4",
+      "prompt": "128号设备昨天的数据有没有缺失？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "缺失检测",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P5",
+      "prompt": "分析这段时间渗压数据的缺失模式，是周期性的还是随机的？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "缺失模式",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P6",
+      "prompt": "帮我填补一下这段缺失的水位数据",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "插值修复",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P7",
+      "prompt": "哪些设备离线超过24小时了？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "离线检测",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P8",
+      "prompt": "139号设备本月的数据质量评分是多少？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "质量评分",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P9",
+      "prompt": "这个传感器的数值连续好几天没变了，是不是卡住了？",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "卡滞检测",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "P10",
+      "prompt": "生成昨天的数据质量日报",
+      "should_trigger": true,
+      "expected_skill": "powerelf-data-governance",
+      "category": "报告生成",
+      "choices": [
+        "powerelf-data-governance",
+        "powerelf-data-governance",
+        "powerelf-data-governance"
+      ],
+      "voted": "powerelf-data-governance",
+      "picked_data_governance": true,
+      "correct": true
+    },
+    {
+      "id": "N1",
+      "prompt": "XX水库当前水位是多少？",
+      "should_trigger": false,
+      "expected_skill": "water-situation",
+      "category": "trap:水位查询",
+      "choices": [
+        "water-situation",
+        "water-situation",
+        "water-situation"
+      ],
+      "voted": "water-situation",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N2",
+      "prompt": "这个水位超过警戒线了吗？",
+      "should_trigger": false,
+      "expected_skill": "powerelf-early-warning",
+      "category": "trap:警戒预警",
+      "choices": [
+        "water-situation",
+        "water-situation",
+        "water-situation"
+      ],
+      "voted": "water-situation",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N3",
+      "prompt": "展示一下最近一周的水位变化曲线",
+      "should_trigger": false,
+      "expected_skill": "water-visualization",
+      "category": "trap:趋势可视化",
+      "choices": [
+        "water-visualization",
+        "water-visualization",
+        "water-visualization"
+      ],
+      "voted": "water-visualization",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N4",
+      "prompt": "今天雨量站降雨量多少？",
+      "should_trigger": false,
+      "expected_skill": "rainfall",
+      "category": "trap:雨量查询",
+      "choices": [
+        "rainfall",
+        "rainfall",
+        "rainfall"
+      ],
+      "voted": "rainfall",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N5",
+      "prompt": "闸门当前开度是多少？泵站是否在运行？",
+      "should_trigger": false,
+      "expected_skill": "gate-pump-operation",
+      "category": "trap:闸泵状态",
+      "choices": [
+        "gate-pump-operation",
+        "gate-pump-operation",
+        "gate-pump-operation"
+      ],
+      "voted": "gate-pump-operation",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N6",
+      "prompt": "查一下st_rsvr_r表最近的数据",
+      "should_trigger": false,
+      "expected_skill": "powerelf-chatbi",
+      "category": "trap:纯数据查询",
+      "choices": [
+        "water-situation",
+        "water-situation",
+        "water-situation"
+      ],
+      "voted": "water-situation",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N7",
+      "prompt": "帮我发一个预警通知给相关负责人",
+      "should_trigger": false,
+      "expected_skill": "powerelf-early-warning",
+      "category": "trap:预警分发",
+      "choices": [
+        "powerelf-early-warning",
+        "powerelf-early-warning",
+        "powerelf-early-warning"
+      ],
+      "voted": "powerelf-early-warning",
+      "picked_data_governance": false,
+      "correct": true
+    },
+    {
+      "id": "N8",
+      "prompt": "最近河道水位趋势怎么样，画个图看看",
+      "should_trigger": false,
+      "expected_skill": "water-situation",
+      "category": "trap:趋势画图",
+      "choices": [
+        "water-visualization",
+        "water-visualization",
+        "water-visualization"
+      ],
+      "voted": "water-visualization",
+      "picked_data_governance": false,
+      "correct": true
+    }
+  ]
+}
