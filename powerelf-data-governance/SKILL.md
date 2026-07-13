@@ -1,6 +1,6 @@
 ---
 name: powerelf-data-governance
-description: "数据异常分析报告/日报/评分报告一键生成，MAD异常检测、缺失检测、智能插值、离线监测、卡滞/相关性/极端事件检测、质量评分、数据回写。水利工程数据质量治理。"
+description: "监测数据（河道水位/水库水位/雨量/渗压）有没有异常值、缺失、离线、卡滞？→数据质量治理：MAD/缺失/离线检测、评分、插值、报告。数值/趋势/超警戒查询用 water-situation。"
 version: 2.0.0
 author: Powerelf Team
 license: MIT
@@ -61,6 +61,9 @@ metadata:
   POWERELF_DB_PASSWORD 密码
 ```
 
+> 凭证由 hermes 启动时从 `~/.hermes/.env` 加载（约定见仓库根 `.env.example`，勿提交真实密码）。
+> ⚠️ `POWERELF_DB_PORT` 必须是数字：曾发生把密码误填进端口字段、`int()` 崩溃导致整个 skill import 失败的事故；`_shared/lib/db.py` 已加防崩回退（非数字端口回退 3306 + 告警）。
+
 ```python
 # 获取连接 — 无论 CWD 在哪里都能正确找到 lib 目录
 import sys, os
@@ -97,15 +100,25 @@ python3 impl/anomaly_detector.py --db "$DB_URL" --table st_pressure_r --field wa
 
 **第一反应：调工具，不要自己写 SQL。**
 
-### MAD 异常检测
+### 异常检测（MAD / IQR / 百分位）
 ```bash
+# MAD（默认；正态/缓变指标：水位/GNSS/渗压）。--threshold=修正Z阈值
 python3 impl/anomaly_detector.py \
   --db "$DB_URL" \
   --table st_pressure_r --field water_pressure --threshold 4.0
 
+# IQR（偏态指标：雨量/流量）。--threshold=IQR倍数k（默认1.5，3.0激进）
+python3 impl/anomaly_detector.py --db "$DB_URL" --table st_pptn_r --field p --method iqr
+
+# 百分位（海量快速筛查）。--threshold=尾部百分位p（默认1→p1/p99）
+python3 impl/anomaly_detector.py --db "$DB_URL" --table st_rsvr_r --field rz --method percentile
+
 # 指定测站和时间
-python3 impl/anomaly_detector.py --db "..." --table st_rsvr_r --field rz --threshold 3.0 --st-id 128 --days 7
+python3 impl/anomaly_detector.py --db "$DB_URL" --table st_rsvr_r --field rz --threshold 3.0 --st-id 128 --days 7
 ```
+
+`--method` 取 `mad`(默认) / `iqr` / `percentile`，`--threshold` 语义随方法（详见 `../_shared/algorithms/outlier-methods.md`）。
+不带 `--method` 时与历史版本完全兼容。
 
 ### 缺失检测
 ```bash
@@ -145,6 +158,7 @@ python3 impl/generate_report.py --date 2026-05-15 --format pdf --output /tmp/rep
 lib/                      # Python 算法库（可编程调用）
 ├── db.py                 # 数据库连接（环境变量驱动）
 ├── mad.py                # MAD异常检测 + 变化率 + 综合判定
+├── outliers.py           # IQR/百分位离群检测（MAD 互补，偏态分布）
 ├── missing.py            # 缺失检测 + 模式识别
 ├── interpolation.py      # 智能插值（4策略自适应）
 ├── offline.py            # 离线检测 + 渐进告警 + MTTR
@@ -263,11 +277,16 @@ print(md)
 python3 impl/generate_report.py --date 2026-05-15
 ```
 
+> **报告结论文案**：生成数据质量/异常报告中的统计结论时，先过一遍
+> [`../_shared/references/statistical-caution.md`](../_shared/references/statistical-caution.md)
+> 的措辞自检清单（相关≠因果、假精度、幸存者偏差等）。
+
 ## 按需加载指令
 
 ```
 "数据质量"/"质量总览"     → rules/quality-scoring.md
 "异常"/"异常检测"/"MAD"   → rules/anomaly-detection.md + algorithms/mad-algorithm.md
+"IQR"/"百分位"/"离群"     → ../_shared/algorithms/outlier-methods.md + lib/outliers.py
 "缺失"/"数据缺失"        → rules/missing-detection.md
 "插值"/"填补"/"修复"     → rules/interpolation.md + algorithms/interpolation-strategies.md
 "离线"/"设备状态"        → rules/offline-detection.md

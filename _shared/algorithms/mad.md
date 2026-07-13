@@ -115,3 +115,9 @@ def detect_anomalies(values, threshold=4.0):
 - 窗口权衡：太小样本不足，太大对近期变化不敏感
 - **卡滞检测叠加**：雨量传感器是步进式读数（0.5mm 步进），连续相同值属正常，需单独处理
   （雨量站建议 tolerance=0.5 或 min_consecutive=24）
+
+## 八、姊妹方法
+
+MAD 适合正态/缓变指标。对偏态分布（雨量、流量）改用 IQR 或百分位法，三者对比与选择指南见
+[`outlier-methods.md`](outlier-methods.md)。CLI 调用：`anomaly_detector.py --method iqr|percentile`。
+生成统计结论文案时另见 [`../references/statistical-caution.md`](../references/statistical-caution.md)。

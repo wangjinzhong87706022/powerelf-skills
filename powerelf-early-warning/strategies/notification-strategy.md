@@ -4,6 +4,10 @@
 
 预警触发后的多通道通知分发机制。
 
+> **生成结论文案前**：`statement` / `alarmInfo` 等面向人的措辞涉及统计结论时，
+> 先查 [`../../_shared/references/statistical-caution.md`](../../_shared/references/statistical-caution.md)
+> 过一遍措辞自检清单（相关≠因果、假精度、幸存者偏差等）。
+
 ## 通知流程
 
 ```

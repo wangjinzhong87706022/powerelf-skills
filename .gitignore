@@ -17,3 +17,11 @@ Thumbs.db
 # 如需忽略 autoresearch 评测产物，取消注释：
 # **/autoresearch*/results.json
 # **/autoresearch*/results.tsv
+
+# 本地凭证：实际由 hermes 从 ~/.hermes/.env 加载，repo 内 .env 仅 dev fallback。
+# 切勿提交真实密码。
+.env
+.env.bak*
+
+# trigger-eval 临时评测工作台（本地实验产物，不跟踪）
+powerelf-data-governance/trigger-eval/

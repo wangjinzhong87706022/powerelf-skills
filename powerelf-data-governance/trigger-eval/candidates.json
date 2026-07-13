@@ -1,0 +1,626 @@
+[
+  {
+    "name": "ORIG",
+    "pos_rate": 1.0,
+    "false_trig": 0.0,
+    "acc": 1.0,
+    "p1_voted": "powerelf-data-governance",
+    "p1_picked": true,
+    "detail": [
+      {
+        "id": "P1",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P2",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P3",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P4",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P5",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P6",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P7",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P8",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P9",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P10",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "N1",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N2",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N3",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      },
+      {
+        "id": "N4",
+        "should": false,
+        "voted": "rainfall",
+        "picked": false,
+        "choices": [
+          "rainfall",
+          "rainfall",
+          "rainfall"
+        ]
+      },
+      {
+        "id": "N5",
+        "should": false,
+        "voted": "gate-pump-operation",
+        "picked": false,
+        "choices": [
+          "gate-pump-operation",
+          "gate-pump-operation",
+          "gate-pump-operation"
+        ]
+      },
+      {
+        "id": "N6",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N7",
+        "should": false,
+        "voted": "powerelf-early-warning",
+        "picked": false,
+        "choices": [
+          "powerelf-early-warning",
+          "powerelf-early-warning",
+          "powerelf-early-warning"
+        ]
+      },
+      {
+        "id": "N8",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "A",
+    "pos_rate": 1.0,
+    "false_trig": 0.0,
+    "acc": 1.0,
+    "p1_voted": "powerelf-data-governance",
+    "p1_picked": true,
+    "detail": [
+      {
+        "id": "P1",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P2",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P3",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P4",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P5",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P6",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P7",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P8",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P9",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P10",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "N1",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N2",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N3",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      },
+      {
+        "id": "N4",
+        "should": false,
+        "voted": "rainfall",
+        "picked": false,
+        "choices": [
+          "rainfall",
+          "rainfall",
+          "rainfall"
+        ]
+      },
+      {
+        "id": "N5",
+        "should": false,
+        "voted": "gate-pump-operation",
+        "picked": false,
+        "choices": [
+          "gate-pump-operation",
+          "gate-pump-operation",
+          "gate-pump-operation"
+        ]
+      },
+      {
+        "id": "N6",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N7",
+        "should": false,
+        "voted": "powerelf-early-warning",
+        "picked": false,
+        "choices": [
+          "powerelf-early-warning",
+          "powerelf-early-warning",
+          "powerelf-early-warning"
+        ]
+      },
+      {
+        "id": "N8",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "C",
+    "pos_rate": 1.0,
+    "false_trig": 0.0,
+    "acc": 1.0,
+    "p1_voted": "powerelf-data-governance",
+    "p1_picked": true,
+    "detail": [
+      {
+        "id": "P1",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P2",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P3",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P4",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P5",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P6",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P7",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P8",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P9",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "P10",
+        "should": true,
+        "voted": "powerelf-data-governance",
+        "picked": true,
+        "choices": [
+          "powerelf-data-governance",
+          "powerelf-data-governance",
+          "powerelf-data-governance"
+        ]
+      },
+      {
+        "id": "N1",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N2",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N3",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      },
+      {
+        "id": "N4",
+        "should": false,
+        "voted": "rainfall",
+        "picked": false,
+        "choices": [
+          "rainfall",
+          "rainfall",
+          "rainfall"
+        ]
+      },
+      {
+        "id": "N5",
+        "should": false,
+        "voted": "gate-pump-operation",
+        "picked": false,
+        "choices": [
+          "gate-pump-operation",
+          "gate-pump-operation",
+          "gate-pump-operation"
+        ]
+      },
+      {
+        "id": "N6",
+        "should": false,
+        "voted": "water-situation",
+        "picked": false,
+        "choices": [
+          "water-situation",
+          "water-situation",
+          "water-situation"
+        ]
+      },
+      {
+        "id": "N7",
+        "should": false,
+        "voted": "powerelf-early-warning",
+        "picked": false,
+        "choices": [
+          "powerelf-early-warning",
+          "powerelf-early-warning",
+          "powerelf-early-warning"
+        ]
+      },
+      {
+        "id": "N8",
+        "should": false,
+        "voted": "water-visualization",
+        "picked": false,
+        "choices": [
+          "water-visualization",
+          "water-visualization",
+          "water-visualization"
+        ]
+      }
+    ]
+  }
+]
