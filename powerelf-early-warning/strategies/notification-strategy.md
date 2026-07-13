@@ -8,6 +8,10 @@
 > 先查 [`../../_shared/references/statistical-caution.md`](../../_shared/references/statistical-caution.md)
 > 过一遍措辞自检清单（相关≠因果、假精度、幸存者偏差等）。
 
+> **通知交付前 QA 闸**：通知文案定稿前，先过一遍
+> [`../../_shared/references/analysis-qa-checklist.md`](../../_shared/references/analysis-qa-checklist.md)
+> 的交付前 QA 清单（数据质量/计算/合理性/呈现）。
+
 ## 通知流程
 
 ```
