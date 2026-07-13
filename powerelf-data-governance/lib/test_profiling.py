@@ -116,6 +116,29 @@ def test_profile_numeric_distinct():
     assert r["distinct"] == 3, r
 
 
+def test_profile_numeric_empty():
+    """空序列 → 全 None + 0 值 + distribution_hint='空'。"""
+    r = profile_numeric([])
+    assert r["count"] == 0, r
+    assert r["null_rate"] == 0.0, r
+    assert r["min"] is None, r
+    assert r["max"] is None, r
+    assert r["mean"] is None, r
+    assert r["median"] is None, r
+    assert r["std"] is None, r
+    assert r["p1"] is None, r
+    assert r["p5"] is None, r
+    assert r["p25"] is None, r
+    assert r["p50"] is None, r
+    assert r["p75"] is None, r
+    assert r["p95"] is None, r
+    assert r["p99"] is None, r
+    assert r["zero_rate"] == 0.0, r
+    assert r["negative_rate"] == 0.0, r
+    assert r["distinct"] == 0, r
+    assert r["distribution_hint"] == "空", r
+
+
 # ============================================================
 # profile_temporal
 # ============================================================
@@ -193,7 +216,7 @@ def test_detect_accuracy_placeholder_999999():
         "type": "numeric",
         "min": 0.0,
         "max": 999999.0,
-        "mean": 999000.0,
+        "mean": 999001.0,
         "distinct": 5,
         "null_rate": 0.0,
     }

@@ -6,7 +6,7 @@
 无 DB 耦合，纯函数，可入 CI。
 
 Functions:
-  - classify_column      列名/样本 → 6 分类之一
+  - classify_column      列名/样本 → 5 分类之一
   - profile_numeric      数值列 → 统计量 + 分布提示
   - profile_temporal     时间列 → 时间范围 + gap 统计
   - completeness_tier    有效值率 → 绿/黄/橙/红
@@ -43,7 +43,7 @@ _BOOLEAN_KEYWORDS = ("switch", "status", "is_", "has_", "flag", "active")
 
 
 def classify_column(name, sample_values=None, dtype=None):
-    """列名 / 样本 → 6 分类之一。
+    """列名 / 样本 → 5 分类之一。
 
     水利语义映射：
       eq_id / stcd          → identifier
@@ -58,7 +58,7 @@ def classify_column(name, sample_values=None, dtype=None):
         dtype: 列类型提示（字符串，可为 None）。
 
     Returns:
-        str: 6 分类之一 {identifier, temporal, metric, dimension, text, boolean, structural}
+        str: 5 分类之一 {identifier, temporal, metric, text, boolean}
     """
     lower = name.lower()
 
@@ -113,7 +113,7 @@ def profile_numeric(values):
 
     # 过滤 None / NaN
     valid_mask = np.array([v is not None and not (isinstance(v, float) and np.isnan(v))
-                           for v in arr])
+                           for v in arr], dtype=bool)
     valid = arr[valid_mask].astype(float)
     valid_count = int(valid.size)
 
@@ -306,9 +306,6 @@ def completeness_tier(valid_rate):
 # 准确性红旗检测
 # ============================================================
 
-# 常见水利占位符值
-_PLACEHOLDER_VALUES = {-1, 999999, 999999.0, -9999, 0}
-
 
 def detect_accuracy_flags(col_profile):
     """列 profile → 准确性红旗列表。
@@ -346,7 +343,7 @@ def detect_accuracy_flags(col_profile):
         hint = col_profile.get("distribution_hint", "")
 
         # 999999 占位符
-        if max_v is not None and max_v in (999999, 999999.0) and mean_v is not None:
+        if max_v is not None and max_v in (999999, 999999.0) and mean_v is not None and mean_v > 999000:
             flags.append("placeholder_999999")
 
         # -1 占位符
