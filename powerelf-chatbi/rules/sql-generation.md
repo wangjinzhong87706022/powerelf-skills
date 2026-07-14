@@ -2,16 +2,29 @@
 
 > 📖 **典型查询示例库**：见 `references/few_shots.md`（15+ 个水情/雨情/设备/预警/巡检/数据治理/大坝安全领域的 NL→SQL 实例，均含 `deleted=0` 与 `tenant_id=1`）。生成 SQL 前优先检索相似示例。
 
-## NL2SQL 流程
+## NL2SQL 流程（agent 自主，弃 Vanna）
 
 ```
-用户问题 → Vanna API → SQL → 执行 → 数据
+用户问题 → hermes agent（LLM + schema.md + few_shots.md + sql-discipline.md）→ 只读 SQL
+        → chatbi/impl/query_exec.py --sql "..." --db "$RO_DB_URL"（7 层护栏只读执行）
+        → 数据 → agent 解读/选图/回复
 
-重试机制:
-  if SQL执行失败 (BadSqlGrammarException):
-    将失败SQL + 错误码 + 原始问题 → 重新提问
-    最多重试 4 次
+SQL 错误（BadSqlGrammar/Unknown column）由 agent 见错误信息自修正重试（query_exec 透传 MySQL 错误）。
+不再依赖后端 Vanna API（路径 A 已废弃）。
 ```
+
+> 📖 **SQL 写作纪律**：见 `_shared/references/sql-discipline.md`（6 维需求解析 / 7 条性能纪律 / 窗口函数 / 错误排查）。
+> 📖 **表结构唯一事实源**：见 `_shared/references/schema.md`。本文件下方表映射仅作水利语义提示，关联键/完整字段以 schema.md 为准。
+
+## ⚠️ 关联键铁律（生成 JOIN 必读）
+
+| 业务表 | 关联键 | 关联方式 |
+|--------|--------|----------|
+| st_rsvr_r / st_pptn_r / st_percolation_r | **stcd** (varchar) | `WHERE stcd = eq_equip_base.code` |
+| st_pressure_r | **eq_id** (bigint) | `WHERE eq_id = eq_equip_base.id` |
+| dsm_dfr_srvrds_srhrds (GNSS) | **eq_id** (int) | `WHERE eq_id = eq_equip_base.id` |
+
+**铁律**：`eq_equip_base.code` 是字符串（如 `'606K215001'`），**不能**写 `eq_id = '606K215001'`（会 Unknown column）。完整铁律见 `schema.md`。
 
 ## 水利领域表映射
 
@@ -111,3 +124,4 @@ SELECT * FROM st_rsvr_r WHERE ...
 - 显示行数: display-num = 20
 - 泵站电气参数为 varchar 类型，数值比较前需 CAST 或应用层转换
 - dr（时段长）在 st_pptn_r 中单位是**分钟**，在 st_pptn_region_r 中 intv 单位是**小时**
+- SQL 写作纪律（禁 SELECT *、EXISTS>IN、JOIN 爆炸、窗口函数、NULLIF 除零）：见 `_shared/references/sql-discipline.md`
