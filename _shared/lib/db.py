@@ -87,3 +87,31 @@ def create_engine(url: Optional[str] = None):
     from sqlalchemy import create_engine as _create
 
     return _create(url or get_sqlalchemy_url())
+
+
+def get_readonly_sqlalchemy_url(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    user: Optional[str] = None,
+    password: Optional[str] = None,
+    database: Optional[str] = None,
+) -> str:
+    """chatbi 专用只读连接串。
+
+    优先级（运行时读 env，便于测试 monkeypatch）：
+        POWERELF_DB_READONLY_*  →  POWERELF_DB_*  →  SRM_DB_*  →  默认值
+    只读账号 chatbi_ro 仅 GRANT SELECT，作 query_exec.py 层1 DB 兜底。
+    未配只读账号时后备主账号（层1 降级，但 query_exec 层2-7 代码护栏仍生效）。
+    """
+    ro_user = (user or os.getenv("POWERELF_DB_READONLY_USER")
+               or os.getenv("POWERELF_DB_USER") or os.getenv("SRM_DB_USER", "root"))
+    ro_pwd = (password or os.getenv("POWERELF_DB_READONLY_PASSWORD")
+              or os.getenv("POWERELF_DB_PASSWORD") or os.getenv("SRM_DB_PASSWORD", ""))
+    ro_host = host or os.getenv("POWERELF_DB_HOST") or os.getenv("SRM_DB_HOST", "localhost")
+    _raw = os.getenv("POWERELF_DB_PORT") or os.getenv("SRM_DB_PORT", "3306")
+    try:
+        ro_port = port or int(_raw)
+    except ValueError:
+        ro_port = 3306
+    ro_db = database or os.getenv("POWERELF_DB_NAME") or os.getenv("SRM_DB_NAME", "powerelf_srm_yml")
+    return f"mysql+pymysql://{ro_user}:{ro_pwd}@{ro_host}:{ro_port}/{ro_db}"

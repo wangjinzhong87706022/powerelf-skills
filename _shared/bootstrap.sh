@@ -20,3 +20,12 @@ if [ -n "$DB_URL" ]; then
 else
   echo "[bootstrap] ⚠️ DB_URL 为空 —— 请先设置 POWERELF_DB_* / SRM_DB_* 环境变量" >&2
 fi
+
+# chatbi 只读 URL（7 层护栏层1 DB 兜底，来自 get_readonly_sqlalchemy_url）
+export RO_DB_URL="$(python3 -c "import sys; sys.path.insert(0,'$_HERE/lib'); from db import get_readonly_sqlalchemy_url; print(get_readonly_sqlalchemy_url())" 2>/dev/null)"
+
+if [ -n "$RO_DB_URL" ]; then
+  echo "[bootstrap] RO_DB_URL 已设置（chatbi 只读，来自 get_readonly_sqlalchemy_url）"
+else
+  echo "[bootstrap] ⚠️ RO_DB_URL 为空 —— chatbi query_exec 将后备主账号" >&2
+fi
