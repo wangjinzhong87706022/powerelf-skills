@@ -94,3 +94,73 @@ def validate_readonly(sql, limit=MAX_LIMIT):
 
     # 层5：强制 LIMIT
     return ensure_limit(raw, limit)
+
+
+# ============================================================
+# 层1/6/7 + 执行
+# ============================================================
+
+def execute(sql, db_url, display=20, limit=MAX_LIMIT):
+    """执行只读 SQL。层2-5 经 validate_readonly；层1/6/7 在此。返回结果 dict。"""
+    sanitized = validate_readonly(sql, limit)
+    engine = create_engine(db_url, connect_args={"connect_timeout": 10})
+    try:
+        with engine.connect() as conn:
+            # 层7：只读事务（双保险，主防线是只读账号）
+            conn.execute(text("SET SESSION TRANSACTION READ ONLY"))
+            # 层6：语句级超时（MySQL 5.7.4+，毫秒）
+            conn.execute(text(f"SET SESSION MAX_EXECUTION_TIME={QUERY_TIMEOUT_SEC * 1000}"))
+            result = conn.execute(text(sanitized))
+            cols = list(result.keys())
+            rows = [dict(row._mapping) for row in result.fetchmany(display)]
+    except SystemExit:
+        raise
+    except Exception as e:
+        # 透传 SQL 错误（喂给 agent 自修正重试）
+        print(f"[ERROR] 执行失败: {e}", file=sys.stderr)
+        sys.exit(2)
+    return {
+        "sql_sanitized": sanitized,
+        "columns": cols,
+        "rows": rows,
+        "row_count": len(rows),
+        "truncated": len(rows) == display,
+        "execution_timeout_sec": QUERY_TIMEOUT_SEC,
+    }
+
+
+def format_table(result):
+    """简易 markdown 表格输出。"""
+    cols = result["columns"]
+    if not cols:
+        return "(无数据)"
+    lines = ["| " + " | ".join(cols) + " |",
+             "|" + "|".join(["---"] * len(cols)) + "|"]
+    for row in result["rows"]:
+        lines.append("| " + " | ".join(str(row.get(c, "")) for c in cols) + " |")
+    if result.get("truncated"):
+        lines.append(f"\n(显示前 {result['row_count']} 行，结果可能被截断)")
+    return "\n".join(lines)
+
+
+def main():
+    if not HAS_DEPS:
+        print("需要安装: pip install sqlparse sqlalchemy pymysql", file=sys.stderr)
+        sys.exit(1)
+    parser = argparse.ArgumentParser(description="只读 SQL 安全执行（7 层护栏）")
+    parser.add_argument("--sql", required=True, help="要执行的只读 SELECT SQL")
+    parser.add_argument("--db", required=True, help="只读数据库连接 URL ($RO_DB_URL)")
+    parser.add_argument("--limit", type=int, default=MAX_LIMIT, help=f"强制 LIMIT 上限（默认 {MAX_LIMIT}）")
+    parser.add_argument("--display", type=int, default=20, help="返回行数（默认 20）")
+    parser.add_argument("--format", choices=["json", "table"], default="json", help="输出格式")
+    args = parser.parse_args()
+
+    result = execute(args.sql, args.db, display=args.display, limit=args.limit)
+    if args.format == "json":
+        print(json.dumps(result, ensure_ascii=False, default=str))
+    else:
+        print(format_table(result))
+
+
+if __name__ == "__main__":
+    main()
