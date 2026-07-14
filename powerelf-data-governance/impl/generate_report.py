@@ -42,7 +42,8 @@ def main():
     from report import generate_daily_report_from_db, generate_anomaly_report_from_db
 
     if args.type == 'daily':
-        md = generate_daily_report_from_db(args.date)
+        result = generate_daily_report_from_db(args.date)
+        md = result.get("markdown", str(result)) if isinstance(result, dict) else result
     elif args.type == 'anomaly':
         md = generate_anomaly_report_from_db(args.date)
     else:

@@ -78,6 +78,8 @@ else:
   completenessScore = completenessRatio * 10  # 低于80%加重惩罚
 ```
 
+> **完整性 tier 定义**（绿>99% / 黄95-99% / 橙80-95% / 红<80%）以 [`../../_shared/references/data-profiling.md`](../../_shared/references/data-profiling.md) 的 `completeness_tier` 函数为单一事实源，本规则不复制阈值。
+
 ## 时间衰减 — 新增
 
 原始实现中所有日期的数据权重相同。增加时间衰减：
