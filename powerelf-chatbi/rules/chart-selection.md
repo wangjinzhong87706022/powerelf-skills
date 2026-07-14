@@ -2,15 +2,17 @@
 
 ## 图表类型
 
-| chartType | Builder | 适用场景 |
-|-----------|---------|----------|
-| line + 多组 | GroupedLineChartCodeBuilder | 多系列时间序列对比 |
-| line + 多Y字段 | MultiYFieldLineChartCodeBuilder | 同一时间轴多个Y指标 |
-| line + 单Y字段 | SingleYFieldLineChartCodeBuilder | 单指标时间序列 |
-| bar + 分组 | GroupBarChartCodeBuilder | 分类对比（多系列） |
-| bar + 单系列 | BarChartCodeBuilder | 分类对比（单系列） |
-| pie | PieChartCodeBuilder | 占比分析 |
-| none | NoneChartCodeBuilder | 数据不适合图表 |
+| chartType | 适用场景 |
+|-----------|----------|
+| line + 多组 | 多系列时间序列对比 |
+| line + 多Y字段 | 同一时间轴多个Y指标 |
+| line + 单Y字段 | 单指标时间序列 |
+| bar + 分组 | 分类对比（多系列） |
+| bar + 单系列 | 分类对比（单系列） |
+| pie | 占比分析 |
+| none | 数据不适合图表 |
+
+> 图表类型扩充（热力/散点/地图/双轴/堆叠等）见 B' 簇后续。agent 生成 ECharts option 时按本表语义选择。
 
 ## 选择逻辑
 

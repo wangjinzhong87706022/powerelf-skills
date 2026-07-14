@@ -10,7 +10,7 @@ metadata:
     tags: [water-conservancy, chatbi, nl2sql, visualization, knowledge-base]
     related_skills: [powerelf-data-governance, powerelf-monitor]
 prerequisites:
-  env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
+  env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN, POWERELF_DB_READONLY_USER, POWERELF_DB_READONLY_PASSWORD]
 ---
 
 # ChatBI Skill v2
@@ -40,13 +40,21 @@ NL2SQL 智能数据分析引擎。规则内嵌。
 
 ---
 
-## API 附录
+## 数据访问
+
+chatbi 走 **agent 自主 NL2SQL 直连库**（弃后端 Vanna）：
+
+```bash
+source ../_shared/bootstrap.sh   # 导出 RO_DB_URL（只读账号 chatbi_ro）
+python3 impl/query_exec.py --sql "SELECT ..." --db "$RO_DB_URL" [--limit 2000] [--display 20] [--format json|table]
+```
+
+`query_exec.py` 7 层安全护栏（只读账号/sqlparse/单语句/系统库黑名单/强制 LIMIT/超时 120s/只读事务），详见 [`rules/sql-generation.md`](rules/sql-generation.md)。
+
+## API 附录（非 NL2SQL 能力，平台端点）
 
 | 端点 | 说明 |
 |------|------|
-| `GET /chatbi/aiReporter/newSession?userId=` | 创建会话 |
-| `GET /chatbi/aiReporter/{chatId}/message?question=` | 发送问题(SSE) |
-| `POST /chatbi/aiReporter/{chatId}/cancel` | 取消操作 |
 | `GET /knowledge/base/search?content=&size=` | 知识库检索 |
 | `GET /knowledge/neo4j-graph/graphEcharts?fileName=` | 知识图谱 |
 | `GET /llm-api/streamChat?message=&promptType=` | LLM对话 |

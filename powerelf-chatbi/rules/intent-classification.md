@@ -31,18 +31,19 @@
   后续提问 → 通过意图分类决定执行步骤
 ```
 
-## 流水线组合
+## 流水线组合（hermes agent 编排，弃后端 Vanna）
 
 ```
 TEXT_TO_SQL 流水线:
-  NL2SQLAgent → SQL执行 → 数据表格
+  意图分类 → agent 生成 SQL（用 sql-discipline.md/schema.md/few_shots.md）
+           → chatbi/impl/query_exec.py 只读执行（7 层护栏）→ 数据表格
 
 VISUALIZATION 流水线:
-  数据 → ChartDecisionAgent → ChartCodeAgent → ECharts JSON
+  数据 → agent 按 chart-selection.md 选图 → 生成 ECharts option
 
 INTERPRETATION 流水线:
-  数据 → InterpretationAgent → 分析文本
+  数据 → agent 解读（过 analysis-qa-checklist.md / statistical-caution.md）→ 分析文本
 
 完整流水线 (首次):
-  意图分类 → NL2SQL → SQL执行 → 图表决策 → 图表生成 → 数据解读
+  意图分类 → 生成SQL → query_exec 执行 → 图表决策 → 图表生成 → 数据解读
 ```
