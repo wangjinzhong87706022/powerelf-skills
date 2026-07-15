@@ -8,14 +8,20 @@ hermes-skills/_shared/lib/db.py，请勿在此维护副本。
 import importlib.util
 import os
 
-_SHARED_DB = os.path.normpath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_shared", "lib", "db.py")
-)
+# POWERELF_SKILLS_ROOT 优先（部署环境）→ 相对路径兜底（开发环境）
+_root = os.environ.get("POWERELF_SKILLS_ROOT")
+if _root:
+    _SHARED_DB = os.path.join(_root, "_shared", "lib", "db.py")
+else:
+    _SHARED_DB = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "..", "..", "_shared", "lib", "db.py")
+    )
 
 if not os.path.isfile(_SHARED_DB):
     raise ImportError(
         f"找不到共享数据库层：{_SHARED_DB}\n"
-        "本 skill 必须位于 hermes-skills/<skill>/ 目录下运行，以确保 _shared/ 可达。"
+        "请设置 POWERELF_SKILLS_ROOT 环境变量指向 powerelf-skills 根目录。"
     )
 
 _spec = importlib.util.spec_from_file_location("_shared_db", _SHARED_DB)
