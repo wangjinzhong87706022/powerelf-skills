@@ -46,6 +46,7 @@ chatbi 走 **agent 自主 NL2SQL 直连库**（弃后端 Vanna）：
 
 ```bash
 source ../_shared/bootstrap.sh   # 导出 RO_DB_URL（只读账号 chatbi_ro）
+# 部署环境：可设置 POWERELF_SKILLS_ROOT 指向 powerelf-skills 根目录替代相对路径
 python3 impl/query_exec.py --sql "SELECT ..." --db "$RO_DB_URL" [--limit 2000] [--display 20] [--format json|table]
 ```
 

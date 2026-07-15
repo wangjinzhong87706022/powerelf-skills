@@ -99,6 +99,9 @@ metadata:
 > 连接层已统一至 `../_shared/lib/db.py`（本 skill 的 `lib/db.py` 为转发 shim），
 > 同样支持旧名 `SRM_DB_*` 后备。CLI 工具的 `--db "$DB_URL"` 需先 source 引导脚本：
 > `source ../_shared/bootstrap.sh`（会正确尊重 `POWERELF_DB_PORT`）。
+>
+> **部署环境**：设置 `POWERELF_SKILLS_ROOT` 环境变量指向 powerelf-skills 根目录，
+> 各 skill 的 shim 会自动通过该变量定位 `_shared/lib/db.py`，无需固定目录深度。
 
 ### 环境变量（实时监测 — REST API）
 

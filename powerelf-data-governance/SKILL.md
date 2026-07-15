@@ -77,6 +77,13 @@ conn = get_connection()
 url = get_sqlalchemy_url()
 ```
 
+**部署环境（推荐）：通过 `POWERELF_SKILLS_ROOT` 环境变量定位**
+```python
+import sys, os
+sys.path.insert(0, os.path.join(os.environ['POWERELF_SKILLS_ROOT'], '_shared', 'lib'))
+from db import get_connection, get_sqlalchemy_url
+```
+
 **CLI 工具统一用 `$DB_URL`**（先 source 引导脚本，会正确尊重 `POWERELF_DB_PORT`）：
 ```bash
 source ../_shared/bootstrap.sh   # 导出 DB_URL
