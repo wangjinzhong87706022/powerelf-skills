@@ -12,8 +12,8 @@
 #
 # 依赖: python3 + pymysql；POWERELF_DB_* 或 SRM_DB_* 环境变量（见 _shared/lib/db.py）。
 
-_HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-export DB_URL="$(python3 -c "import sys; sys.path.insert(0,'$_HERE/lib'); from db import get_sqlalchemy_url; print(get_sqlalchemy_url())" 2>/dev/null)"
+_HERE="${POWERELF_SKILLS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)}"
+export DB_URL="$(python3 -c "import sys; sys.path.insert(0,'$_HERE/_shared/lib'); from db import get_sqlalchemy_url; print(get_sqlalchemy_url())" 2>/dev/null)"
 
 if [ -n "$DB_URL" ]; then
   echo "[bootstrap] DB_URL 已设置（来自 _shared/lib/db.py）"
@@ -22,7 +22,7 @@ else
 fi
 
 # chatbi 只读 URL（7 层护栏层1 DB 兜底，来自 get_readonly_sqlalchemy_url）
-export RO_DB_URL="$(python3 -c "import sys; sys.path.insert(0,'$_HERE/lib'); from db import get_readonly_sqlalchemy_url; print(get_readonly_sqlalchemy_url())" 2>/dev/null)"
+export RO_DB_URL="$(python3 -c "import sys; sys.path.insert(0,'$_HERE/_shared/lib'); from db import get_readonly_sqlalchemy_url; print(get_readonly_sqlalchemy_url())" 2>/dev/null)"
 
 if [ -n "$RO_DB_URL" ]; then
   echo "[bootstrap] RO_DB_URL 已设置（chatbi 只读，来自 get_readonly_sqlalchemy_url）"
