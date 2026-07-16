@@ -125,7 +125,7 @@ def cluster_points(
 ) -> List[List[str]]:
     """Cluster inspection points by geographic proximity using K-Means.
 
-    Pure-Python implementation with Euclidean distance on (lon, lat).
+    使用 Haversine 距离（球面距离）替代欧氏距离（M4 修复：经纬度需投影或球面距离）。
 
     Args:
         points: List of dicts with at least ``id``, ``lon``, ``lat``.
@@ -152,10 +152,10 @@ def cluster_points(
     assignments = [0] * len(points)
 
     for _ in range(max_iterations):
-        # Assignment step.
+        # Assignment step（使用 Haversine 距离）
         new_assignments = []
         for p in points:
-            dists = [_euclidean(p, c) for c in centroids]
+            dists = [_haversine(p["lat"], p["lon"], c["lat"], c["lon"]) for c in centroids]
             new_assignments.append(dists.index(min(dists)))
 
         # Check convergence.

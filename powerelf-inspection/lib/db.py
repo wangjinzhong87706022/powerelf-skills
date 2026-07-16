@@ -31,6 +31,7 @@ _spec.loader.exec_module(_mod)
 # re-export 全部公开符号，保持 from db import ... 调用不变
 get_connection = _mod.get_connection
 get_sqlalchemy_url = _mod.get_sqlalchemy_url
+get_readonly_sqlalchemy_url = getattr(_mod, "get_readonly_sqlalchemy_url", None)
 create_engine = _mod.create_engine
 DB_HOST = _mod.DB_HOST
 DB_PORT = _mod.DB_PORT
@@ -41,6 +42,7 @@ DB_PASSWORD = _mod.DB_PASSWORD
 __all__ = [
     "get_connection",
     "get_sqlalchemy_url",
+    "get_readonly_sqlalchemy_url",
     "create_engine",
     "DB_HOST",
     "DB_PORT",

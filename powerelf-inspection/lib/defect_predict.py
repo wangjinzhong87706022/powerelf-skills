@@ -10,6 +10,9 @@ Covers:
 import math
 from typing import Any, Dict, List
 
+# 启发式阈值（M3：未经标定，仅参考；建议按历史分布校准）
+HOTSPOT_THRESHOLDS = {"high": 0.3, "medium": 0.1}
+
 
 # ---------------------------------------------------------------------------
 # 4.1 Linear Trend Prediction
@@ -190,9 +193,10 @@ def bayesian_hotspot(
         # Hotspot score = probability * importance weight.
         hotspot_score = round(probability * importance, 4)
 
-        if hotspot_score > 0.3:
+        # 使用启发式阈值（M3：未经标定，建议按历史分布校准）
+        if hotspot_score > HOTSPOT_THRESHOLDS["high"]:
             risk_level = "high"
-        elif hotspot_score > 0.1:
+        elif hotspot_score > HOTSPOT_THRESHOLDS["medium"]:
             risk_level = "medium"
         else:
             risk_level = "low"
