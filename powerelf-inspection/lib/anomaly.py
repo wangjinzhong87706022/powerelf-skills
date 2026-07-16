@@ -35,9 +35,14 @@ def layer1_threshold(value: float, rules: List[dict]) -> List[dict]:
     """
     results: List[dict] = []
     for rule in rules:
-        extend = json.loads(rule["extend"])
-        condition = extend["condition"]
-        raw_threshold = extend["content"][0]
+        try:
+            extend = json.loads(rule["extend"]) if isinstance(rule.get("extend"), str) else rule.get("extend")
+            condition = extend.get("condition", ">")
+            content = extend.get("content") or []
+            raw_threshold = content[0] if len(content) > 0 else None
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            continue  # 跳过格式坏的规则（B5 阈值存在性/健壮性）
+
         threshold = float(raw_threshold) if raw_threshold is not None else None
         level = rule.get("level_r", 3)
 
@@ -112,18 +117,20 @@ def layer2_change_rate(
 
     result: Dict[str, Any] = {}
     for ind, t in thresholds.items():
-        triggered = False
-        if t.get("abs") is not None and abs_change > t["abs"]:
-            triggered = True
-        if t.get("rel") is not None and rel_change > t["rel"]:
-            triggered = True
+        abs_t, rel_t = t.get("abs"), t.get("rel")
+        abs_trig = abs_t is not None and abs_change > abs_t
+        rel_trig = rel_t is not None and rel_change > rel_t
 
-        # Pick the tighter threshold for reporting.
-        rate = rel_change if t.get("rel") else abs_change
-        threshold = t.get("rel") if t.get("rel") else t.get("abs")
+        # 报告实际触发的那个阈值（都触发则报更严的 rel）
+        if rel_trig:
+            rate, threshold = rel_change, rel_t
+        elif abs_trig:
+            rate, threshold = abs_change, abs_t
+        else:
+            rate, threshold = (rel_change if rel_t else abs_change), (rel_t or abs_t)
 
         result[ind] = {
-            "is_anomaly": triggered,
+            "is_anomaly": abs_trig or rel_trig,
             "rate": rate,
             "threshold": threshold,
             "abs_change": abs_change,
@@ -188,8 +195,7 @@ def layer4_mad_statistical(
 ) -> Dict[str, Any]:
     """Layer 4: Statistical anomaly detection via Modified Z-Score (MAD).
 
-    Uses the last value in *values* as the current reading and the rest as
-    the historical window.
+    委托给 mad_anomaly() 统一实现（M2 去重）。
 
     Args:
         values: List of historical readings (last element = current).
@@ -198,25 +204,7 @@ def layer4_mad_statistical(
     Returns:
         Dict with ``is_anomaly`` and ``score`` (the Modified Z-Score).
     """
-    if len(values) < 4:
-        return {"is_anomaly": False, "score": 0.0}
-
-    current_value = values[-1]
-    historical = values[:-1]
-
-    median = statistics.median(historical)
-    abs_devs = [abs(v - median) for v in historical]
-    mad = statistics.median(abs_devs) * 1.4826
-
-    if mad == 0:
-        return {"is_anomaly": False, "score": 0.0}
-
-    z_score = abs(current_value - median) / mad
-
-    return {
-        "is_anomaly": z_score > threshold,
-        "score": round(z_score, 4),
-    }
+    return mad_anomaly(values, threshold=threshold, min_samples=4)
 
 
 # ---------------------------------------------------------------------------

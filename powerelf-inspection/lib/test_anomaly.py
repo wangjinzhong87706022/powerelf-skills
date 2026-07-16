@@ -44,3 +44,22 @@ def test_h4_mad_vs_2sigma_on_skewed():
     median = float(np.median(vals[:-1])); mad = float(np.median(np.abs(np.array(vals[:-1])-median)))*1.4826
     z = abs(vals[-1]-median)/mad if mad>0 else 0.0
     assert z > 4.0  # MAD 检出极端值
+
+def test_layer4_delegates_to_mad():
+    # layer4现委托 mad_anomaly，等价行为
+    vals = [float(i) for i in range(1, 21)] + [100.0]
+    r1 = anomaly.mad_anomaly(vals, threshold=4.0)
+    r2 = anomaly.layer4_mad_statistical(vals, threshold=4.0)
+    assert r1["is_anomaly"] is True and r2["is_anomaly"] is True
+    assert r1["score"] == r2["score"]  # 完全委托，结果一致
+
+def test_layer2_reports_breaching_threshold_m1():
+    # abs触发但rel未触发时，应报abs（修M1：不再无条件报rel）
+    r = anomaly.layer2_change_rate(100.0, 99.0)  # abs=1, rel≈0.01
+    wl = r["water_level"]  # abs=0.5, rel=0.05 → abs触发(1>0.5), rel不触发
+    assert wl["is_anomaly"] is True
+    assert wl["threshold"] == 0.5  # 应报实际触发的abs阈值
+
+def test_layer1_rejects_malformed_extend():
+    rules = [{"extend": "{\"content\":[null]}", "level_r": 3}]  # content[0]=null
+    assert anomaly.layer1_threshold(100.0, rules) == []  # 不触发，不抛
