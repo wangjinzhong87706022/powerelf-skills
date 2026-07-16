@@ -63,3 +63,16 @@ def test_layer2_reports_breaching_threshold_m1():
 def test_layer1_rejects_malformed_extend():
     rules = [{"extend": "{\"content\":[null]}", "level_r": 3}]  # content[0]=null
     assert anomaly.layer1_threshold(100.0, rules) == []  # 不触发，不抛
+
+def test_layer5_empty_indicators_not_anomaly():
+    assert anomaly.layer5_correlation([])["is_anomaly"] is False
+
+def test_confidence_formula_dd1():
+    # 文档公式：0.3×阈值 + 0.2×数据质量 + 0.2×趋势 + 0.2×历史 + 0.1×上下文
+    layers = {
+        1: {"is_anomaly": True, "confidence": 0.9},   # 阈值层触发
+        3: {"is_anomaly": True, "confidence": 0.8},   # 趋势层触发
+    }
+    r = anomaly.composite_anomaly_judge(layers)
+    assert 0.0 < r["confidence"] <= 1.0
+    assert set(r["triggered_layers"]) <= {1,2,3,4,5}

@@ -227,6 +227,9 @@ def layer5_correlation(indicator_pairs: List[dict]) -> Dict[str, Any]:
     Returns:
         Dict with ``is_anomaly`` and ``description`` summarising contradictions.
     """
+    if not indicator_pairs:
+        return {"is_anomaly": False, "description": "no indicators"}
+
     contradictions: List[str] = []
     for pair in indicator_pairs:
         a = pair.get("a_trend")
@@ -261,6 +264,9 @@ _LAYER_WEIGHTS = {
 def composite_anomaly_judge(layer_results: Dict[int, Any]) -> Dict[str, Any]:
     """Aggregate all 5 layer results into a single anomaly verdict.
 
+    文档公式（DD1）：0.3×阈值 + 0.2×数据质量 + 0.2×趋势 + 0.2×历史 + 0.1×上下文
+    层→因子映射：L1阈值 / L4数据质量(MAD) / L3趋势 / L2历史(变化率) / L5上下文(相关性)
+
     Args:
         layer_results: Mapping from layer number (1-5) to that layer's output.
             Each value may be a single dict or a list of dicts; each should
@@ -270,62 +276,30 @@ def composite_anomaly_judge(layer_results: Dict[int, Any]) -> Dict[str, Any]:
         Dict with ``is_anomaly``, ``confidence`` (0-1), ``triggered_layers``,
         and human-readable ``description``.
     """
-    weighted_sum = 0.0
-    weight_total = 0.0
-    triggered_layers: List[int] = []
+    # 文档权重（DD1）
+    FACTOR_WEIGHT = {1: 0.30, 4: 0.20, 3: 0.20, 2: 0.20, 5: 0.10}
+    triggered, factor_scores = [], {}
 
     for layer_num in range(1, 6):
         entry = layer_results.get(layer_num)
         if entry is None:
             continue
-
-        # Normalise to list.
         entries = entry if isinstance(entry, list) else [entry]
+        confs = [e.get("confidence", 0.5) for e in entries
+                 if isinstance(e, dict) and (e.get("is_anomaly") or e.get("triggered"))]
+        if confs:
+            triggered.append(layer_num)
+            factor_scores[layer_num] = max(confs)
 
-        # Determine if this layer triggered.
-        layer_confidences: List[float] = []
-        for e in entries:
-            if isinstance(e, dict):
-                # A layer "triggered" if it has an anomaly indicator.
-                is_anomaly = e.get("is_anomaly", False) or e.get("triggered", False)
-                conf = e.get("confidence", 0.5)
-                if is_anomaly:
-                    layer_confidences.append(conf)
+    weight_present = sum(FACTOR_WEIGHT[l] for l in triggered)
+    confidence = (sum(FACTOR_WEIGHT[l] * factor_scores[l] for l in triggered) / weight_present) if weight_present else 0.0
 
-        if layer_confidences:
-            max_conf = max(layer_confidences)
-            weighted_sum += _LAYER_WEIGHTS[layer_num] * max_conf
-            weight_total += _LAYER_WEIGHTS[layer_num]
-            triggered_layers.append(layer_num)
-
-    confidence = (weighted_sum / weight_total) if weight_total > 0 else 0.0
-
-    # Multiple layers triggering increases confidence.
-    if len(triggered_layers) >= 3:
-        confidence = min(confidence * 1.15, 1.0)
-
-    is_anomaly = confidence > 0.5 or len(triggered_layers) >= 2
-
-    descriptions = []
-    layer_names = {
-        1: "threshold",
-        2: "change_rate",
-        3: "trend",
-        4: "MAD_statistical",
-        5: "correlation",
-    }
-    for ln in triggered_layers:
-        descriptions.append(layer_names.get(ln, f"layer_{ln}"))
-
+    names = {1: "threshold", 2: "change_rate", 3: "trend", 4: "MAD", 5: "correlation"}
     return {
-        "is_anomaly": is_anomaly,
+        "is_anomaly": confidence > 0.5 or len(triggered) >= 2,
         "confidence": round(confidence, 4),
-        "triggered_layers": triggered_layers,
-        "description": (
-            f"Anomaly detected via {', '.join(descriptions)}"
-            if descriptions
-            else "No anomaly detected"
-        ),
+        "triggered_layers": triggered,
+        "description": f"Anomaly via {', '.join(names[l] for l in triggered)}" if triggered else "No anomaly",
     }
 
 
