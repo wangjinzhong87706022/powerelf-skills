@@ -455,6 +455,51 @@ python3 impl/generate_report.py --date 2026-05-15
 
 通用头与鉴权约定：见 [`../_shared/api-auth.md`](../_shared/api-auth.md)（`Authorization: Bearer ${POWERELF_API_TOKEN}` + `tenant-id: 1`）
 
+## Pitfalls（高频错误）
+
+开发/维护中常见的陷阱（含 ❌错误示例与 ✅正确做法），详见 `references/pitfalls.md`：
+
+1. **MAD 窗口参数误设** — 窗口过小漏检，过大约束无意义
+2. **插值长度误用** — 连续缺失超过 3 天不应插值
+3. **评分分母选错** — 应在线设备数 ≠ 有数据设备数
+4. **离线阈值错配** — 不同站型离线阈值不同
+5. **回写权限失控** — 只读账号不应执行 writeback
+
+## Validation Gate（交付前 QA 闸）
+
+报告交付前需过 QA 闸（详见 [`../_shared/references/analysis-qa-checklist.md`](../_shared/references/analysis-qa-checklist.md)），逐条自检后填入 `confidence_tier`。
+
+### 置信度评级
+
+| 等级 | 含义 |
+|------|------|
+| **Ready to share** | 数据完整、计算正确、数字自洽 |
+| **Share with caveats** | 有已知局限但不影响结论主体 |
+| **Needs revision** | 存在影响结论的缺陷 |
+
+## 输出深度模式（depth-mode）
+
+| 模式 | 输出内容 | 适用场景 |
+|------|----------|----------|
+| **精简（terse）** | 仅评分/异常数等关键数值 | 批量概览 |
+| **标准（standard）** | 评分 + 1–2 个关联维度 | 例行日报 |
+| **详细（detailed）** | 全维度评分 + 异常明细 + 趋势图 + 处理建议 | 专项报告 |
+
+## 共享引用（_shared）
+
+本 skill 与 `powerelf-inspection` / `powerelf-monitor` 同源引用以下 `_shared/` 文档：
+
+| 文档 | 用途 |
+|------|------|
+| `_shared/references/schema.md` | DDL、关联键、类型定义 |
+| `_shared/references/sql-discipline.md` | SQL 写作纪律 |
+| `_shared/references/analysis-qa-checklist.md` | 交付前 QA 闸 |
+| `_shared/references/statistical-caution.md` | 统计措辞护栏 |
+| `_shared/references/data-profiling.md` | 数据画像方法论 |
+| `_shared/references/api-auth.md` | REST API 鉴权约定 |
+| `_shared/algorithms/` | MAD/离群方法/时序预测算法 |
+| `_shared/rules/` | 闸门/泵站/GNSS/雨情/趋势规则 |
+
 ## Related Skills
 
 - `powerelf-early-warning` — 预警规则与通知联动
