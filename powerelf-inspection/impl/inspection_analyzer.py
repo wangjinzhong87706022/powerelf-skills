@@ -19,8 +19,11 @@
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime, timedelta
+
+logger = logging.getLogger("inspection_analyzer")
 
 try:
     import pandas as pd
@@ -58,10 +61,10 @@ def load_thresholds(engine):
                     "value_upper": float(extend['content'][1]) if extend.get('content', [None, None])[1] else None,
                     "condition": extend.get('condition', '>'),
                 }
-            except:
-                pass
-    except:
-        pass
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+                logger.warning("解析 ew_info_rules 失败 rule=%s: %s", rule.get('id'), e)
+    except Exception as e:
+        logger.warning("读取 ew_info_rules 失败: %s", e)
 
     # 从 sys_data_source_registry 读取 judge_rules
     try:
@@ -74,10 +77,10 @@ def load_thresholds(engine):
                 jr = json.loads(row['judge_rules']) if isinstance(row['judge_rules'], str) else row['judge_rules']
                 if jr:
                     thresholds["registry"][row['source_table']] = jr
-            except:
-                pass
-    except:
-        pass
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+                logger.warning("解析 registry judge_rules 失败 table=%s: %s", row.get('source_table'), e)
+    except Exception as e:
+        logger.warning("读取 sys_data_source_registry 失败: %s", e)
 
     return thresholds
 
@@ -120,6 +123,7 @@ def read_sensor_data(engine, table, fields, st_id=None, days=30, time_field="tm"
     try:
         return pd.read_sql(text(sql), engine, params=params)
     except Exception as e:
+        logger.warning("read_sensor_data 失败 table=%s fields=%s: %s", table, fields, e)
         return pd.DataFrame()
 
 
@@ -130,7 +134,8 @@ def read_warning_rules(engine):
             SELECT id, name, ew_type, level_r, st_id, extend
             FROM ew_info_rules WHERE deleted = 0
         """), engine)
-    except:
+    except Exception as e:
+        logger.warning("read_warning_rules 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -141,7 +146,8 @@ def read_stations(engine):
             SELECT id, code, name, type, status, longitude, latitude
             FROM att_st_base WHERE deleted = 0
         """), engine)
-    except:
+    except Exception as e:
+        logger.warning("read_stations 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -156,7 +162,8 @@ def read_inspections(engine, days=30):
             ORDER BY create_time DESC
         """), engine, params={"days": days})
         return tasks
-    except:
+    except Exception as e:
+        logger.warning("read_inspections 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -169,7 +176,8 @@ def read_defects(engine, days=90):
             WHERE deleted = 0 AND create_time >= NOW()-INTERVAL :days DAY
             ORDER BY create_time DESC
         """), engine, params={"days": days})
-    except:
+    except Exception as e:
+        logger.warning("read_defects 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -180,7 +188,8 @@ def read_equipment(engine):
             SELECT id, name, code, status, category
             FROM eq_equip_base WHERE deleted = 0
         """), engine)
-    except:
+    except Exception as e:
+        logger.warning("read_equipment 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -193,7 +202,8 @@ def read_alerts(engine, days=30):
             WHERE deleted = 0 AND create_time >= NOW()-INTERVAL :days DAY
             ORDER BY create_time DESC LIMIT 500
         """), engine, params={"days": days})
-    except:
+    except Exception as e:
+        logger.warning("read_alerts 失败: %s", e)
         return pd.DataFrame()
 
 
@@ -553,7 +563,7 @@ def analyze_inspection_results(engine, days=30):
     def parse_pct(p):
         try:
             return float(str(p).replace('%', '')) / 100
-        except:
+        except (ValueError, AttributeError):
             return 0
 
     completed_tasks = tasks[tasks['status'] == '3'].copy()
@@ -765,7 +775,8 @@ def analyze_water_quality(engine, days=90):
             FROM wq_pcp_d WHERE spt >= NOW()-INTERVAL :days DAY
             ORDER BY spt DESC LIMIT 500
         """), engine, params={"days": days})
-    except:
+    except Exception as e:
+        logger.warning("read_water_quality 失败: %s", e)
         return {"category": "水质监测", "status": "无数据", "findings": []}
 
     if df.empty:
@@ -815,7 +826,8 @@ def analyze_soil_moisture(engine, days=30):
             WHERE tm >= NOW()-INTERVAL :days DAY
             ORDER BY tm DESC LIMIT 500
         """), engine, params={"days": days})
-    except:
+    except Exception as e:
+        logger.warning("read_soil_moisture 失败: %s", e)
         return {"category": "土壤墒情", "status": "无数据", "findings": []}
 
     if df.empty:
@@ -864,7 +876,8 @@ def analyze_termite(engine, days=180):
             WHERE tm >= NOW()-INTERVAL :days DAY
             ORDER BY tm DESC LIMIT 500
         """), engine, params={"days": days})
-    except:
+    except Exception as e:
+        logger.warning("read_termite 失败: %s", e)
         return {"category": "白蚁监测", "status": "无数据", "findings": []}
 
     if df.empty:
