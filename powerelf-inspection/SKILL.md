@@ -218,106 +218,16 @@ python3 impl/test_inspection.py --db "$DB_URL" --days 7
 4. 数据不足时不可下结论（<10个数据点）
 5. 不可跳过现场确认环节
 
-## 实时监测模式
+## 实时监测（→ powerelf-monitor）
 
-12 类监测数据实时分析引擎，通过 REST API 访问数据，规则内嵌，Agent 可独立分析。
+实时/当前值、12 类监测趋势、REST 看盘、预警触发由 **`powerelf-monitor`** 负责（详见其 SKILL.md）。本 skill 仅做**离线巡检回顾分析**（定时批处理、DB 直连、昨日窗口、日报 + 复合工况 + 巡检考核）。两者经 `_shared/`（算法/规则/schema）共享基底、经路由表交互，无代码 import。
 
-### 环境变量
+| 你想要的 | 用哪个 skill |
+|---|---|
+| 某站**当前**水位/最新值、实时趋势看盘、预警 | powerelf-monitor |
+| **昨日/本周/本月**巡检回顾、日报、复合工况、巡检质量考核 | powerelf-inspection（本 skill） |
 
-| 变量 | 用途 | 默认值 |
-|------|------|--------|
-| `POWERELF_API_BASE` | API 基础地址 | `https://srm.example.com` |
-| `POWERELF_API_TOKEN` | API 鉴权 Token | （必填） |
-
-通用请求头：
-```
-Authorization: Bearer ${POWERELF_API_TOKEN}
-tenant-id: 1
-```
-
-### 12 大监测类型
-
-#### 水文气象监测
-
-| 类型 | 数据表 | 核心字段 | 分析规则 |
-|------|--------|----------|----------|
-| 水库水情 | st_rsvr_r | rz(库水位m), inq(入库流量m³/s), otq(出库流量m³/s), w(蓄水量), blrz(下游水位m), stcd(站码) | `rules/reservoir-analysis.md` |
-| 河道水情 | st_river_r | z(水位m), q(流量m³/s), xsa(断面面积), xsavv(平均流速), xsmxv(最大流速), stcd(站码) | 基本阈值判断 |
-| 闸站水情 | st_was_r | upz(上游水位m), dwz(下游水位m), tgtq(总过闸流量m³/s), stcd(站码) | 基本阈值判断 |
-| 潮汐水情 | st_tide_r | tdz(潮位m), airp(气压), tdptn(潮位状态), hltdmk(高低潮标记) | 基本阈值判断 |
-| 测站雨情 | st_pptn_r | p(时段雨量mm), dr(时段长min), dyp(日雨量mm), cump(累计雨量mm), stcd(站码) | `rules/rainfall-analysis.md` |
-| 分区雨情 | st_pptn_region_r | drp(时段雨量mm), intv(时段长h), dyp(日累计雨量mm), wth(天气) | `rules/rainfall-analysis.md` |
-| 防洪区水情 | st_flood_r | z(水位m), q(流量m³/s), fca_id(防洪区ID) | 基本阈值判断 |
-
-#### 设备工情监测
-
-| 类型 | 数据表 | 核心字段 | 分析规则 |
-|------|--------|----------|----------|
-| 闸门工情 | rei_gate_r | gtq(流量m³/s), gtophgt(开启高度m), gtopnum(开启孔数), status(开关状态bit), stcd(站码), slcd(闸码) | `rules/anomaly-and-complex-conditions.md` |
-| 泵站工情 | rei_pump_r | uab/ubc/uca(三相电压varchar), ia/ib/ic(三相电流varchar), p(有功功率varchar), freq(频率varchar), speed(转速varchar), status(运行状态bit), angle(叶片角度) | `rules/anomaly-and-complex-conditions.md` |
-
-#### 大坝安全监测
-
-| 类型 | 数据表 | 核心字段 | 分析规则 |
-|------|--------|----------|----------|
-| GNSS变形 | dsm_dfr_srvrds_srhrds | wgs84_delta_h/x/y(本次变化量mm), wgs84_total_h/x/y(累计变化量mm), speed_gh/gx/gy(速率), point_id(测点ID) | `rules/anomaly-and-complex-conditions.md` |
-| 渗流量 | st_percolation_r | percolation(渗流量L/s), stcd(站码), eq_code(设备编码) | 基本阈值判断 |
-| 渗压 | st_pressure_r | ext_pressure(渗压kPa), water_pressure(水位压力kPa), ext_temperature(温度℃), section_id(断面ID), point_id(测点ID) | 基本阈值判断 |
-
-#### 其他监测
-
-| 类型 | 数据表 | 核心字段 | 分析规则 |
-|------|--------|----------|----------|
-| 墒情 | st_soil_moisture_r | soil_water10cm/20cm/30cm/60cm/100cm(各深度含水量%), soil_temp10cm~100cm(各深度温度℃), ec(电导率uS/cm), ph, tension(张力kPa), groundwater_depth(地下水位m), soil_moist_evaluation(评价) | 基本阈值判断 |
-| 白蚁监测 | st_termite_monitor_r | termite_species(蚁种), pest_density(密度等级0-4), damage_level(危害等级), check_result(检查结果:无白蚁/发现/疑似痕迹) | 基本阈值判断 |
-
-### 实时监测算法
-
-| 算法 | 文件 | 说明 |
-|------|------|------|
-| 时序预测 | `algorithms/time-series-forecast.md` | Holt-Winters/ARIMA/LSTM 三种算法 + 水利场景参数建议 |
-| 水位变化率 | `algorithms/water-level-change.md` | 百分比公式(1%/3%/5%三级) + 10min流量汇总 + 库容平衡 |
-| 位移速率 | `algorithms/displacement-rate.md` | 最大最小差值/月份数(cm/月) + 四级分级(稳定/缓慢/中速/快速) |
-| 趋势检测 | `rules/trend-detection.md` | Mann-Kendall S统计量 + 变点检测 + 自相关周期检测 |
-| 雨情分析 | `rules/rainfall-analysis.md` | 6级雨量划分 + 分区雨情 + 累计趋势 + 数据校验 |
-| 水库水情 | `rules/reservoir-analysis.md` | 水位变化率 + 库容平衡 + 10分钟流量 + 异常识别 |
-
-### API 附录
-
-| 端点 | 说明 |
-|------|------|
-| `GET /monitor/overview/get` | 各类型设备在线/离线/异常统计 |
-| `GET /monitor/overview/list?type=riverRe` | 某类型详情列表 |
-| `GET /srm/river-re/curve?stId=&eqId=&startTime=&endTime=` | 水库水位趋势 |
-| `GET /srm/river-re/getBaseInfoByStIds?stIds=` | 批量查最新水库数据 |
-| `GET /srm/river-re/getCurrentBlrzWarningList` | 水位变化率预警 |
-| `GET /srm/river-r/curve?stId=&eqId=&startTime=&endTime=` | 河道水位趋势 |
-| `GET /srm/pptn-r/curve?stId=&eqId=&startTime=&endTime=` | 雨量趋势 |
-| `GET /srm/gate-real/all/now` | 所有闸门当前状态 |
-| `GET /srm/pump-real/all/now` | 所有泵站当前状态 |
-| `GET /srm/gnss-data-day/curve?stId=&eqId=&startTime=&endTime=` | GNSS趋势 |
-| `GET /srm/percolation-r/curve?stId=&eqId=&startTime=&endTime=` | 渗流趋势 |
-| `GET /srm/pressure-r/curve?stId=&eqId=&startTime=&endTime=` | 渗压趋势 |
-| `POST /att/dot-user/concern` | 关注/取消关注 |
-
-### 实时监测按需加载指令
-
-```
-"水位"/"水库"/"水情"     → rules/reservoir-analysis.md + algorithms/water-level-change.md
-"河道"/"河流"           → st_river_r 基本阈值判断
-"闸站"/"水闸"           → st_was_r 基本阈值判断
-"潮汐"/"潮位"           → st_tide_r 基本阈值判断
-"雨量"/"降雨"           → rules/rainfall-analysis.md
-"分区雨情"/"区域降雨"    → st_pptn_region_r 基本阈值判断
-"闸门"/"泵站"           → rules/anomaly-and-complex-conditions.md
-"GNSS"/"位移"/"变形"    → rules/anomaly-and-complex-conditions.md + algorithms/displacement-rate.md
-"渗流"/"渗流量"         → st_percolation_r 基本阈值判断
-"渗压"/"压力"           → st_pressure_r 基本阈值判断
-"墒情"/"土壤"           → st_soil_moisture_r 基本阈值判断
-"白蚁"/"蚁害"           → st_termite_monitor_r 基本阈值判断
-"趋势"/"异常趋势"       → rules/trend-detection.md
-"预测"/"预报"/"ARIMA"/"LSTM" → algorithms/time-series-forecast.md
-```
+相关算法（MAD/水位变化率/位移速率/时序预测/趋势检测/水库·雨情分析）见 `../_shared/algorithms/` 与 `../_shared/rules/`，两 skill 同源引用。
 
 ## 自演化机制
 
