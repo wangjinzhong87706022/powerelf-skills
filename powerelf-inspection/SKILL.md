@@ -45,7 +45,7 @@ metadata:
 ├── impl/                       # 可执行分析工具
 │   ├── inspection_analyzer.py  # 15维度异常检测引擎
 │   ├── inspection_tool.py      # 质量评分/缺陷预测/路线优化
-│   └── test_inspection.py      # 24个自动化测试用例
+│   └── test_inspection.py      # 18个自动化测试用例
 ├── rules/                      # 13个规则文件（AI Agent 阅读）
 │   ├── intelligent-inspection.md           # 智能巡检主规则
 │   ├── anomaly-and-complex-conditions.md   # 异常与复杂场景
@@ -66,7 +66,7 @@ metadata:
 │   ├── quality-scoring-model.md            # 质量评分模型
 │   ├── multi-index-correlation.md          # 多指标关联
 │   ├── trend-prediction.md                 # 趋势预测（线性回归）
-│   ├── time-series-forecast.md             # 时序预测（Holt-Winters/ARIMA/LSTM）
+│   ├── time-series-forecast.md             # 时序预测（Holt-Winters/ARIMA/LSTM，📌 roadmap）
 │   ├── water-level-change.md               # 水位变化率算法
 │   └── displacement-rate.md                # 位移速率算法
 ├── references/                 # 参考文档
@@ -185,8 +185,11 @@ python3 impl/test_inspection.py --db "$DB_URL" --days 7
   └─ 超标 → 第2层
 第2层: 变化率检测 (突变)
   └─ 突变且无外部因素 → 第3层
-第3层: 趋势检测 (单向持续)
+第3层: 趋势检测 (单向持续，min_consecutive 编码于 impl)
   └─ 同向持续达阈值 → 第4层
+     ├─ 水位: 6 点窗口 / 5 次连续上升/下降
+     ├─ 渗压: 7 点窗口 / 6 次连续上升
+     └─ GNSS: 5 点窗口 / 4 次连续加速
 第4层: MAD统计异常 (离群点)
   └─ 统计异常 → 第5层
 第5层: 多指标关联 (矛盾分析)
@@ -266,3 +269,51 @@ python3 impl/test_inspection.py --db "$DB_URL" --days 7
 ## Few-Shots（SQL 最佳实践）
 
 常用 SQL 模式（参数化查询、JOIN-by-Name、标识符白名单、CAST 类型转换、聚合统计、分页、事务控制），详见 `references/few_shots.md`。
+
+## Validation Gate（交付前 QA 闸）
+
+报告交付前需过 QA 闸（详见 `../_shared/references/analysis-qa-checklist.md`），逐条自检后填入 `confidence_tier`。
+
+### Inspection 专属 5 项
+
+1. [ ] 关联键（`eq_id`/`stcd`/`st_id`）已核验，未混用
+2. [ ] `ew_info_rules` 阈值数据存在性已确认（`extend` JSON 解析健壮性）
+3. [ ] 传感器故障 vs 真异常已区分（消费 `data-quality tier`）
+4. [ ] `business_check_task` 状态码（1/2/3）正确过滤
+5. [ ] 缺陷率已用 `real_objitem` 分母，并做 data-quality 校正
+
+### 置信度评级
+
+| 等级 | 含义 | 适用场景 |
+|------|------|----------|
+| **Ready to share** | 数据完整、计算正确、数字自洽 | 核心指标无缺失、QA 清单全绿 |
+| **Share with caveats** | 有已知局限但不影响结论主体 | 部分数据缺失（已标注） |
+| **Needs revision** | 存在影响结论的缺陷 | 关键指标缺失/错误 |
+
+## 输出深度模式（depth-mode）
+
+| 模式 | 输出内容 | 适用场景 |
+|------|----------|----------|
+| **精简（terse）** | 仅异常数值列表，无描述 | 批量告警聚合 |
+| **标准（standard）** | 异常 + 1–2 个关联指标 | 日报/周报例行分析 |
+| **详细（detailed）** | 多维度 + 趋势图 + 异常检测详情 | 专项报告/人工复核 |
+
+## 共享引用（_shared）
+
+本 skill 与 `powerelf-monitor` / `powerelf-data-governance` 同源引用以下 `_shared/` 文档：
+
+| 文档 | 用途 |
+|------|------|
+| `_shared/references/schema.md` | DDL、关联键、类型定义（单一事实源） |
+| `_shared/references/sql-discipline.md` | SQL 写作 6 维解析 + 7 条纪律 |
+| `_shared/references/analysis-qa-checklist.md` | 交付前 QA 闸（四类清单 + 8 陷阱） |
+| `_shared/references/statistical-caution.md` | 统计措辞护栏（避免过度推断） |
+| `_shared/references/data-profiling.md` | 数据画像方法论（完整性/一致性） |
+| `_shared/algorithms/` | MAD、水位变化率、位移速率、时序预测 |
+| `_shared/rules/` | 闸门/泵站工情、GNSS 变形（已提升） |
+
+### 文档漂移说明
+
+- **Holt-Winters / ARIMA / LSTM / Mann-Kendall**：标记为 📌 roadmap（见 `ROADMAP.md`），当前未在 `lib/` 中实现。
+- **趋势阈值**：已在代码中编码（水位≥6 点窗口/5 次连续、渗压≥7 点窗口/6 次连续、GNSS≥5 点窗口/4 次连续），见 `impl/inspection_analyzer.py` 中 `consecutive_monotonic` 调用。
+- **自演化**：规则自演化（阈值适应/排除规则生成）当前为 AI Agent 辅助流程，全自动闭环标记为 📌 roadmap。
