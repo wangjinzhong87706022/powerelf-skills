@@ -21,9 +21,12 @@
 
 import argparse
 import json
+import logging
 import os
 import re
 import sys
+
+logger = logging.getLogger("query_exec")
 
 try:
     import sqlparse
@@ -106,10 +109,16 @@ def execute(sql, db_url, display=20, limit=MAX_LIMIT):
     engine = create_engine(db_url, connect_args={"connect_timeout": 10})
     try:
         with engine.connect() as conn:
-            # 层7：只读事务（双保险，主防线是只读账号）
-            conn.execute(text("SET SESSION TRANSACTION READ ONLY"))
-            # 层6：语句级超时（MySQL 5.7.4+，毫秒）
-            conn.execute(text(f"SET SESSION MAX_EXECUTION_TIME={QUERY_TIMEOUT_SEC * 1000}"))
+            # 层7：只读事务（双保险，主防线是只读账号）；失败不阻塞合法查询
+            try:
+                conn.execute(text("SET SESSION TRANSACTION READ ONLY"))
+            except Exception as e:
+                logger.warning("SET SESSION TRANSACTION READ ONLY 失败（非致命）: %s", e)
+            # 层6：语句级超时（MySQL 5.7.4+，毫秒）；失败不阻塞合法查询
+            try:
+                conn.execute(text(f"SET SESSION MAX_EXECUTION_TIME={QUERY_TIMEOUT_SEC * 1000}"))
+            except Exception as e:
+                logger.warning("SET SESSION MAX_EXECUTION_TIME 失败（非致命）: %s", e)
             result = conn.execute(text(sanitized))
             cols = list(result.keys())
             rows = [dict(row._mapping) for row in result.fetchmany(display)]
