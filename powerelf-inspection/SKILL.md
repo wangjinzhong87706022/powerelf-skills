@@ -45,7 +45,7 @@ metadata:
 ├── impl/                       # 可执行分析工具
 │   ├── inspection_analyzer.py  # 15维度异常检测引擎
 │   ├── inspection_tool.py      # 质量评分/缺陷预测/路线优化
-│   └── test_inspection.py      # 18个自动化测试用例
+│   └── test_inspection.py      # 20个pytest集成测试（带skip守卫）
 ├── rules/                      # 13个规则文件（AI Agent 阅读）
 │   ├── intelligent-inspection.md           # 智能巡检主规则
 │   ├── anomaly-and-complex-conditions.md   # 异常与复杂场景
