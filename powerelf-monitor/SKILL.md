@@ -17,6 +17,23 @@ prerequisites:
 
 水利工程实时数据分析引擎。规则内嵌，Agent 可独立分析监测数据。
 
+## 适用场景
+
+本 skill 适用于：
+- 某站**当前**水位/流量/雨量实时值、趋势看盘
+- REST API 查询最新监测数据
+- 实时 12 类监测分析（水库/河道/雨量/闸门/泵站/GNSS/渗压/渗流/墒情/白蚁）
+- 趋势异常检测、水位变化率预警、位移速率分析
+
+## When NOT to Use
+
+| 你想要的 | 应使用 |
+|---|---|
+| **昨日/本周**离线巡检回顾、日报、复合工况、质量评分 | `powerelf-inspection` |
+| 数据质量（异常/缺失/离线/卡滞检测、评分、插值） | `powerelf-data-governance` |
+| 阈值/告警判定与分发 | `powerelf-early-warning` |
+| 纯数据查询 / "某站水位是多少" | `powerelf-chatbi` |
+
 ## 12大监测类型
 
 ### 水文气象监测
@@ -103,6 +120,17 @@ prerequisites:
 | `POST /att/dot-user/concern` | 关注/取消关注 |
 
 通用头与鉴权约定：见 [`../_shared/api-auth.md`](../_shared/api-auth.md)（`Authorization: Bearer ${POWERELF_API_TOKEN}` + `tenant-id: 1`）
+
+## 共享引用（_shared）
+
+本 skill 与 `powerelf-inspection` 同源引用以下 `_shared/` 文档：
+
+| 文档 | 用途 |
+|------|------|
+| `_shared/references/schema.md` | DDL、关联键、类型定义 |
+| `_shared/references/api-auth.md` | REST API 鉴权约定 |
+| `_shared/rules/` | 闸门/泵站/GNSS/雨情/趋势规则（单一事实源） |
+| `_shared/algorithms/` | 水位变化率/位移速率/时序预测算法 |
 
 ## 与 powerelf-inspection 的分工
 
