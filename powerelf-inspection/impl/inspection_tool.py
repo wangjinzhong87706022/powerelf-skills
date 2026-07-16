@@ -22,8 +22,29 @@
 
 import argparse
 import json
+import logging
+import re
 import sys
 from datetime import datetime
+
+logger = logging.getLogger("inspection_tool")
+
+# 标识符白名单（防 SQL 注入：table/fields/time_field 来自 sys_data_source_registry，DB 可写）
+_ALLOWED_TABLES = {
+    "st_river_r","st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
+    "rei_gate_r","rei_pump_r","eq_equip_base","eq_equip_defect","ew_camera_info",
+    "srm_gnss_data_day","srm_robot_data_day","srm_illegal_acts",
+}
+_ALLOWED_TIME_FIELDS = {"tm", "create_time", "discovery_time", None}
+
+def _validate_identifiers(table, fields, time_field):
+    if table not in _ALLOWED_TABLES:
+        raise ValueError(f"非法表名: {table}")
+    if time_field is not None and time_field not in _ALLOWED_TIME_FIELDS:
+        raise ValueError(f"非法时间列: {time_field}")
+    # fields 仅允许 [A-Za-z0-9_,]
+    if not re.fullmatch(r"[A-Za-z0-9_]+(,[A-Za-z0-9_]+)*", fields or ""):
+        raise ValueError(f"非法字段列表: {fields}")
 
 try:
     import pandas as pd
@@ -152,6 +173,9 @@ def collect_from_source(engine, source, st_id=None, project_id=None):
     fields = source['query_fields']
     hours = source.get('default_hours')
     time_field = source.get('time_field', 'tm')
+
+    # 标识符白名单校验（防 SQL 注入）
+    _validate_identifiers(table, fields, time_field)
 
     try:
         if st_id and hours:
