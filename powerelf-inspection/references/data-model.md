@@ -1,5 +1,7 @@
 # 巡检业务数据模型
 
+> 表结构（DDL/字段/关联键）单一事实源：[`../../_shared/references/schema.md`](../../_shared/references/schema.md)。本文件仅描述巡检业务实体关系，不复制 DDL。
+
 源自 Java Spring 后端（powerelf-wplms）的 11 个巡检业务实体。
 
 ## 核心实体关系
