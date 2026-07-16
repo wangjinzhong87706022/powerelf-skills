@@ -167,6 +167,25 @@ CHECK_PERCENT_SEMANTICS = "completion"  # 详见 lib/quality.py
 
 ---
 
+## 13. Data-Quality Tier 连接点（缺陷率校正）
+
+```python
+# 剔除传感器故障/卡滞/离线导致的假缺陷
+adjusted = adjusted_defect_count(raw_defects, sensor_fault_flags)
+# 然后用 adjusted 计算缺陷发现率
+rate = compute_defect_discovery_rate(adjusted, real_checkitems)
+```
+
+| 连接点 | 函数 | 说明 |
+|--------|------|------|
+| 缺陷率校正 | `quality.adjusted_defect_count(raw_defects, sensor_fault_flags)` | 剔除传感器故障导致的假缺陷（read-only 消费 governance data-quality tier） |
+| data-quality tier 来源 | `powerelf-data-governance` | 提供传感器故障/卡滞/离线标记，见 `powerelf-data-governance/SKILL.md` |
+
+**来源:** `lib/quality.py:adjusted_defect_count()`
+**状态:** 连接点就绪，待 governance 侧提供 `sensor_fault_flags` 接口后联调
+
+---
+
 ## 参考
 
 - `_shared/references/schema.md` — DDL / 关联键 / 类型定义

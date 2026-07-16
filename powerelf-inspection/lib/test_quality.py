@@ -19,3 +19,11 @@ def test_c2_defect_rate_denominator():
 def test_h1_check_percent_documented():
     # 敲定：check_percent 语义=完成率（默认处置），文档/代码/schema 对齐
     assert quality.CHECK_PERCENT_SEMANTICS == "completion"
+
+def test_adjusted_defect_count_removes_faults():
+    # 原始缺陷 10，其中 3 个是传感器故障 → 调整后 7
+    assert quality.adjusted_defect_count(10, [True, False, True, False, True]) == 7
+    # 全故障 → 0（不降到负数）
+    assert quality.adjusted_defect_count(3, [True, True, True]) == 0
+    # 无故障 → 原值
+    assert quality.adjusted_defect_count(5, [False, False]) == 5

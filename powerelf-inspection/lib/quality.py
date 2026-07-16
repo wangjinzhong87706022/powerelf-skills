@@ -65,6 +65,22 @@ def compute_defect_discovery_rate(defects_found: int, real_checkitems: int) -> f
     return defects_found / real_checkitems
 
 
+def adjusted_defect_count(raw_defects: int, sensor_fault_flags: list) -> int:
+    """剔除传感器故障/卡滞/离线导致的假缺陷（消费 governance data-quality tier，read-only）。
+
+    当 data-quality tier 判定某传感器为"故障"而非"真异常"时，
+    该传感器产生的缺陷数应从总量中剔除，避免缺陷率虚高。
+
+    Args:
+        raw_defects: 原始缺陷总数（来自 business_check_error）。
+        sensor_fault_flags: 传感器故障标记列表，True=该缺陷由传感器故障引起。
+
+    Returns:
+        调整后的缺陷数（≥0）。
+    """
+    return max(0, raw_defects - sum(1 for f in sensor_fault_flags if f))
+
+
 def compute_route_coverage(covered_points: int, total_points: int) -> float:
     """Compute route coverage rate.
 
