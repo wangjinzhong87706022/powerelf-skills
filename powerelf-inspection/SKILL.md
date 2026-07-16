@@ -7,8 +7,9 @@ license: MIT
 platforms: [linux]
 metadata:
   hermes:
-    tags: [inspection, anomaly-detection, water-conservancy, dam-safety, real-time-monitoring]
+    tags: [inspection, anomaly-detection, water-conservancy, dam-safety]
     category: industrial
+    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-monitor]
 ---
 
 # 水利工程智能巡检智能体
@@ -110,6 +111,24 @@ pip install pandas numpy sqlalchemy pymysql scikit-learn
 ```
 
 ## 深度巡检模式
+
+### 适用场景
+
+本 skill 适用于：
+- 昨日/本周/本月**离线巡检回顾分析**（批处理、DB 直连）
+- 巡检质量评分（完成率/及时率/缺陷率/覆盖率）
+- 缺陷趋势预测 + 路线效率优化
+- 规则自演化（阈值适应/异常规则生成）
+- 巡检业务管理（任务/路线/缺陷/报告）
+
+### When NOT to Use
+
+| 你想要的 | 应使用 |
+|---|---|
+| 某站当前水位/流量实时值、趋势看盘 | `powerelf-chatbi` / `powerelf-monitor` |
+| 数据质量（异常/缺失/离线/卡滞/插值） | `powerelf-data-governance` |
+| 阈值/告警判定与分发 | `powerelf-early-warning` |
+| 实时 12 类监测、REST、预警触发 | `powerelf-monitor` |
 
 ### 工具命令
 
