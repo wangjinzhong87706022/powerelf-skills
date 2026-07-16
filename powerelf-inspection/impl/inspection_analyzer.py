@@ -1220,6 +1220,16 @@ def generate_report(engine, days=30, limit=5000):
 
     report += "\n---\n*报告由智能巡检系统自动生成*\n"
 
+    # 追加 QA 闸（P2-T8）
+    try:
+        import sys as _sys
+        import os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
+        from report import _QA_CHECKLIST
+        report += "\n" + _QA_CHECKLIST.format(confidence_tier="With caveats") + "\n"
+    except Exception:
+        pass  # QA 闸导入失败不影响报告主体
+
     return report, analyses
 
 
