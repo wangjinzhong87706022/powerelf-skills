@@ -1,0 +1,12 @@
+{
+  "eval_id": 25,
+  "eval_name": "correlation-pressure-percolation",
+  "prompt": "st_pressure_r的water_pressure上升了但st_percolation_r的渗流却下降了，这个物理矛盾怎么解释？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_pressure_r的water_pressure上升了但st_percolation_r的渗...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

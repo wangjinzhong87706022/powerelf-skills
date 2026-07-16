@@ -1,0 +1,12 @@
+{
+  "eval_id": 18,
+  "eval_name": "quality-trend-weekly",
+  "prompt": "本周的数据质量趋势怎么样？和上周比是变好了还是变差了？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 本周的数据质量趋势怎么样？和上周比是变好了还是变差了？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

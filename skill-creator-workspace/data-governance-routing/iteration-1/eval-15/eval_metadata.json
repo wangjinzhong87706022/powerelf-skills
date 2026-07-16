@@ -1,0 +1,12 @@
+{
+  "eval_id": 15,
+  "eval_name": "quality-score-equipment-139",
+  "prompt": "给振弦渗压计E01(设备139)做一下5月份的数据质量评分",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 给振弦渗压计E01(设备139)做一下5月份的数据质量评分...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

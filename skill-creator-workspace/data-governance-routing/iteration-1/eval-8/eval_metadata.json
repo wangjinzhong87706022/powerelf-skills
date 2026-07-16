@@ -1,0 +1,12 @@
+{
+  "eval_id": 8,
+  "eval_name": "missing-pptn-june-drop",
+  "prompt": "st_pptn_r表6月份的数据量从5月的4万7千条骤降到880条，是不是有大量缺失？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_pptn_r表6月份的数据量从5月的4万7千条骤降到880条，是不是有大量缺失？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

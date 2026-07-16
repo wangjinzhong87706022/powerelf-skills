@@ -1,0 +1,345 @@
+{
+  "skill_name": "powerelf-data-governance-routing",
+  "skill_path": "/home/scada/powerelf-skills/_shared/hermes-agent-powerelf-skill-routing",
+  "description": "基于 powerelf_srm_yml 数据库实际数据模式生成的数据治理路由测试问题集。覆盖 MAD 异常检测、缺失检测、离线检测、卡滞检测、质量评分、插值修复、数据回写、报告生成、相关性异常、极端事件区分等场景，以及负例（不应路由的问题）。",
+  "database": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "name": "powerelf_srm_yml",
+    "user": "root",
+    "password": "来自环境变量 SRM_DB_PASSWORD 或 POWERELF_DB_PASSWORD"
+  },
+  "tables": {
+    "st_rsvr_r": "水库水情 — 19万+条，2026-01~07，rz(水位 0.03~500)，inq(入库 0~300)，otq(出库)",
+    "st_river_r": "河道水位 — 0条（完全空表）",
+    "st_pptn_r": "雨量 — 26万+条，2025-12~2026-06，p(雨量最大120mm)，dr(历时)",
+    "st_pressure_r": "渗压 — 1835条，仅2026-05，water_pressure(avg=443, max=800)",
+    "st_percolation_r": "渗流 — 766条，仅2026-05，percolation(avg=0.57, max=31.67)",
+    "dsm_dfr_srvrds_srhrds": "GNSS位移 — 19223条，2025-12~2026-06，wgs84_delta_h(xyz)",
+    "st_flood_r": "汛情 — 10176条，仅2025-08~11（已过期7个月+）",
+    "eq_equip_base": "设备基础信息 — 149台设备",
+    "eq_data_anomaly_record": "数据异常记录 — 39条",
+    "eq_data_missing_record": "数据缺失记录 — 140条",
+    "eq_equip_offline_record": "设备离线记录 — 585条（最长离线907h≈38天）",
+    "stats_data_anomaly_daily": "异常日统计 — 736条",
+    "stats_data_missing_daily": "缺失日统计 — 736条（压力表缺失最严重240条）",
+    "dg_equip_offline": "设备离线阈值配置"
+  },
+  "evals": [
+    {
+      "id": 0,
+      "name": "mad-rsvr-all-may",
+      "prompt": "帮我用MAD算法检测st_rsvr_r表2026年5月的水位数据，看看有没有异常值",
+      "expected_output": "Provider calls powerelf-data-governance skill to run MAD anomaly detection on st_rsvr_r.rz for May 2026",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "mad-rsvr-rz-0p029",
+      "prompt": "st_rsvr_r表1月份的水位数据怎么会出现0.029米的数值？正常水位不是应该在455米左右吗？帮我检测一下异常",
+      "expected_output": "Provider calls powerelf-data-governance to analyze the rz=0.029 anomaly in Jan 2026 (eq_code=606K215303)",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "mad-rsvr-rz-500-spike",
+      "prompt": "st_rsvr_r表5月15日水位突然跳到500米了，帮我看看这个是不是异常值",
+      "expected_output": "Provider calls powerelf-data-governance to analyze rz=500 spike on 2026-05-15 (stcd=606K2155)",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "pressure-800-anomaly",
+      "prompt": "st_pressure_r表5月20日water_pressure达到800，比平均值443高出一大截，这是数据异常吗？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze water_pressure=800 anomaly vs avg 443",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "rainfall-120mm-extreme",
+      "prompt": "st_pptn_r表5月18日下了120mm的雨，这个雨量数据正常吗？帮我检测一下",
+      "expected_output": "Provider calls powerelf-data-governance to analyze extreme rainfall 120mm on 2026-05-18",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "inq-300-anomaly",
+      "prompt": "st_rsvr_r表6月30日入库流量(inq)达到300，平均值才1.22，这个数据有没有问题？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze inq=300 anomaly vs avg 1.22",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "missing-pressure-table",
+      "prompt": "st_pressure_r表5月份的数据有没有缺失？我怀疑有些时段没采到数据",
+      "expected_output": "Provider calls powerelf-data-governance to check missing data pattern in st_pressure_r (1835 records vs expected 2976)",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "missing-rsvr-station-128",
+      "prompt": "检查一下st_rsvr_r表的606K2153号站在5月份有没有数据缺失",
+      "expected_output": "Provider calls powerelf-data-governance to check missing data for station 606K2153 in May (197 records)",
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "missing-pptn-june-drop",
+      "prompt": "st_pptn_r表6月份的数据量从5月的4万7千条骤降到880条，是不是有大量缺失？",
+      "expected_output": "Provider calls powerelf-data-governance to investigate massive data volume drop in st_pptn_r June 2026",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "river-table-empty",
+      "prompt": "st_river_r表怎么一条记录都没有？河道水位监测是不是出问题了？",
+      "expected_output": "Provider calls powerelf-data-governance to flag st_river_r empty table as data collection issue",
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "offline-max-907h",
+      "prompt": "有哪些设备离线超过30天了？帮我查一下离线最严重的设备",
+      "expected_output": "Provider calls powerelf-data-governance to find devices offline >720h (equipment 239, 134, 236 >900h each)",
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "offline-equipment-104",
+      "prompt": "西坝咀雨量计(设备104)当前是否在线？离线多久了？",
+      "expected_output": "Provider calls powerelf-data-governance to check online status of equipment 104 (西坝咀雨量计, type_flag=8)",
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "offline-equipment-239",
+      "prompt": "设备239已经离线900多个小时了，这正常吗？什么级别的告警？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze equipment 239 offline 907h → CRITICAL level",
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "offline-mttr-calculation",
+      "prompt": "计算最近30天所有设备的平均修复时间MTTR",
+      "expected_output": "Provider calls powerelf-data-governance to calculate MTTR from eq_equip_offline_record",
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "offline-duration-grading",
+      "prompt": "对当前离线的设备按离线时长做分级，哪些是CRITICAL级别的？",
+      "expected_output": "Provider calls powerelf-data-governance to classify offline devices by duration (CRITICAL >24h)",
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "quality-score-equipment-139",
+      "prompt": "给振弦渗压计E01(设备139)做一下5月份的数据质量评分",
+      "expected_output": "Provider calls powerelf-data-governance to score equipment 139 (振弦渗压计E01) for May 2026",
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "quality-compare-139-140",
+      "prompt": "对比设备139(状态正常)和设备140(状态异常)的5月份数据质量评分",
+      "expected_output": "Provider calls powerelf-data-governance to compare quality scores between equipment 139 and 140",
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "quality-ranking-low-scores",
+      "prompt": "哪些设备的5月份质量评分低于60分？列出需要重点关注的设备",
+      "expected_output": "Provider calls powerelf-data-governance to filter devices with quality score <60",
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "quality-trend-weekly",
+      "prompt": "本周的数据质量趋势怎么样？和上周比是变好了还是变差了？",
+      "expected_output": "Provider calls powerelf-data-governance to compare weekly quality trends",
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "stagnation-pressure-e01",
+      "prompt": "振弦渗压计E01(设备139)最近几天的数值一直没变过，是不是卡滞了？",
+      "expected_output": "Provider calls powerelf-data-governance to detect stagnation on equipment 139",
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "stagnation-all-may",
+      "prompt": "检测5月份所有传感器有没有数据卡滞的异常",
+      "expected_output": "Provider calls powerelf-data-governance to batch detect stagnation across all sensors in May 2026",
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "rsvr-june-data-stoppage",
+      "prompt": "st_rsvr_r表6月份只有351条记录，7月份才9条，之前每个月都是2-5万条，数据采集是不是停了？",
+      "expected_output": "Provider calls powerelf-data-governance to investigate catastrophic data volume drop in st_rsvr_r June-July 2026",
+      "files": []
+    },
+    {
+      "id": 22,
+      "name": "gnss-june-drop",
+      "prompt": "dsm_dfr_srvrds_srhrds表6月份数据从3001条骤降到272条，这个采集异常是什么原因？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze GNSS data collection drop in June 2026",
+      "files": []
+    },
+    {
+      "id": 23,
+      "name": "interpolation-rsvr-missing",
+      "prompt": "st_rsvr_r表中606K2153站水位数据有缺失，帮我用插值补全",
+      "expected_output": "Provider calls powerelf-data-governance to interpolate missing water level data for station 606K2153",
+      "files": []
+    },
+    {
+      "id": 24,
+      "name": "interpolation-pressure-linear",
+      "prompt": "st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
+      "expected_output": "Provider calls powerelf-data-governance to linearly interpolate 240 missing pressure records (equipment 134)",
+      "files": []
+    },
+    {
+      "id": 25,
+      "name": "correlation-pressure-percolation",
+      "prompt": "st_pressure_r的water_pressure上升了但st_percolation_r的渗流却下降了，这个物理矛盾怎么解释？",
+      "expected_output": "Provider calls powerelf-data-governance to detect pressure-percolation correlation anomaly",
+      "files": []
+    },
+    {
+      "id": 26,
+      "name": "correlation-rainfall-waterlevel",
+      "prompt": "5月18日下了120mm的暴雨，但水位没怎么涨，数据是不是有问题？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze rainfall-waterlevel correlation (120mm rain vs flat water level)",
+      "files": []
+    },
+    {
+      "id": 27,
+      "name": "extreme-event-vs-anomaly-may15",
+      "prompt": "5月15日水位从440突然跳到500，是真实事件还是传感器故障？",
+      "expected_output": "Provider calls powerelf-data-governance to distinguish extreme event vs sensor anomaly for 440→500 jump",
+      "files": []
+    },
+    {
+      "id": 28,
+      "name": "extreme-event-jan-0p029",
+      "prompt": "1月份水位出现0.029米的极端低值，是传感器坏了还是真实的水位下降？",
+      "expected_output": "Provider calls powerelf-data-governance to classify rz=0.029 as equipment anomaly vs real event",
+      "files": []
+    },
+    {
+      "id": 29,
+      "name": "flood-data-stale",
+      "prompt": "st_flood_r表的最新数据还是2025年11月的，已经过期7个多月了，这个数据时效性问题严重吗？",
+      "expected_output": "Provider calls powerelf-data-governance to flag st_flood_r data staleness (last data Nov 2025, now Jul 2026)",
+      "files": []
+    },
+    {
+      "id": 30,
+      "name": "report-daily-quality",
+      "prompt": "生成昨天的数据质量日报",
+      "expected_output": "Provider calls powerelf-data-governance to generate daily data quality report",
+      "files": []
+    },
+    {
+      "id": 31,
+      "name": "report-monthly-anomaly",
+      "prompt": "出一份5月份的异常分析报告，汇总所有表的数据质量问题",
+      "expected_output": "Provider calls powerelf-data-governance to generate monthly anomaly report for May 2026",
+      "files": []
+    },
+    {
+      "id": 32,
+      "name": "report-score-all-devices",
+      "prompt": "生成所有设备的5月份评分报告",
+      "expected_output": "Provider calls powerelf-data-governance to generate score report for all devices in May 2026",
+      "files": []
+    },
+    {
+      "id": 33,
+      "name": "writeback-fix-anomaly",
+      "prompt": "把st_rsvr_r表中检测到的水位异常值修复后写回数据库",
+      "expected_output": "Provider calls powerelf-data-governance to write back fixed anomaly data to eq_data_anomaly_record",
+      "files": []
+    },
+    {
+      "id": 34,
+      "name": "writeback-fill-missing",
+      "prompt": "把st_pressure_r表缺失的数据插值补全后写回eq_data_missing_record",
+      "expected_output": "Provider calls powerelf-data-governance to write back filled missing data",
+      "files": []
+    },
+    {
+      "id": 35,
+      "name": "writeback-offline-status",
+      "prompt": "设备104(西坝咀雨量计)确认已离线，更新设备状态并创建离线记录",
+      "expected_output": "Provider calls powerelf-data-governance to mark equipment 104 offline and create record",
+      "files": []
+    },
+    {
+      "id": 36,
+      "name": "device-context-equipment-140",
+      "prompt": "设备140(振弦渗压计E02)状态异常，查一下它的历史记录和运维建议",
+      "expected_output": "Provider calls powerelf-data-governance to retrieve context for equipment 140 and provide O&M suggestions",
+      "files": []
+    },
+    {
+      "id": 37,
+      "name": "device-context-offline-239",
+      "prompt": "设备239已经离线900多小时了，查一下这个设备的详细信息，给出处理建议",
+      "expected_output": "Provider calls powerelf-data-governance to analyze equipment 239 (907h offline) and suggest actions",
+      "files": []
+    },
+    {
+      "id": 38,
+      "name": "missing-pressure-134-10days",
+      "prompt": "设备134(st_pressure_r)从5月1日到10日连续10天没有数据，共缺失240条，这是怎么回事？",
+      "expected_output": "Provider calls powerelf-data-governance to investigate continuous 10-day data gap for equipment 134",
+      "files": []
+    },
+    {
+      "id": 39,
+      "name": "anomaly-stats-overview",
+      "prompt": "帮我看看stats_data_anomaly_daily表，哪个表的异常最多？整体趋势怎么样？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze anomaly stats across tables from stats_data_anomaly_daily",
+      "files": []
+    },
+    {
+      "id": 40,
+      "name": "quality-scoring-by-manufacturer",
+      "prompt": "按设备厂商分组，生成5月份的厂商数据质量排名",
+      "expected_output": "Provider calls powerelf-data-governance to rank manufacturers by data quality score for May 2026",
+      "files": []
+    },
+    {
+      "id": 41,
+      "name": "stagnation-critical-level",
+      "prompt": "检测到渗压计连续24小时输出相同值，这个卡滞级别严重吗？",
+      "expected_output": "Provider calls powerelf-data-governance to assess stagnation severity (continuous identical values >24h)",
+      "files": []
+    },
+    {
+      "id": 42,
+      "name": "missing-pattern-recognition",
+      "prompt": "分析st_pressure_r表的数据缺失模式，是周期性的还是随机的？",
+      "expected_output": "Provider calls powerelf-data-governance to identify missing data pattern (periodic vs random) in st_pressure_r",
+      "files": []
+    },
+    {
+      "id": 43,
+      "name": "interpolation-confidence",
+      "prompt": "插值补全后的数据置信度怎么样？能直接用吗？",
+      "expected_output": "Provider calls powerelf-data-governance to assess interpolation confidence level",
+      "files": []
+    },
+    {
+      "id": 44,
+      "name": "percolation-extreme-31",
+      "prompt": "st_percolation_r表的渗流值最大达到31.67，但平均值才0.57，这个极端值怎么判断？",
+      "expected_output": "Provider calls powerelf-data-governance to analyze percolation=31.67 extreme value vs avg 0.57",
+      "files": []
+    }
+  ]
+}

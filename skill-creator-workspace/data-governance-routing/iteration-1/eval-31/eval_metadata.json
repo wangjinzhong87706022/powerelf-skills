@@ -1,0 +1,12 @@
+{
+  "eval_id": 31,
+  "eval_name": "report-monthly-anomaly",
+  "prompt": "出一份5月份的异常分析报告，汇总所有表的数据质量问题",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 出一份5月份的异常分析报告，汇总所有表的数据质量问题...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

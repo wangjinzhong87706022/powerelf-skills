@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "mad-rsvr-rz-0p029",
+  "prompt": "st_rsvr_r表1月份的水位数据怎么会出现0.029米的数值？正常水位不是应该在455米左右吗？帮我检测一下异常",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_rsvr_r表1月份的水位数据怎么会出现0.029米的数值？正常水位不是应该在455米左右吗？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

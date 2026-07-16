@@ -1,0 +1,12 @@
+{
+  "eval_id": 32,
+  "eval_name": "report-score-all-devices",
+  "prompt": "生成所有设备的5月份评分报告",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 生成所有设备的5月份评分报告...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

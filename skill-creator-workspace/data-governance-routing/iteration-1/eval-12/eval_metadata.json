@@ -1,0 +1,12 @@
+{
+  "eval_id": 12,
+  "eval_name": "offline-equipment-239",
+  "prompt": "设备239已经离线900多个小时了，这正常吗？什么级别的告警？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 设备239已经离线900多个小时了，这正常吗？什么级别的告警？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

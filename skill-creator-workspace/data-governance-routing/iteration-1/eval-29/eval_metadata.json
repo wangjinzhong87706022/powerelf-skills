@@ -1,0 +1,12 @@
+{
+  "eval_id": 29,
+  "eval_name": "flood-data-stale",
+  "prompt": "st_flood_r表的最新数据还是2025年11月的，已经过期7个多月了，这个数据时效性问题严重吗？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_flood_r表的最新数据还是2025年11月的，已经过期7个多月了，这个数据时效性问题严重吗...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 35,
+  "eval_name": "writeback-offline-status",
+  "prompt": "设备104(西坝咀雨量计)确认已离线，更新设备状态并创建离线记录",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 设备104(西坝咀雨量计)确认已离线，更新设备状态并创建离线记录...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

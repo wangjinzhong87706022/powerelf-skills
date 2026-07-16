@@ -1,0 +1,12 @@
+{
+  "eval_id": 22,
+  "eval_name": "gnss-june-drop",
+  "prompt": "dsm_dfr_srvrds_srhrds表6月份数据从3001条骤降到272条，这个采集异常是什么原因？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: dsm_dfr_srvrds_srhrds表6月份数据从3001条骤降到272条，这个采集异常是什么...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

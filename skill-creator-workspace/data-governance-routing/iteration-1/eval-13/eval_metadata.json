@@ -1,0 +1,12 @@
+{
+  "eval_id": 13,
+  "eval_name": "offline-mttr-calculation",
+  "prompt": "计算最近30天所有设备的平均修复时间MTTR",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 计算最近30天所有设备的平均修复时间MTTR...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

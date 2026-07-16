@@ -1,0 +1,12 @@
+{
+  "eval_id": 4,
+  "eval_name": "rainfall-120mm-extreme",
+  "prompt": "st_pptn_r表5月18日下了120mm的雨，这个雨量数据正常吗？帮我检测一下",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_pptn_r表5月18日下了120mm的雨，这个雨量数据正常吗？帮我检测一下...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

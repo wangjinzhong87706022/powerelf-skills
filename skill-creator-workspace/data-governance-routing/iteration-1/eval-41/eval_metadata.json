@@ -1,0 +1,12 @@
+{
+  "eval_id": 41,
+  "eval_name": "stagnation-critical-level",
+  "prompt": "检测到渗压计连续24小时输出相同值，这个卡滞级别严重吗？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 检测到渗压计连续24小时输出相同值，这个卡滞级别严重吗？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

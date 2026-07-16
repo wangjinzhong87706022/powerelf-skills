@@ -1,0 +1,12 @@
+{
+  "eval_id": 5,
+  "eval_name": "inq-300-anomaly",
+  "prompt": "st_rsvr_r表6月30日入库流量(inq)达到300，平均值才1.22，这个数据有没有问题？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_rsvr_r表6月30日入库流量(inq)达到300，平均值才1.22，这个数据有没有问题？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

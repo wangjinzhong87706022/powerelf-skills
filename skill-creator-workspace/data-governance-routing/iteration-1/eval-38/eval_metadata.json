@@ -1,0 +1,12 @@
+{
+  "eval_id": 38,
+  "eval_name": "missing-pressure-134-10days",
+  "prompt": "设备134(st_pressure_r)从5月1日到10日连续10天没有数据，共缺失240条，这是怎么回事？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 设备134(st_pressure_r)从5月1日到10日连续10天没有数据，共缺失240条，这是怎...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

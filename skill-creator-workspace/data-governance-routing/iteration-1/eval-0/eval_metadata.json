@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "mad-rsvr-all-may",
+  "prompt": "帮我用MAD算法检测st_rsvr_r表2026年5月的水位数据，看看有没有异常值",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 帮我用MAD算法检测st_rsvr_r表2026年5月的水位数据，看看有没有异常值...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

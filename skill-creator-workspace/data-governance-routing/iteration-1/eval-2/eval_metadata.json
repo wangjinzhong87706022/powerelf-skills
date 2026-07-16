@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "mad-rsvr-rz-500-spike",
+  "prompt": "st_rsvr_r表5月15日水位突然跳到500米了，帮我看看这个是不是异常值",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_rsvr_r表5月15日水位突然跳到500米了，帮我看看这个是不是异常值...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 30,
+  "eval_name": "report-daily-quality",
+  "prompt": "生成昨天的数据质量日报",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 生成昨天的数据质量日报...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

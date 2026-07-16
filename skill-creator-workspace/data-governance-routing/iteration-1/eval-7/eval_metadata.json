@@ -1,0 +1,12 @@
+{
+  "eval_id": 7,
+  "eval_name": "missing-rsvr-station-128",
+  "prompt": "检查一下st_rsvr_r表的606K2153号站在5月份有没有数据缺失",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 检查一下st_rsvr_r表的606K2153号站在5月份有没有数据缺失...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

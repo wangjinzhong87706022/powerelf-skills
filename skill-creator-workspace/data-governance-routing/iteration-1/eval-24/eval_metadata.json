@@ -1,0 +1,12 @@
+{
+  "eval_id": 24,
+  "eval_name": "interpolation-pressure-linear",
+  "prompt": "st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

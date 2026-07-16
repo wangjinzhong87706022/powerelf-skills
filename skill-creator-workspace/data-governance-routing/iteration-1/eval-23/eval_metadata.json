@@ -1,0 +1,12 @@
+{
+  "eval_id": 23,
+  "eval_name": "interpolation-rsvr-missing",
+  "prompt": "st_rsvr_r表中606K2153站水位数据有缺失，帮我用插值补全",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_rsvr_r表中606K2153站水位数据有缺失，帮我用插值补全...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

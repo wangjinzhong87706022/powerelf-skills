@@ -1,0 +1,12 @@
+{
+  "eval_id": 9,
+  "eval_name": "river-table-empty",
+  "prompt": "st_river_r表怎么一条记录都没有？河道水位监测是不是出问题了？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_river_r表怎么一条记录都没有？河道水位监测是不是出问题了？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

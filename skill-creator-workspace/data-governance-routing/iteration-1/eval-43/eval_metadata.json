@@ -1,0 +1,12 @@
+{
+  "eval_id": 43,
+  "eval_name": "interpolation-confidence",
+  "prompt": "插值补全后的数据置信度怎么样？能直接用吗？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 插值补全后的数据置信度怎么样？能直接用吗？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

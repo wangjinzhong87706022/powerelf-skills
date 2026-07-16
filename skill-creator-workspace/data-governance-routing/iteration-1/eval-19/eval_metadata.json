@@ -1,0 +1,12 @@
+{
+  "eval_id": 19,
+  "eval_name": "stagnation-pressure-e01",
+  "prompt": "振弦渗压计E01(设备139)最近几天的数值一直没变过，是不是卡滞了？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 振弦渗压计E01(设备139)最近几天的数值一直没变过，是不是卡滞了？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

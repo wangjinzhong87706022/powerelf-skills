@@ -1,0 +1,369 @@
+{
+  "test_time": "2026-07-15 17:52:16",
+  "total": 40,
+  "passed": 38,
+  "failed": 2,
+  "pass_rate": 95.0,
+  "results": [
+    {
+      "id": 0,
+      "name": "mad-rsvr-all-may",
+      "query": "帮我用MAD算法检测st_rsvr_r表2026年5月的水位数据，看看有没有异常值",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 290
+    },
+    {
+      "id": 1,
+      "name": "mad-rsvr-rz-0p029",
+      "query": "st_rsvr_r表1月份的水位数据怎么会出现0.029米的数值？正常水位不是应该在455米左右吗？帮我检测一下异常",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 298
+    },
+    {
+      "id": 2,
+      "name": "mad-rsvr-rz-500-spike",
+      "query": "st_rsvr_r表5月15日水位突然跳到500米了，帮我看看这个是不是异常值",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 289
+    },
+    {
+      "id": 3,
+      "name": "pressure-800-anomaly",
+      "query": "st_pressure_r表5月20日water_pressure达到800，比平均值443高出一大截，这是数据异常吗？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 294
+    },
+    {
+      "id": 4,
+      "name": "rainfall-120mm-extreme",
+      "query": "st_pptn_r表5月18日下了120mm的雨，这个雨量数据正常吗？帮我检测一下",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 290
+    },
+    {
+      "id": 5,
+      "name": "inq-300-anomaly",
+      "query": "st_rsvr_r表6月30日入库流量(inq)达到300，平均值才1.22，这个数据有没有问题？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 296
+    },
+    {
+      "id": 6,
+      "name": "missing-pressure-table",
+      "query": "st_pressure_r表5月份的数据有没有缺失？我怀疑有些时段没采到数据",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 281
+    },
+    {
+      "id": 7,
+      "name": "missing-rsvr-station-128",
+      "query": "检查一下st_rsvr_r表的606K2153号站在5月份有没有数据缺失",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 285
+    },
+    {
+      "id": 8,
+      "name": "missing-pptn-june-drop",
+      "query": "st_pptn_r表6月份的数据量从5月的4万7千条骤降到880条，是不是有大量缺失？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 292
+    },
+    {
+      "id": 9,
+      "name": "river-table-empty",
+      "query": "st_river_r表怎么一条记录都没有？河道水位监测是不是出问题了？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 280
+    },
+    {
+      "id": 10,
+      "name": "offline-max-907h",
+      "query": "有哪些设备离线超过30天了？帮我查一下离线最严重的设备",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 278
+    },
+    {
+      "id": 11,
+      "name": "offline-equipment-104",
+      "query": "西坝咀雨量计(设备104)当前是否在线？离线多久了？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 282
+    },
+    {
+      "id": 12,
+      "name": "offline-equipment-239",
+      "query": "设备239已经离线900多个小时了，这正常吗？什么级别的告警？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-early-warning",
+      "correct": false,
+      "tokens": 284
+    },
+    {
+      "id": 13,
+      "name": "offline-mttr-calculation",
+      "query": "计算最近30天所有设备的平均修复时间MTTR",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 275
+    },
+    {
+      "id": 14,
+      "name": "offline-duration-grading",
+      "query": "对当前离线的设备按离线时长做分级，哪些是CRITICAL级别的？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-early-warning",
+      "correct": false,
+      "tokens": 279
+    },
+    {
+      "id": 15,
+      "name": "quality-score-equipment-139",
+      "query": "给振弦渗压计E01(设备139)做一下5月份的数据质量评分",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 285
+    },
+    {
+      "id": 16,
+      "name": "quality-compare-139-140",
+      "query": "对比设备139(状态正常)和设备140(状态异常)的5月份数据质量评分",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 286
+    },
+    {
+      "id": 17,
+      "name": "quality-ranking-low-scores",
+      "query": "哪些设备的5月份质量评分低于60分？列出需要重点关注的设备",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 279
+    },
+    {
+      "id": 18,
+      "name": "quality-trend-weekly",
+      "query": "本周的数据质量趋势怎么样？和上周比是变好了还是变差了？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 279
+    },
+    {
+      "id": 19,
+      "name": "stagnation-pressure-e01",
+      "query": "振弦渗压计E01(设备139)最近几天的数值一直没变过，是不是卡滞了？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 289
+    },
+    {
+      "id": 20,
+      "name": "stagnation-all-may",
+      "query": "检测5月份所有传感器有没有数据卡滞的异常",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 274
+    },
+    {
+      "id": 21,
+      "name": "rsvr-june-data-stoppage",
+      "query": "st_rsvr_r表6月份只有351条记录，7月份才9条，之前每个月都是2-5万条，数据采集是不是停了？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 297
+    },
+    {
+      "id": 22,
+      "name": "gnss-june-drop",
+      "query": "dsm_dfr_srvrds_srhrds表6月份数据从3001条骤降到272条，这个采集异常是什么原因？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 294
+    },
+    {
+      "id": 23,
+      "name": "interpolation-rsvr-missing",
+      "query": "st_rsvr_r表中606K2153站水位数据有缺失，帮我用插值补全",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 289
+    },
+    {
+      "id": 24,
+      "name": "interpolation-pressure-linear",
+      "query": "st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 289
+    },
+    {
+      "id": 25,
+      "name": "correlation-pressure-percolation",
+      "query": "st_pressure_r的water_pressure上升了但st_percolation_r的渗流却下降了，这个物理矛盾怎么解释？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 289
+    },
+    {
+      "id": 26,
+      "name": "correlation-rainfall-waterlevel",
+      "query": "5月18日下了120mm的暴雨，但水位没怎么涨，数据是不是有问题？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 286
+    },
+    {
+      "id": 27,
+      "name": "extreme-event-vs-anomaly-may15",
+      "query": "5月15日水位从440突然跳到500，是真实事件还是传感器故障？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 286
+    },
+    {
+      "id": 28,
+      "name": "extreme-event-jan-0p029",
+      "query": "1月份水位出现0.029米的极端低值，是传感器坏了还是真实的水位下降？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 286
+    },
+    {
+      "id": 29,
+      "name": "flood-data-stale",
+      "query": "st_flood_r表的最新数据还是2025年11月的，已经过期7个多月了，这个数据时效性问题严重吗？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 294
+    },
+    {
+      "id": 30,
+      "name": "report-daily-quality",
+      "query": "生成昨天的数据质量日报",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 268
+    },
+    {
+      "id": 31,
+      "name": "report-monthly-anomaly",
+      "query": "出一份5月份的异常分析报告，汇总所有表的数据质量问题",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 274
+    },
+    {
+      "id": 32,
+      "name": "report-score-all-devices",
+      "query": "生成所有设备的5月份评分报告",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 270
+    },
+    {
+      "id": 33,
+      "name": "writeback-fix-anomaly",
+      "query": "把st_rsvr_r表中检测到的水位异常值修复后写回数据库",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 280
+    },
+    {
+      "id": 34,
+      "name": "writeback-fill-missing",
+      "query": "把st_pressure_r表缺失的数据插值补全后写回eq_data_missing_record",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 281
+    },
+    {
+      "id": 35,
+      "name": "writeback-offline-status",
+      "query": "设备104(西坝咀雨量计)确认已离线，更新设备状态并创建离线记录",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 285
+    },
+    {
+      "id": 36,
+      "name": "device-context-equipment-140",
+      "query": "设备140(振弦渗压计E02)状态异常，查一下它的历史记录和运维建议",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 287
+    },
+    {
+      "id": 37,
+      "name": "device-context-offline-239",
+      "query": "设备239已经离线900多小时了，查一下这个设备的详细信息，给出处理建议",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 284
+    },
+    {
+      "id": 38,
+      "name": "missing-pressure-134-10days",
+      "query": "设备134(st_pressure_r)从5月1日到10日连续10天没有数据，共缺失240条，这是怎么回事？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 296
+    },
+    {
+      "id": 39,
+      "name": "anomaly-stats-overview",
+      "query": "帮我看看stats_data_anomaly_daily表，哪个表的异常最多？整体趋势怎么样？",
+      "expected": "powerelf-data-governance",
+      "selected": "powerelf-data-governance",
+      "correct": true,
+      "tokens": 281
+    }
+  ]
+}

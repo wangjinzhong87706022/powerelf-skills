@@ -1,0 +1,13 @@
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "sk-oigy1bNt5NvWzwZqTSoV41IG7vhGMzog",
+    "ANTHROPIC_BASE_URL": "https://token.sensenova.cn",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "sensenova-u1-fast",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-flash",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-flash",
+    "ANTHROPIC_MODEL": "deepseek-v4-flash",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": "deepseek-v4-flash",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": "sensenova-u1-fast",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME": "deepseek-v4-flash"
+  }
+}

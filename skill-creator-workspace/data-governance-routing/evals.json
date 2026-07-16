@@ -1,0 +1,47 @@
+{
+  "skill_name": "powerelf-data-governance-routing",
+  "evals": [
+    {
+      "id": 0,
+      "name": "data-anomaly-detection",
+      "prompt": "帮我检查一下最近24小时水库水位数据有没有异常值，用MAD算法检测一下",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for MAD anomaly detection",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "missing-data-check",
+      "prompt": "最近一周河道水位监测数据有没有缺失？哪些站点有数据缺失的情况？",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for missing data detection",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "data-quality-overview",
+      "prompt": "帮我评估一下最近一个月所有监测站点的数据质量，给出质量评分和问题汇总",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data quality scoring",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "offline-stagnation",
+      "prompt": "检查哪些传感器最近有离线或者数据卡滞的问题",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for offline/stagnation detection",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "data-interpolation",
+      "prompt": "水位数据有缺失，帮我用插值方法补全缺失的部分",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data interpolation",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "general-data-problem",
+      "prompt": "监测数据是不是有问题？帮我看看数据质量怎么样",
+      "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data quality overview",
+      "files": []
+    }
+  ]
+}

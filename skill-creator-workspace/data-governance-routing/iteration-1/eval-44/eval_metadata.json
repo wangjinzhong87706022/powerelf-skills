@@ -1,0 +1,12 @@
+{
+  "eval_id": 44,
+  "eval_name": "percolation-extreme-31",
+  "prompt": "st_percolation_r表的渗流值最大达到31.67，但平均值才0.57，这个极端值怎么判断？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_percolation_r表的渗流值最大达到31.67，但平均值才0.57，这个极端值怎么判断...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

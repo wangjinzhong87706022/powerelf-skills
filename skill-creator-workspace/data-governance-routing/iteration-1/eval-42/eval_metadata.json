@@ -1,0 +1,12 @@
+{
+  "eval_id": 42,
+  "eval_name": "missing-pattern-recognition",
+  "prompt": "分析st_pressure_r表的数据缺失模式，是周期性的还是随机的？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 分析st_pressure_r表的数据缺失模式，是周期性的还是随机的？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 27,
+  "eval_name": "extreme-event-vs-anomaly-may15",
+  "prompt": "5月15日水位从440突然跳到500，是真实事件还是传感器故障？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 5月15日水位从440突然跳到500，是真实事件还是传感器故障？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

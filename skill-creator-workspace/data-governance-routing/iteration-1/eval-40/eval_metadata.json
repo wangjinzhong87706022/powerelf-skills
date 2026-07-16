@@ -1,0 +1,12 @@
+{
+  "eval_id": 40,
+  "eval_name": "quality-scoring-by-manufacturer",
+  "prompt": "按设备厂商分组，生成5月份的厂商数据质量排名",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 按设备厂商分组，生成5月份的厂商数据质量排名...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

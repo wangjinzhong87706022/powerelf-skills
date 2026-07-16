@@ -1,0 +1,12 @@
+{
+  "eval_id": 39,
+  "eval_name": "anomaly-stats-overview",
+  "prompt": "帮我看看stats_data_anomaly_daily表，哪个表的异常最多？整体趋势怎么样？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 帮我看看stats_data_anomaly_daily表，哪个表的异常最多？整体趋势怎么样？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

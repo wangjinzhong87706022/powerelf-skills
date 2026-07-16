@@ -1,0 +1,12 @@
+{
+  "eval_id": 37,
+  "eval_name": "device-context-offline-239",
+  "prompt": "设备239已经离线900多小时了，查一下这个设备的详细信息，给出处理建议",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 设备239已经离线900多小时了，查一下这个设备的详细信息，给出处理建议...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

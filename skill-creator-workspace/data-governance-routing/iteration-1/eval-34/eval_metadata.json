@@ -1,0 +1,12 @@
+{
+  "eval_id": 34,
+  "eval_name": "writeback-fill-missing",
+  "prompt": "把st_pressure_r表缺失的数据插值补全后写回eq_data_missing_record",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 把st_pressure_r表缺失的数据插值补全后写回eq_data_missing_record...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

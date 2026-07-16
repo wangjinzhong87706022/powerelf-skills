@@ -1,0 +1,12 @@
+{
+  "eval_id": 36,
+  "eval_name": "device-context-equipment-140",
+  "prompt": "设备140(振弦渗压计E02)状态异常，查一下它的历史记录和运维建议",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 设备140(振弦渗压计E02)状态异常，查一下它的历史记录和运维建议...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

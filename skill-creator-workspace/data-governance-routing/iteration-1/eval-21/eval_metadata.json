@@ -1,0 +1,12 @@
+{
+  "eval_id": 21,
+  "eval_name": "rsvr-june-data-stoppage",
+  "prompt": "st_rsvr_r表6月份只有351条记录，7月份才9条，之前每个月都是2-5万条，数据采集是不是停了？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_rsvr_r表6月份只有351条记录，7月份才9条，之前每个月都是2-5万条，数据采集是不是停...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

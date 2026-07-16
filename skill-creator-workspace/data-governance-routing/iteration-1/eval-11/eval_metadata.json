@@ -1,0 +1,12 @@
+{
+  "eval_id": 11,
+  "eval_name": "offline-equipment-104",
+  "prompt": "西坝咀雨量计(设备104)当前是否在线？离线多久了？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 西坝咀雨量计(设备104)当前是否在线？离线多久了？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

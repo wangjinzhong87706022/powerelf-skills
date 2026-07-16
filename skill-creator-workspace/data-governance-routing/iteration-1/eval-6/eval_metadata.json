@@ -1,0 +1,12 @@
+{
+  "eval_id": 6,
+  "eval_name": "missing-pressure-table",
+  "prompt": "st_pressure_r表5月份的数据有没有缺失？我怀疑有些时段没采到数据",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: st_pressure_r表5月份的数据有没有缺失？我怀疑有些时段没采到数据...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

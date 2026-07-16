@@ -1,0 +1,12 @@
+{
+  "eval_id": 28,
+  "eval_name": "extreme-event-jan-0p029",
+  "prompt": "1月份水位出现0.029米的极端低值，是传感器坏了还是真实的水位下降？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 1月份水位出现0.029米的极端低值，是传感器坏了还是真实的水位下降？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

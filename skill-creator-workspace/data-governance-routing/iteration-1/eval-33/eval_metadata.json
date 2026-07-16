@@ -1,0 +1,12 @@
+{
+  "eval_id": 33,
+  "eval_name": "writeback-fix-anomaly",
+  "prompt": "把st_rsvr_r表中检测到的水位异常值修复后写回数据库",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 把st_rsvr_r表中检测到的水位异常值修复后写回数据库...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 16,
+  "eval_name": "quality-compare-139-140",
+  "prompt": "对比设备139(状态正常)和设备140(状态异常)的5月份数据质量评分",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 对比设备139(状态正常)和设备140(状态异常)的5月份数据质量评分...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

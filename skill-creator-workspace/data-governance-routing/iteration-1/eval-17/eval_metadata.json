@@ -1,0 +1,12 @@
+{
+  "eval_id": 17,
+  "eval_name": "quality-ranking-low-scores",
+  "prompt": "哪些设备的5月份质量评分低于60分？列出需要重点关注的设备",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 哪些设备的5月份质量评分低于60分？列出需要重点关注的设备...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}

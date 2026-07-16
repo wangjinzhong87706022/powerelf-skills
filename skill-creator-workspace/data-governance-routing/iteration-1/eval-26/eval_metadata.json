@@ -1,0 +1,12 @@
+{
+  "eval_id": 26,
+  "eval_name": "correlation-rainfall-waterlevel",
+  "prompt": "5月18日下了120mm的暴雨，但水位没怎么涨，数据是不是有问题？",
+  "assertions": [
+    {
+      "name": "routes-to-data-governance",
+      "text": "The agent should invoke powerelf-data-governance for query: 5月18日下了120mm的暴雨，但水位没怎么涨，数据是不是有问题？...",
+      "expected": "skill_powerelf-data-governance invoked"
+    }
+  ]
+}
