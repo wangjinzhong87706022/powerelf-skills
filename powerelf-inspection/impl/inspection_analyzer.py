@@ -1035,7 +1035,11 @@ def analyze_correlation(engine, days=7, thresholds=None):
         inq_trend = st_water['inq'].tail(6).values
 
         rz_rising = all(rz_trend[i] > rz_trend[i-1] for i in range(1, len(rz_trend)))
-        inq_falling = all(inq_trend[i] < inq_trend[i-1] for i in range(1, len(inq_trend)) if inq_trend[i-1] > 0)
+        # 仅在有非零流量可比时才判定下降；全零/无可比项不算下降（修 C3 空真）
+        comparable = [i for i in range(1, len(inq_trend)) if inq_trend[i-1] > 0]
+        inq_falling = bool(comparable) and all(
+            inq_trend[i] < inq_trend[i-1] for i in comparable
+        )
 
         if rz_rising and inq_falling:
             findings.append({
