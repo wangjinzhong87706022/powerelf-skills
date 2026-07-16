@@ -97,7 +97,7 @@ def detect_anomalies(values, threshold=4.0, window_size=None):
 
         med = _median(window)
         abs_deviations = [abs(x - med) for x in window]
-        mad = _median(sorted(abs_deviations))
+        mad = _median(abs_deviations)
 
         if mad > 0:
             modified_z_score = 0.6745 * abs(values[i] - med) / mad

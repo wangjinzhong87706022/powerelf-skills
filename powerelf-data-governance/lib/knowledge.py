@@ -178,7 +178,7 @@ class RAGFlowProvider(KnowledgeProvider):
             import requests
             resp = requests.get(f"{self.api_url}/api/v1/datasets", timeout=5)
             return resp.status_code == 200
-        except:
+        except Exception:
             return False
 
 
@@ -233,7 +233,7 @@ class ElasticsearchProvider(KnowledgeProvider):
             auth = (self.username, self.password) if self.username else None
             resp = requests.get(f"{self.host}/_cluster/health", auth=auth, verify=False, timeout=5)
             return resp.status_code == 200
-        except:
+        except Exception:
             return False
 
 
@@ -274,7 +274,7 @@ class ChromaProvider(KnowledgeProvider):
             import chromadb
             client = chromadb.HttpClient(host=self.host, port=self.port)
             return client.heartbeat() > 0
-        except:
+        except Exception:
             return False
 
 

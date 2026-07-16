@@ -47,6 +47,10 @@ def compute_quality_score(missing_ratio, anomaly_ratio):
     Returns:
         Quality dimension score (float, 0 to 35).
     """
+    # 文档约定：missing + anomaly >= 30% 时 quality_score = 0
+    if missing_ratio + anomaly_ratio >= 0.3:
+        return 0.0
+
     missing_score = max(0, (0.3 - missing_ratio) * 10 / 3) * 0.6
     anomaly_score = max(0, (0.3 - anomaly_ratio) * 10 / 3) * 0.4
     quality_score = (missing_score + anomaly_score) * 0.35 * 100
