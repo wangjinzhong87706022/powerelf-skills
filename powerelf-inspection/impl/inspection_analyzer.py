@@ -257,12 +257,19 @@ def analyze_water_level(engine, days=30, thresholds=None):
         rz_min = rz_values.min()
         rz_mean = rz_values.mean()
 
-        if rz > rz_mean + 2 * rz_values.std():
-            findings.append({
-                "level": "WARNING",
-                "message": f"测站{st_id}: 当前水位{rz:.2f}m 超过均值2倍标准差 (均值{rz_mean:.2f}m)",
-                "detail": "统计异常，需确认"
-            })
+        # 稳健 MAD（替换 2-sigma：水位偏态，参数法易误报/漏报；修 H4）
+        if len(rz_values) >= 10:
+            _rz = rz_values.values
+            _median = float(np.median(_rz))
+            _mad = float(np.median(np.abs(_rz - _median))) * 1.4826
+            if _mad > 0:
+                _z = abs(rz - _median) / _mad
+                if _z > 3.0:
+                    findings.append({
+                        "level": "WARNING",
+                        "message": f"测站{st_id}: 当前水位{rz:.2f}m MAD统计异常 z={_z:.1f} (中位数{_median:.2f}m)",
+                        "detail": "偏离历史分布，需确认"
+                    })
 
         # 入库/出库平衡
         if inq is not None and otq is not None:
@@ -444,17 +451,19 @@ def analyze_percolation(engine, days=30):
                     })
                     break  # 只报一次
 
-        # 统计异常
+        # 统计异常（稳健 MAD 替换 2-sigma）
         if len(perc_values) >= 10:
-            mean = np.mean(perc_values)
-            std = np.std(perc_values)
-            if std > 0:
-                latest = float(perc_values[-1])
-                if latest > mean + 2 * std:
+            _perc = perc_values.values
+            _median = float(np.median(_perc))
+            _mad = float(np.median(np.abs(_perc - _median))) * 1.4826
+            if _mad > 0:
+                latest = float(_perc[-1])
+                _z = abs(latest - _median) / _mad
+                if _z > 3.0:
                     findings.append({
                         "level": "WARNING",
-                        "message": f"渗流计{st_id}: 渗流量{latest:.3f}L/s 超过均值2倍标准差 (均值{mean:.3f})",
-                        "detail": "统计异常，需关注"
+                        "message": f"渗流计{st_id}: 渗流量{latest:.3f}L/s MAD统计异常 z={_z:.1f} (中位数{_median:.3f})",
+                        "detail": "偏离历史分布，需确认"
                     })
 
     if not findings:

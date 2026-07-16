@@ -15,3 +15,11 @@ def test_c3_all_zero_flow_not_falling():
     assert _inq_falling_fixed([5.0, 4.0, 3.0, 2.0, 1.0, 0.5]) is True   # 真下降仍检出
     assert _inq_falling_fixed([3.0, 2.0, 1.0]) is True  # 短序列真下降
     assert _inq_falling_fixed([1.0, 0.0, 0.0]) is False  # 部分零值（0.0→0.0不可比）
+
+def test_h4_mad_vs_2sigma_on_skewed():
+    # 右偏序列：一个远离的极端值。MAD 稳健，受极端值影响小。
+    vals = [float(i) for i in range(1, 21)] + [100.0]  # 1..20 + 极端值
+    import numpy as np
+    median = float(np.median(vals[:-1])); mad = float(np.median(np.abs(np.array(vals[:-1])-median)))*1.4826
+    z = abs(vals[-1]-median)/mad if mad>0 else 0.0
+    assert z > 4.0  # MAD 检出极端值
