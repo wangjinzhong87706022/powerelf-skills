@@ -339,3 +339,79 @@ def composite_anomaly_judge(layer_results: Dict[int, Any]) -> Dict[str, Any]:
             else "No anomaly detected"
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# MAD Anomaly (standalone, reusable)
+# ---------------------------------------------------------------------------
+
+def mad_anomaly(values: List[float], threshold: float = 4.0, min_samples: int = 4) -> Dict[str, Any]:
+    """Robust MAD outlier detection (aligned with _shared/algorithms/mad.md).
+
+    The last element of *values* is treated as the current reading; the rest
+    form the historical window.
+
+    Args:
+        values: Time-ordered readings (last = current).
+        threshold: Modified Z-Score cutoff (default 4.0).
+        min_samples: Minimum number of values required.
+
+    Returns:
+        Dict with ``is_anomaly``, ``score``, ``median``, ``mad``.
+    """
+    if len(values) < min_samples:
+        return {"is_anomaly": False, "score": 0.0}
+
+    try:
+        import numpy as _np
+        hist = _np.asarray(values[:-1], dtype=float)
+        current = float(values[-1])
+    except Exception:
+        hist = values[:-1]
+        current = values[-1]
+        median = statistics.median(hist)
+        mad = statistics.median([abs(v - median) for v in hist]) * 1.4826
+    else:
+        median = float(_np.median(hist))
+        mad = float(_np.median(_np.abs(hist - median))) * 1.4826
+
+    if mad == 0:
+        return {"is_anomaly": False, "score": 0.0}
+
+    z = abs(current - median) / mad
+    return {
+        "is_anomaly": z > threshold,
+        "score": round(z, 4),
+        "median": round(median, 4),
+        "mad": round(mad, 4),
+    }
+
+
+def consecutive_monotonic(
+    values: List[float],
+    direction: str,
+    min_consecutive: int,
+) -> Dict[str, Any]:
+    """Count consecutive monotonic moves from the end of *values*.
+
+    Args:
+        values: Time-ordered readings.
+        direction: ``"rise"`` (strictly increasing) or ``"fall"`` (strictly decreasing).
+        min_consecutive: Minimum consecutive count to flag a trend.
+
+    Returns:
+        Dict with ``is_trend`` and ``count``.
+    """
+    if len(values) < 2:
+        return {"is_trend": False, "count": 0}
+
+    count = 0
+    for i in range(len(values) - 1, 0, -1):
+        if direction == "rise" and values[i] > values[i - 1]:
+            count += 1
+        elif direction == "fall" and values[i] < values[i - 1]:
+            count += 1
+        else:
+            break
+
+    return {"is_trend": count >= min_consecutive, "count": count}

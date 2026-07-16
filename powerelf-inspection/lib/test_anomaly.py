@@ -1,6 +1,27 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 
+import anomaly
+
+def test_mad_anomaly_detects_outlier():
+    # 使用有变化的序列 + 极端离群值
+    vals = [float(i) for i in range(1, 21)] + [100.0]  # 1..20 + 极端值
+    r = anomaly.mad_anomaly(vals, threshold=4.0)
+    assert r["is_anomaly"] is True and r["score"] > 4.0
+
+def test_mad_anomaly_min_samples():
+    assert anomaly.mad_anomaly([1.0, 2.0], threshold=4.0)["is_anomaly"] is False  # 样本不足
+
+def test_mad_anomaly_zero_mad():
+    assert anomaly.mad_anomaly([5.0]*20, threshold=4.0)["is_anomaly"] is False  # mad=0 不报
+
+def test_consecutive_monotonic_rise():
+    r = anomaly.consecutive_monotonic([1,2,3,4,5,6], "rise", 5)
+    assert r["is_trend"] is True and r["count"] == 5
+
+def test_consecutive_monotonic_break():
+    assert anomaly.consecutive_monotonic([1,2,3,2,1,0], "rise", 3)["is_trend"] is False
+
 def _inq_falling_buggy(inq_trend):
     # 复刻 inspection_analyzer.py:1038 的旧逻辑（含 bug）
     return all(inq_trend[i] < inq_trend[i-1] for i in range(1, len(inq_trend)) if inq_trend[i-1] > 0)
