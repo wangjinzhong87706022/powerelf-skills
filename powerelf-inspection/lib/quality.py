@@ -12,6 +12,9 @@ Covers:
 
 from typing import Any, Dict, List, Optional
 
+# check_percent 字段语义（H1 默认处置：完成率；详见 references/business_rules.md）
+CHECK_PERCENT_SEMANTICS = "completion"
+
 
 # ---------------------------------------------------------------------------
 # Individual dimension helpers
@@ -47,19 +50,19 @@ def compute_timeliness_rate(on_time_count: int, total_count: int) -> float:
     return on_time_count / total_count
 
 
-def compute_defect_discovery_rate(defects_found: int, total_checks: int) -> float:
-    """Compute defect discovery rate.
+def compute_defect_discovery_rate(defects_found: int, real_checkitems: int) -> float:
+    """缺陷发现率 = 缺陷数 / 实际巡检项数（real_objitem）。详见 quality-assessment.md。
 
     Args:
         defects_found: Number of defects found.
-        total_checks: Total number of checks performed.
+        real_checkitems: Number of actual inspection items (real_objitem).
 
     Returns:
         Rate in [0, 1].
     """
-    if total_checks <= 0:
+    if real_checkitems <= 0:
         return 0.0
-    return defects_found / total_checks
+    return defects_found / real_checkitems
 
 
 def compute_route_coverage(covered_points: int, total_points: int) -> float:
@@ -185,12 +188,11 @@ def compute_quality_score(
 
     # The raw scores already encode the weight (max 30+25+25+20=100).
     # But if custom weights are supplied we re-normalise.
+    _MAX = {"completion": 30.0, "timeliness": 25.0, "defect_rate": 25.0, "coverage": 20.0}
     if weights:
-        # Scale each raw score by the weight ratio.
-        total = sum(raw_scores.values())
+        # 按各维度满分归一化后再加权 × 100（C1 自定义权重分支修正）
         total_score = sum(
-            raw_scores[dim] * (w.get(dim, 0) / sum(_DEFAULT_WEIGHTS.values()))
-            * (100 / sum(raw_scores.values()) if sum(raw_scores.values()) > 0 else 0)
+            (raw_scores[dim] / _MAX[dim]) * weights.get(dim, 0) * 100.0
             for dim in raw_scores
         )
     else:
