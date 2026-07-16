@@ -262,3 +262,7 @@ python3 impl/test_inspection.py --db "$DB_URL" --days 7
 5. **泵站 varchar** — 电压/电流为 varchar，不能直接数值比较
 6. **传感器故障 vs 真极端** — 需区分传感器故障和真实异常
 7. **双数据库 session** — 同时连接 inspection/governance 库时 session 混乱
+
+## Few-Shots（SQL 最佳实践）
+
+常用 SQL 模式（参数化查询、JOIN-by-Name、标识符白名单、CAST 类型转换、聚合统计、分页、事务控制），详见 `references/few_shots.md`。
