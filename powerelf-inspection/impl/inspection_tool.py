@@ -34,6 +34,9 @@ logger = logging.getLogger("inspection_tool")
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
 import quality as _quality
 
+# 导入采集层（P2-T7 最小分离 S4）
+from registry import load_registry, get_builtin_registry, match_data_sources, collect_from_source, show_registry, demo_collect
+
 # 标识符白名单（防 SQL 注入：table/fields/time_field 来自 sys_data_source_registry，DB 可写）
 _ALLOWED_TABLES = {
     "st_river_r","st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
