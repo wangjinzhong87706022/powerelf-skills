@@ -8,7 +8,7 @@ platforms: [linux, windows, macos]
 metadata:
   hermes:
     tags: [water-conservancy, real-time-monitoring, sensor, reservoir, dam, gnss]
-    related_skills: [powerelf-data-governance, powerelf-early-warning]
+    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection]
 prerequisites:
   env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
 ---
@@ -103,3 +103,8 @@ prerequisites:
 | `POST /att/dot-user/concern` | 关注/取消关注 |
 
 通用头与鉴权约定：见 [`../_shared/api-auth.md`](../_shared/api-auth.md)（`Authorization: Bearer ${POWERELF_API_TOKEN}` + `tenant-id: 1`）
+
+## 与 powerelf-inspection 的分工
+
+monitor = **实时**（当前/在线、REST、看盘、预警触发）；inspection = **离线回顾**（昨日窗口批处理、DB 直连、日报 + 复合工况 + 巡检质量考核）。同读 st_* 表，时间模式/触发/产出/消费者不同。离线巡检回顾/日报/巡检质量考核 → 用 `powerelf-inspection`。
+
