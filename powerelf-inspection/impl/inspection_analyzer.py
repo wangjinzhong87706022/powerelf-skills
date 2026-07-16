@@ -21,9 +21,16 @@ import argparse
 import json
 import logging
 import sys
+import os as _os
 from datetime import datetime, timedelta
 
 logger = logging.getLogger("inspection_analyzer")
+
+# 导入 lib/anomaly（P2-T6 接线）
+_sys_path_orig = sys.path[:]
+sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
+import anomaly as _anomaly
+sys.path = _sys_path_orig
 
 try:
     import pandas as pd
@@ -238,14 +245,13 @@ def analyze_water_level(engine, days=30, thresholds=None):
         # 趋势分析
         rz_values = st_data['rz'].dropna().astype(float)
         if len(rz_values) >= 6:
-            recent_6 = rz_values.tail(6).values
-            if all(recent_6[i] > recent_6[i-1] for i in range(1, len(recent_6))):
+            if _anomaly.consecutive_monotonic(rz_values.tail(6).values.tolist(), "rise", 5)["is_trend"]:
                 findings.append({
                     "level": "WARNING",
                     "message": f"测站{st_id}: 水位连续上升6次 ({rz_values.iloc[-6]:.2f}m → {rz:.2f}m)",
                     "detail": "持续上升趋势，需关注"
                 })
-            elif all(recent_6[i] < recent_6[i-1] for i in range(1, len(recent_6))):
+            elif _anomaly.consecutive_monotonic(rz_values.tail(6).values.tolist(), "fall", 5)["is_trend"]:
                 findings.append({
                     "level": "INFO",
                     "message": f"测站{st_id}: 水位连续下降6次 ({rz_values.iloc[-6]:.2f}m → {rz:.2f}m)",
@@ -257,19 +263,15 @@ def analyze_water_level(engine, days=30, thresholds=None):
         rz_min = rz_values.min()
         rz_mean = rz_values.mean()
 
-        # 稳健 MAD（替换 2-sigma：水位偏态，参数法易误报/漏报；修 H4）
+        # 稳健 MAD（替换 2-sigma：水位偏态，参数法易误报/漏报；修 H4 + 接线 lib）
         if len(rz_values) >= 10:
-            _rz = rz_values.values
-            _median = float(np.median(_rz))
-            _mad = float(np.median(np.abs(_rz - _median))) * 1.4826
-            if _mad > 0:
-                _z = abs(rz - _median) / _mad
-                if _z > 3.0:
-                    findings.append({
-                        "level": "WARNING",
-                        "message": f"测站{st_id}: 当前水位{rz:.2f}m MAD统计异常 z={_z:.1f} (中位数{_median:.2f}m)",
-                        "detail": "偏离历史分布，需确认"
-                    })
+            _r = _anomaly.mad_anomaly(rz_values.values.tolist(), threshold=3.0, min_samples=10)
+            if _r["is_anomaly"]:
+                findings.append({
+                    "level": "WARNING",
+                    "message": f"测站{st_id}: 当前水位{rz:.2f}m MAD统计异常 z={_r['score']:.1f} (中位数{_r['median']:.2f}m)",
+                    "detail": "偏离历史分布，需确认"
+                })
 
         # 入库/出库平衡
         if inq is not None and otq is not None:
@@ -383,11 +385,10 @@ def analyze_pressure(engine, days=30, thresholds=None):
         # 趋势分析 - 连续上升
         wp_values = st_data['water_pressure'].values
         if len(wp_values) >= 7:
-            recent_7 = wp_values[-7:]
-            if all(recent_7[i] > recent_7[i-1] for i in range(1, len(recent_7))):
+            if _anomaly.consecutive_monotonic(wp_values[-7:].tolist(), "rise", 6)["is_trend"]:
                 findings.append({
                     "level": "WARNING",
-                    "message": f"渗压计{st_id}: 渗压连续7次上升 ({wp_values[-7]:.2f}kPa → {wp:.2f}kPa)",
+                    "message": f"渗压计{st_id}: 渗压连续上升 ({wp_values[-7]:.2f}kPa → {wp:.2f}kPa)",
                     "detail": "持续上升趋势，可能存在渗漏，需现场检查"
                 })
 
@@ -402,16 +403,15 @@ def analyze_pressure(engine, days=30, thresholds=None):
                     "detail": f"变化幅度>{pressure_change_threshold}kPa，需确认是否有外部因素"
                 })
 
-        # MAD异常检测
+        # MAD异常检测（委托 lib/anomaly）
         if len(wp_values) >= 10:
-            median = np.median(wp_values)
-            mad = np.median(np.abs(wp_values - median)) * 1.4826
-            if mad > 0:
-                z_score = abs(wp - median) / mad
-                if z_score > 4:
-                    findings.append({
-                        "level": "WARNING",
-                        "message": f"渗压计{st_id}: 统计异常 z_score={z_score:.1f} (当前{wp:.2f}kPa, 中位数{median:.2f}kPa)",
+            _r = _anomaly.mad_anomaly(wp_values.tolist(), threshold=4.0, min_samples=10)
+            if _r["is_anomaly"]:
+                findings.append({
+                    "level": "WARNING",
+                    "message": f"渗压计{st_id}: 统计异常 z_score={_r['score']:.1f} (当前{wp:.2f}kPa, 中位数{_r['median']:.2f}kPa)",
+                    "detail": "偏离历史分布，需人工确认"
+                })
                         "detail": "偏离历史分布，需人工确认"
                     })
 
@@ -522,8 +522,7 @@ def analyze_displacement(engine, days=30, thresholds=None):
         # 趋势分析
         speed_values = st_data['speed_gh'].dropna().values
         if len(speed_values) >= 5:
-            recent_5 = speed_values[-5:]
-            if all(recent_5[i] > recent_5[i-1] for i in range(1, len(recent_5))):
+            if _anomaly.consecutive_monotonic(speed_values[-5:].tolist(), "rise", 4)["is_trend"]:
                 findings.append({
                     "level": "WARNING",
                     "message": f"GNSS测站{st_id}: 位移速率持续上升 ({speed_values[-5]:.3f} → {speed:.3f} mm/d)",
@@ -1007,21 +1006,21 @@ def analyze_mad_anomaly(engine, days=30, thresholds=None):
             if len(values) < 20:
                 continue
 
-            median = np.median(values)
-            mad = np.median(np.abs(values - median)) * 1.4826
-            if mad == 0:
+            # MAD检测（委托 lib/anomaly）
+            _r = _anomaly.mad_anomaly(values.tolist(), threshold=default_z, min_samples=20)
+            if not _r["is_anomaly"]:
                 continue
 
             latest = float(values[-1])
-            z_score = abs(latest - median) / mad
 
             # MAD阈值从注册表读取
             mad_threshold = get_registry_threshold(thresholds, table, "mad_threshold", default_z)
 
-            if z_score > mad_threshold:
+            # 使用lib返回的score（已计算z_score）
+            if _r["score"] > mad_threshold:
                 findings.append({
                     "level": "WARNING",
-                    "message": f"{label}测站{st_id}: MAD统计异常 z={z_score:.1f} (阈值{mad_threshold}, 当前{latest:.2f}, 中位数{median:.2f})",
+                    "message": f"{label}测站{st_id}: MAD统计异常 z={_r['score']:.1f} (阈值{mad_threshold}, 当前{latest:.2f}, 中位数{_r['median']:.2f})",
                     "detail": f"偏离历史分布，基于{len(values)}个数据点的MAD检测"
                 })
 
