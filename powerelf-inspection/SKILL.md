@@ -250,3 +250,15 @@ python3 impl/test_inspection.py --db "$DB_URL" --days 7
 3. **新检测规则生成**：≥3个同一模式的漏报 → 自动生成新规则
 4. **置信度校准**：每50条反馈重新校准置信度分桶
 5. **演化目标**：精度>0.85，召回>0.90，人工干预率<20%
+
+## Pitfalls（高频错误）
+
+开发/维护中常见的 7 类陷阱（含 ❌错误示例与 ✅正确做法），详见 `references/pitfalls.md`：
+
+1. **占位符污染** — SQL 中 `{st_id}` 占位符导致注入
+2. **关联键混淆** — `eq_id`(bigint)/`stcd`(varchar)/`st_id`(int) 易混
+3. **GNSS 表名** — `dsm_dfr_srvrds_srhrds` 易写错
+4. **extend JSON** — `ew_info_rules.extend` 格式坏导致解析异常
+5. **泵站 varchar** — 电压/电流为 varchar，不能直接数值比较
+6. **传感器故障 vs 真极端** — 需区分传感器故障和真实异常
+7. **双数据库 session** — 同时连接 inspection/governance 库时 session 混乱
