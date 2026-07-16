@@ -24,10 +24,15 @@ import argparse
 import json
 import logging
 import re
-import sys
+import sys as _sys
+import os as _os
 from datetime import datetime
 
 logger = logging.getLogger("inspection_tool")
+
+# 导入 lib/quality（P2-T5 接线）
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
+import quality as _quality
 
 # 标识符白名单（防 SQL 注入：table/fields/time_field 来自 sys_data_source_registry，DB 可写）
 _ALLOWED_TABLES = {
@@ -217,7 +222,7 @@ def calc_inspection_quality(engine, start_date, end_date):
     """计算巡检质量评分（与 quality-assessment.md 分段评分模型一致）"""
     tasks = pd.read_sql(text("""
         SELECT id, name, status, plan_checknum, real_checknum,
-               plan_checkobj, bad_num, check_percent,
+               plan_checkobj, real_checkobj, bad_num, check_percent,
                plan_time, begin_time, end_time, exceed_time
         FROM business_check_task
         WHERE create_time BETWEEN :start AND :end
@@ -234,62 +239,27 @@ def calc_inspection_quality(engine, start_date, end_date):
     completion_rate = completed / total if total > 0 else 0
     timeliness_rate = 1 - (overtime / total) if total > 0 else 0
 
-    # 使用 plan_checkobj 作为计划巡检项数，real_checknum 作为实际巡检数
-    total_items = tasks['plan_checkobj'].sum() if 'plan_checkobj' in tasks.columns else tasks['real_checknum'].sum()
+    # 缺陷率使用 real_checkobj 作为分母（C2 修复）
     total_defects = tasks['bad_num'].sum()
-    defect_rate = total_defects / total_items if total_items > 0 else 0
+    real_items = tasks['real_checkobj'].sum() if 'real_checkobj' in tasks.columns else 0
+    defect_rate = _quality.compute_defect_discovery_rate(int(total_defects), int(real_items))
 
     def parse_percent(p):
         try:
             return float(str(p).replace('%', '')) / 100
-        except:
+        except (ValueError, AttributeError):
             return 0
 
     avg_omission = tasks['check_percent'].apply(parse_percent).mean()
     coverage_rate = 1 - avg_omission
 
-    # 分段评分模型（与 quality-assessment.md 一致）
-    if completion_rate >= 0.95:
-        score_completion = 30
-    elif completion_rate >= 0.90:
-        score_completion = 25
-    elif completion_rate >= 0.80:
-        score_completion = 20
-    elif completion_rate >= 0.70:
-        score_completion = 15
-    else:
-        score_completion = 10
-
-    if timeliness_rate >= 0.95:
-        score_timeliness = 25
-    elif timeliness_rate >= 0.90:
-        score_timeliness = 20
-    elif timeliness_rate >= 0.80:
-        score_timeliness = 15
-    else:
-        score_timeliness = 10
-
-    if 0.01 <= defect_rate <= 0.05:
-        score_defect = 25
-    elif 0.05 < defect_rate <= 0.10:
-        score_defect = 20
-    elif 0.10 < defect_rate <= 0.20:
-        score_defect = 15
-    elif defect_rate > 0.20:
-        score_defect = 10
-    else:
-        score_defect = 15
-
-    if coverage_rate >= 0.95:
-        score_coverage = 20
-    elif coverage_rate >= 0.90:
-        score_coverage = 15
-    elif coverage_rate >= 0.80:
-        score_coverage = 10
-    else:
-        score_coverage = 5
-
-    score = score_completion + score_timeliness + score_defect + score_coverage
+    # 调用 lib/quality 统一评分（D4 删除内联副本）
+    qs = _quality.compute_quality_score(completion_rate, timeliness_rate, defect_rate, coverage_rate)
+    score_completion = qs["dimension_scores"]["completion"]["score"]
+    score_timeliness = qs["dimension_scores"]["timeliness"]["score"]
+    score_defect = qs["dimension_scores"]["defect_rate"]["score"]
+    score_coverage = qs["dimension_scores"]["coverage"]["score"]
+    score = qs["total_score"]
 
     return {
         "score": round(score, 1),
