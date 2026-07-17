@@ -1,6 +1,6 @@
 ---
 name: powerelf-data-governance
-description: "监测数据（河道水位/水库水位/雨量/渗压）有没有异常值、缺失、离线、卡滞？→数据质量治理：MAD/缺失/离线检测、评分、插值、报告。数值/趋势/超警戒查询用 water-situation。"
+description: "监测数据（水库水位/雨量/渗压/渗流/GNSS）有没有异常值、缺失、离线、卡滞？→数据质量治理：MAD/缺失/离线检测、评分、插值、报告。"
 version: 2.0.0
 author: Powerelf Team
 license: MIT
@@ -92,7 +92,7 @@ python3 impl/anomaly_detector.py --db "$DB_URL" --table st_pressure_r --field wa
 
 ## 数据库查询注意事项
 
-⚠️ **Agent 在写 SQL 查询数据库前,必须先读 `../_shared/references/schema.md`（跨 skill 单一事实源，含设备关联键映射）**。
+⚠️ **Agent 在写 SQL 查询数据库前，必须先读共享 schema：`$POWERELF_SKILLS_ROOT/_shared/references/schema.md`（环境变量未设时回退相对路径 `../_shared/references/schema.md`；跨 skill 单一事实源，含设备关联键映射 + 2026-07-16 全表实测 DDL）**。
 
 | 常见错误假设 | 实际正确值 |
 |------------|----------|
@@ -161,47 +161,13 @@ python3 impl/generate_report.py --date 2026-05-15 --format pdf --output /tmp/rep
 
 ## 模块架构
 
-```
-lib/                      # Python 算法库（可编程调用）
-├── db.py                 # 数据库连接（环境变量驱动）
-├── mad.py                # MAD异常检测 + 变化率 + 综合判定
-├── outliers.py           # IQR/百分位离群检测（MAD 互补，偏态分布）
-├── missing.py            # 缺失检测 + 模式识别
-├── interpolation.py      # 智能插值（4策略自适应）
-├── offline.py            # 离线检测 + 渐进告警 + MTTR
-├── scoring.py            # 质量评分（4维度 + 时间衰减 + 趋势）
-├── stagnation.py         # 传感器卡滞检测
-├── extreme_event.py      # 极端事件区分
-├── correlation.py        # 跨指标物理矛盾检测
-├── device_context.py     # 设备上下文关联
-├── knowledge.py          # 多后端知识检索（MySQL/RAGFlow/ES/Chroma/HTTP）
-├── writeback.py          # 数据回写（异常修复/缺失填补/离线记录）
-└── report.py             # 报告生成（Markdown/JSON/HTML/PDF）
+- **`lib/`** — Python 算法库：`mad`(异常+变化率) · `outliers`(IQR离群) · `missing`(缺失+模式) · `interpolation`(4策略插值) · `offline`(离线+MTTR) · `scoring`(4维评分) · `stagnation`(卡滞) · `extreme_event`(极端事件) · `correlation`(跨指标矛盾) · `device_context`(设备上下文) · `knowledge`(多后端知识检索) · `writeback`(回写) · `report`(报告) · `db`(连接 shim)
+- **`impl/`** — CLI 算子：`anomaly_detector` · `missing_detector` · `offline_detector` · `quality_scorer` · `generate_report`
+- **`rules/`** — 规则文档（按需加载）：anomaly / missing / interpolation / offline / quality-scoring
+- **`algorithms/`** — 算法详解（含 ML）：mad · interpolation · scoring · multivariate(孤立森林·DBSCAN) · spatial(Kriging·IDW)
+- **`evolution/`** — 自调优：`parameters.md`(72参数) · `feedback-log.md`
 
-impl/                     # CLI 工具（可直接终端调用）
-├── anomaly_detector.py   # MAD异常检测算子
-├── missing_detector.py   # 缺失检测算子
-├── offline_detector.py   # 离线检测算子
-└── quality_scorer.py     # 质量评分算子
-
-rules/                    # 规则文档（按需加载）
-├── anomaly-detection.md  # MAD异常检测规则
-├── missing-detection.md  # 缺失检测规则
-├── interpolation.md      # 智能插值规则
-├── offline-detection.md  # 离线检测规则
-└── quality-scoring.md    # 统计评分规则
-
-algorithms/               # 算法详解（含ML方法）
-├── mad-algorithm.md
-├── interpolation-strategies.md
-├── scoring-formulas.md
-├── multivariate-anomaly.md     # 孤立森林/DBSCAN/自编码器
-└── spatial-interpolation.md    # Kriging/高斯过程/IDW
-
-evolution/                # 自调优系统
-├── parameters.md         # 可调参数注册表（72个参数）
-└── feedback-log.md       # 反馈日志
-```
+> 各 `lib/` 模块的「子模块 → 文件 → 功能」逐项映射见下方【能力概览】表；此处只给目录骨架以省 token。
 
 ## 能力概览
 
