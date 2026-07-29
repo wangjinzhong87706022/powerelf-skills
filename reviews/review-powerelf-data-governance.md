@@ -6,7 +6,7 @@
 |---|---|
 | Skill | `powerelf-data-governance` |
 | 评审版本 | HEAD `e99d2ed` + working tree dirty（`SKILL.md` modified、`rules/offline-detection.md` modified） |
-| 文件统计 | impl/ 6 py (1061 LOC) + lib/ 17 py 非测试 (5046 LOC) + lib/ 8 test py (902 LOC) + tests/ 2 py (478 LOC, untracked) + rules/ 5 md + algorithms/ 5 md + SKILL.md + evolution/ 2 md + scripts/ 1 py (untracked) + references/ 14 文件 (untracked) |
+| 文件统计 | impl/ 6 py (1061 LOC) + lib/ 17 py 非测试 (5046 LOC) + lib/ 8 test py (902 LOC) + tests/ 11 文件 (2 py 478 LOC + 5 md + 4 sh, untracked) + rules/ 5 md + algorithms/ 5 md + SKILL.md + evolution/ 2 md + scripts/ 1 py (untracked) + references/ 13 文件 (untracked) |
 | 总 LOC (py) | ~7009（含 test）+ ~236 scripts/ |
 | 评审日期 | 2026-07-29 |
 | 评审人 | Claude (sub-agent, Task 1/6) |
@@ -41,10 +41,11 @@
 | Medium | 文档-代码一致 | `algorithms/multivariate-anomaly.md` 全文件 + `algorithms/spatial-interpolation.md` 全文件 | 两份算法文档（246 + 278 行）描述了孤立森林、DBSCAN、自编码器、Kriging、高斯过程、IDW 等 6 种算法的伪代码和参数，但 **全仓库无任何 Python 实现**。文档标题未标注"规划中"或"概念设计"，容易误导 Agent 认为已实现。 | 在文件顶部添加 `> ⚠️ 概念设计，尚未实现` 标注；或移至 `evolution/` 目录。 |
 | Medium | SQL/Schema | `lib/report.py:372-381` | report.py 的 monitor_tables 字典包含 `rei_gate_r` 和 `rei_pump_r`（闸门/泵站工情表）。这两张表在 schema.md 中存在，但属于"设备工情"类（1.2 节），不是"监测数据"表。且它们的 `st_id` 列语义可能不同（闸门/泵站没有传统意义上的"测站"）。UNION ALL `COUNT(DISTINCT st_id)` 可能返回错误结果。 | 确认 rei_gate_r/rei_pump_r 是否确有 st_id 列及其语义；若不适合日报统计则从 monitor_tables 中移除。 |
 | Medium | SQL/Schema | 全 impl/ + 全 lib/ | 占位符风格混用：impl/ 使用 SQLAlchemy `:param` 命名占位符（如 `:days`, `:st_id`），lib/report.py 和 lib/writeback.py 使用 PyMySQL `%s` 位置占位符。虽然各自与所用 driver 一致（impl/ 用 SQLAlchemy `text()`，lib/ 用 raw pymysql），但跨模块不一致增加了维护心智负担。 | 长期统一为一种 driver/占位符风格；短期在 SKILL.md 中说明两种风格的使用场景。 |
-| Medium | 架构 | `powerelf-data-governance/references/` 全目录（14 文件，全 untracked） | SKILL.md 多处引用 `references/quick-reference.md`、`references/analysis-guide.md`、`references/best-practices.md`，但这 3 个文件 + 整个 references/ 目录均为 **untracked**（未 commit）。若其他人 clone 仓库或 Agent 在新会话中运行，这些文件不存在，SKILL.md 中的链接全部 404。 | 尽快 `git add` references/ 目录并 commit。这是 SKILL.md 正常工作的必要条件。 |
+| Medium | 架构 | `powerelf-data-governance/references/` 全目录（13 文件，全 untracked） | SKILL.md 多处引用 `references/quick-reference.md`、`references/analysis-guide.md`、`references/best-practices.md`，但这 3 个文件 + 整个 references/ 目录均为 **untracked**（未 commit）。若其他人 clone 仓库或 Agent 在新会话中运行，这些文件不存在，SKILL.md 中的链接全部 404。 | 尽快 `git add` references/ 目录并 commit。这是 SKILL.md 正常工作的必要条件。 |
 | Medium | 架构 | `powerelf-data-governance/scripts/classify_offline_by_duration.py`（untracked） | SKILL.md 的"强制指令"和"工具命令"两节均以最高优先级指向 `scripts/classify_offline_by_duration.py`，但该文件为 **untracked**。若文件丢失，SKILL.md 的核心工作流即断裂。 | 立即 commit 该文件。 |
 | Medium | 代码级 | `lib/overview.py:57` | `_table_overview()` 中 `f"FROM \`{table}\`"` 使用反引号包裹表名，但 MONITOR_TABLES 的 key `dsm_dfr_srvrds_srhrds` 是一个非标准表名（无 st_ 前缀、含连续下划线），反引号虽可保护但不如在 SQL 层用白名单安全。且 `_table_overview()` 接受任意 `table: str` 参数，未做输入验证。 | 在函数入口添加 `if table not in MONITOR_TABLES: raise ValueError` 守卫。 |
 | Medium | 代码级 | `lib/report.py:389` | `cur.execute(f"""{union_parts}""")` 中 union_parts 由 Python f-string 拼接而成，直接传给 `cur.execute()` 无参数化。虽然表名来自硬编码字典（不是用户输入），但此模式若被复制到其他上下文则危险。 | 添加注释 `# SAFE: table names from hardcoded dict, not user input`；长期改为参数化。 |
+| Medium | 代码级 | `impl/offline_detector.py:91` | `DEFAULT_THRESHOLDS` 使用 st_type 代码（如 `"SP": 360`）作为 key，但 `run_detection()` 中 `threshold = DEFAULT_THRESHOLDS.get(table, 60)` 用表名（如 `st_pressure_r`）查找 — key 类型不匹配（SP vs st_pressure_r），永远 fallback 到默认 60 分钟。SP 类型设备（水位站）应有 360 分钟阈值，但实际使用 60 分钟，导致**假离线告警频率高 6 倍**。这是一个静默功能 bug，不影响程序运行但产出错误结果。 | 确认是否真有 SP 类型设备在生产中运行；若有则升 High。最小修复：键从 st_type 改为表名，或加一个归一化层（table→st_type→threshold）。 |
 
 ---
 
@@ -60,7 +61,6 @@
 | Low | 架构 | `algorithms/` 目录 | SKILL.md 未直接引用 algorithms/ 目录中的任何文件（0 次 grep 命中）。algorithms/ 的 5 个文件仅被 rules/*.md 间接引用。Agent 的按需加载流程中可能永远不会读到 algorithms/，使其成为"死文档"。 | 在 SKILL.md 的"快速查找"表中添加 algorithms/ 入口。 |
 | Low | 文档-代码一致 | `SKILL.md` 全文 | SKILL.md 声明 `version: 2.0.0` 但无 changelog 或版本历史。结合 SKILL_OPTIMIZATION_PLAN.md 提到的"当前 731 行 → 目标 < 15KB"优化计划（untracked），版本号与实际内容的对应关系不明。 | 添加 changelog 段或在 evolution/ 中维护版本历史。 |
 | Low | SQL/Schema | `lib/writeback.py:117` | `create_offline_record()` INSERT 语句硬编码 `tenant_id = 1`。这是多租户框架的租户隔离列，硬编码意味着所有离线记录都归属 tenant 1，若实际部署有多租户则数据错乱。 | 从连接上下文或配置中读取 tenant_id；或添加注释说明"单租户部署，tenant_id 恒为 1"。 |
-| Low | 代码级 | `impl/offline_detector.py:91` | `DEFAULT_THRESHOLDS` 使用 `table` 名（如 `"SP": 360`）作为 key，但 `run_detection()` 中 `threshold = DEFAULT_THRESHOLDS.get(table, 60)` 用 table 名（如 `st_pressure_r`）查找 — key 不匹配（SP vs st_pressure_r），永远 fallback 到 60。 | 改为按 st_type 查找阈值，或在 CLI 层做 table→st_type 映射。 |
 
 ---
 
@@ -73,11 +73,11 @@
 | "禁止 conn.execute(" | overview.py + writeback.py 全程 raw pymysql | ❌ | SKILL.md 规定与实际 lib/ 实现矛盾 |
 | "每条 SQL 必须带 deleted = 0" | report.py:386 UNION ALL 无 deleted=0 | ❌ | 日报测站数虚高 |
 | MAD 阈值: 水位 3.0 / 雨量 5.0 / 渗压 4.0 / GNSS 3.5 / 流量 4.0 | anomaly_detector.py DEFAULT_THRESHOLDS 完全一致 | ✅ | |
-| 离线阈值: SP=360, 其他=60 | offline_detector.py DEFAULT_THRESHOLDS 一致（但 key 不匹配，见 Low #8） | ⚠️ | key 用 st_type 而非 table name |
+| 离线阈值: SP=360, 其他=60 | offline_detector.py DEFAULT_THRESHOLDS 一致（但 key 不匹配，见 Medium #10） | ⚠️ | key 用 st_type 而非 table name |
 | 评分四维度 35%+10%+40%+15% | scoring.py compute_equil_score 完全一致 | ✅ | 公式逐行对齐 |
 | 变化率阈值: 水位 5% / 渗压 3% / GNSS 2% / 流量 10% | anomaly_detector.py CHANGE_RATE_THRESHOLDS 完全一致 | ✅ | |
 | `scripts/classify_offline_by_duration.py` 为强制入口 | 文件存在但 untracked | ⚠️ | 功能正常，但未 commit |
-| `references/quick-reference.md` 等被 SKILL.md 引用 | 文件存在但全目录 untracked | ⚠️ | 14 文件均未 commit |
+| `references/quick-reference.md` 等被 SKILL.md 引用 | 文件存在但全目录 untracked | ⚠️ | 13 文件均未 commit |
 | algorithms/mad-algorithm.md 引用 | stub 指向 _shared/algorithms/mad.md | ⚠️ | rules/ 仍引用旧路径 |
 
 ---
