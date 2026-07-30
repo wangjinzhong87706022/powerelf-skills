@@ -8,7 +8,7 @@
 | 评审版本 | HEAD `dc312ac`（branch `review/2026-07-29-skills-deep`）；工作树 `_shared/lib/db.py` 和 `_shared/references/schema.md` 有未提交改动 |
 | 跟踪文件 | **24 文件**：`references/` 5 md + `algorithms/` 5 md + `rules/` 5 md + `evolution/` 3 md + `lib/` 3 py + `api-auth.md` 1 md + `bootstrap.sh` 1 sh + `hooks/block_raw_pymysql.py` 1 py |
 | 跟踪 LOC | **约 3,100 行**（references 1,503 + rules 497 + algorithms 430 + lib 421 + evolution 68 + hooks 87 + api-auth 40 + bootstrap 31） |
-| 未跟踪文件 | **14 文件 + 1 目录**：`check_st128*.py` ×5 + `report_*.py` ×2 + md 报告 ×7 + `hooks/__pycache__/` |
+| 未跟踪文件 | **15 文件 + 1 目录**：`check_st128*.py` ×5 + `report_*.py` ×2 + md 报告 ×8 + `hooks/__pycache__/` |
 | Python 编译 | ✅ 全部通过（`py_compile` 对 `lib/*.py` + `hooks/*.py` 无错误） |
 | 评审日期 | 2026-07-30 |
 | 评审人 | Claude (sub-agent, Task 6/6) |
@@ -30,7 +30,7 @@
 | # | 严重度 | 维度 | 文件:行 | 描述 | 建议 |
 |---|--------|------|---------|------|------|
 | H1 | **High** | 代码安全 + 架构 | `hooks/block_raw_pymysql.py:1-87` | **hook 代码完善但未在任何 settings.json 中配置——事实上是死代码**。`block_raw_pymysql.py` 实现了 `pre_tool_call` hook 接口（从 stdin 读 JSON → 扫描 command/code 中的 `pymysql.connect` 模式 → 输出 block/allow），代码质量高（87 行，`py_compile` 通过，覆盖了 terminal 和 execute_code 两种 tool_input 类型，还处理了 `cd` + 相对路径的文件读取）。但 `grep -r "block_raw_pymysql\|hooks/" .claude/` 返回空——**没有任何 `.claude/settings.json` 或 `settings.local.json` 配置 `pre_tool_call` hook 指向该文件**。`ls .claude/*.json` 仅有 `settings.local.json`，其中无 `hooks` 键。该 hook 的文档声称"2026-07-17 agent.log 实证：本地 27B 模型手写 pymysql.connect → 空密码/猎密码/连错库连环翻车"，说明它解决了一个真实痛点，但目前完全不生效。 | (a) 在 `.claude/settings.json` 中配置 `pre_tool_call` hook：`{"hooks": {"pre_tool_call": [{"matcher": "terminal|execute_code", "command": "python3 _shared/hooks/block_raw_pymysql.py"}]}}`；(b) 将 `hooks/` 目录纳入 git 跟踪（目前是 untracked）；(c) 补一个 README.md 说明 hook 的安装方式。 |
-| H2 | **High** | 文档一致性 | `_shared/rules/gate-pump-status.md:16-18` vs `_shared/references/schema.md:335-345` | **rules 与 schema.md 列定义冲突**。`_shared/rules/gate-pump-status.md` 的"闸门工情字段"表列出 `eq_id`(bigint, line 18) / `eq_code`(varchar, line 16) / `st_id`(bigint, line 17) 等列，且 `rei_pump_r` 字段表列出 20+ 列（含 `lx`/`lu`/`fan_run`/`fan_fault`/`ot`/`it`/`ul`/`al`/`extend`/`idstcd` 等）。但 schema.md 的 `rei_gate_r` DDL 仅 8 列（无 eq_id/eq_code），`rei_pump_r` DDL 仅 11 列（无 eq_id/eq_code/lx/lu/fan_run 等）。两个 _shared 文件对同一张表的列定义相差 2-3 倍。**影响**：monitor skill 同时引用这两个文件（rules 指针指向 _shared/rules，SKILL.md 引用 schema.md），agent 不知道该信谁。 | 与 B1 合并修复——用 `SHOW CREATE TABLE` 取真实 DDL，统一 schema.md 和 rules/ 的列定义。 |
+| H2 | **High** | 文档一致性 | `_shared/rules/gate-pump-status.md:16-18` vs `_shared/references/schema.md:335-345` | **rules 与 schema.md 列定义冲突**。`_shared/rules/gate-pump-status.md` 的"闸门工情字段"表列出 `eq_id`(bigint, line 18) / `eq_code`(varchar, line 16) / `st_id`(bigint, line 17) 等列，且 `rei_pump_r` 字段表列出 20+ 列（含 `lx`/`lu`/`fan_run`/`fan_fault`/`ot`/`it`/`ul`/`al`/`extend`/`idstcd` 等）。但 schema.md 的 `rei_gate_r` DDL 仅 8 列（无 eq_id/eq_code），`rei_pump_r` DDL 仅 13 列（无 eq_id/eq_code/lx/lu/fan_run 等）。两个 _shared 文件对同一张表的列定义相差 2-3 倍。**影响**：monitor skill 同时引用这两个文件（rules 指针指向 _shared/rules，SKILL.md 引用 schema.md），agent 不知道该信谁。 | 与 B1 合并修复——用 `SHOW CREATE TABLE` 取真实 DDL，统一 schema.md 和 rules/ 的列定义。 |
 
 ---
 
