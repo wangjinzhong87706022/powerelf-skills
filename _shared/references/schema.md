@@ -75,6 +75,121 @@
 
 ---
 
+## 📖 列名速查字典（全列 + 中文含义，2026-07-17 实测）
+
+> **写 SQL 前查列名的权威来源**。程序化取用调 `from db import columns; columns("表名")`（永远准确）；
+> 人工查阅用本表。★ = 检测主字段。框架列（`id`/`deleted`/`tenant_id`/`creator`/`create_time`/`updater`/`update_time`）
+> 每张业务表都有：`id`=主键、`deleted`=逻辑删除(查询必带`=0`)、`create_time`/`update_time`=审计时间(**非观测**)，下表不再重复列。
+
+### 监测表
+
+**st_rsvr_r**（水库水情，19.4 万行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间（分析窗口用这个，非 create_time） |
+| rz | decimal(8,3) | ★库水位(m) |
+| inq | decimal(10,3) | 入库流量(m³/s) |
+| otq | decimal(10,3) | 出库流量(m³/s) |
+| w | decimal(10,3) | 蓄水量(万m³) |
+| blrz | decimal(7,3) | 库下水位(m) |
+| inqdr | decimal(5,2) | 入库流量差 |
+| eq_id | bigint | ★关联键 → eq_equip_base.id |
+| st_id | bigint | 测站ID |
+| stcd | varchar(20) | 测站编码（**99.8% 空，勿用于 JOIN**） |
+| eq_code | varchar(20) | 设备编码 |
+
+**st_river_r**（河道水情，**本库 0 行空表，勿查**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| z | decimal(8,3) | ★河道水位(m) |
+| q | decimal(10,3) | 流量(m³/s) |
+| wptn | char(2) | 水势(4涨/5落/6平) |
+| eq_id | bigint | ★关联键 |
+
+**st_pptn_r**（雨量，26.1 万行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| p | decimal(5,1) | ★时段雨量(mm) |
+| dyp | decimal(5,1) | 日雨量(mm) |
+| cump | decimal(5,1) | 累计雨量(mm) |
+| dr | decimal(6,1) | 时段长(min) |
+| eq_id | bigint | ★关联键 |
+
+**st_pressure_r**（渗压，1835 行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| ext_pressure | decimal(11,5) | ★外水压力/渗压(kPa) |
+| water_pressure | decimal(11,5) | 孔隙水压力/测压管水位(m) |
+| ext_temperature | decimal(11,5) | 温度(℃) |
+| point_id | bigint | 测点ID |
+| section_id | bigint | 断面ID |
+| eq_id | bigint | ★关联键 |
+
+**st_percolation_r**（渗流，766 行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| percolation | decimal(11,5) | ★渗流量(L/s)，NOT NULL |
+| eq_id | bigint | ★关联键 |
+| stcd | varchar(20) | 测站编码（**92.2% 空，勿用于 JOIN**） |
+
+**dsm_dfr_srvrds_srhrds**（GNSS 位移，1.9 万行，⚠️**无 stcd 列，eq_id 是 int 非 bigint**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| wgs84_delta_h | double(20,4) | ★高程位移变化量(mm) |
+| wgs84_delta_x/y | double(20,4) | X/Y 向位移变化量(mm) |
+| wgs84_total_h/x/y | double(20,4) | 累计位移(mm) |
+| speed_gh | double(20,4) | ★高程位移速率(mm) |
+| speed_gx/gy | double(20,4) | X/Y 向位移速率(mm) |
+| eq_id | int | ★关联键（注意类型 int） |
+| point_id | int | 测点ID |
+
+### 设备 / 映射 / 治理表
+
+**eq_equip_base**（设备台账，149 台）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| id | bigint | ★主键（被各监测表 eq_id 引用） |
+| name | varchar(128) | ★设备名称 |
+| code | varchar(64) | ★设备编码（字符串，如 606K215001） |
+| type_flag | tinyint | ★设备类型标志 |
+| status | tinyint | ★状态(0离线/1在线/2异常) |
+| position | varchar(255) | 安装位置 |
+| manufacturer | varchar(128) | 厂商 |
+| st_base_id | bigint | 测站基础ID |
+
+**eq_business_equip_relation**（设备-业务映射，70 条）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| business_table | varchar(255) | ★业务表名（如 st_rsvr_r） |
+| eq_id | bigint | ★设备ID |
+| st_id | bigint | ★测站ID |
+| st_type | varchar(4) | ★站类型 |
+| frequency | int | ★采集频率(min) |
+| offline_threshold | int | ★离线阈值(min) |
+
+**eq_data_anomaly_record / eq_data_missing_record**（治理输出，时间列是 create_time 非 tm）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| equipment_code | bigint | ★设备编码 |
+| data_anomaly_datetime / data_missing_datetime | datetime | ★异常/缺失时间 |
+| table_name | varchar(255) | ★业务表名 |
+| fix_data_content / filled_data_content | json | ★修复/填充内容 |
+| whether_fix / whether_add | int | 是否已处理(0/1) |
+
+**dg_equip_offline**（离线阈值配置，⚠️**此表 tm 是阈值不是时间**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| st_type | varchar(4) | ★站类型 |
+| tm | varchar(4) | ★离线阈值(min)（不是时间！） |
+| frequency | varchar(4) | ★采集频率(min) |
+
+---
+
 ## 一、监测表（原始数据，12 类）
 
 ### 1.1 水文气象
