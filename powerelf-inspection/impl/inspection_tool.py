@@ -41,7 +41,7 @@ from registry import load_registry, get_builtin_registry, match_data_sources, co
 _ALLOWED_TABLES = {
     "st_river_r","st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
     "rei_gate_r","rei_pump_r","eq_equip_base","eq_equip_defect","ew_camera_info",
-    "srm_gnss_data_day","srm_robot_data_day","srm_illegal_acts",
+    "dsm_dfr_srvrds_srhrds","srm_robot_data_day","srm_illegal_acts",
 }
 _ALLOWED_TIME_FIELDS = {"tm", "create_time", "discovery_time", None}
 
@@ -225,7 +225,7 @@ def calc_inspection_quality(engine, start_date, end_date):
     """计算巡检质量评分（与 quality-assessment.md 分段评分模型一致）"""
     tasks = pd.read_sql(text("""
         SELECT id, name, status, plan_checknum, real_checknum,
-               plan_checkobj, real_checkobj, bad_num, check_percent,
+               plan_checkobj, real_objitem, bad_num, check_percent,
                plan_time, begin_time, end_time, exceed_time
         FROM business_check_task
         WHERE create_time BETWEEN :start AND :end
@@ -242,9 +242,9 @@ def calc_inspection_quality(engine, start_date, end_date):
     completion_rate = completed / total if total > 0 else 0
     timeliness_rate = 1 - (overtime / total) if total > 0 else 0
 
-    # 缺陷率使用 real_checkobj 作为分母（C2 修复）
+    # 缺陷率分母用 real_objitem（实测正确列名；旧代码误用不存在的 real_checkobj 致查询报错）
     total_defects = tasks['bad_num'].sum()
-    real_items = tasks['real_checkobj'].sum() if 'real_checkobj' in tasks.columns else 0
+    real_items = tasks['real_objitem'].sum() if 'real_objitem' in tasks.columns else 0
     defect_rate = _quality.compute_defect_discovery_rate(int(total_defects), int(real_items))
 
     def parse_percent(p):
@@ -352,7 +352,7 @@ def analyze_route_efficiency(engine):
     def parse_percent(p):
         try:
             return float(str(p).replace('%', '')) / 100
-        except:
+        except (ValueError, TypeError):
             return 0
 
     tasks['omission_rate'] = tasks['check_percent'].apply(parse_percent)
@@ -441,7 +441,7 @@ def demo_collect(engine, route_id):
                 "SELECT * FROM business_check_point WHERE id=:id", engine,
                 params={"id": int(point_id)}
             )
-        except:
+        except Exception:
             continue
         if point.empty:
             continue
@@ -457,7 +457,7 @@ def demo_collect(engine, route_id):
                 JOIN business_check_obj o ON o.type_id = t.id
                 WHERE o.point_id = :pid AND i.deleted = 0
             """, engine, params={"pid": int(point_id)})
-        except:
+        except Exception:
             continue
 
         for _, item in items.iterrows():

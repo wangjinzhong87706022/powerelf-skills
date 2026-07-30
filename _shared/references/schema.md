@@ -25,7 +25,7 @@
 | `deleted` | `BIT(1) DEFAULT b'0'` | 逻辑删除标志，查询**必须**带 `deleted = 0` |
 | `tenant_id` | `BIGINT DEFAULT 1` | 租户编号，多租户环境带 `tenant_id = ?` |
 | `eq_id` | `BIGINT` | **设备 id**（→ `eq_equip_base.id`）；**所有监测表都有**，不止渗压/GNSS |
-| `eq_code` | `VARCHAR(20) NOT NULL` | 设备编码（→ `eq_equip_base.code`）；NOT NULL |
+| `eq_code` | `VARCHAR(20)` | 设备编码（→ `eq_equip_base.code`）；**多数监测表有**（`rei_gate_r`/`rei_pump_r` 等），但墒情/白蚁表无此列——故设备关联统一走 `eq_id` |
 | `creator` / `create_time` / `updater` / `update_time` | 审计四件套 | 创建/更新人与时间 |
 | `project_id` | `BIGINT` | 工程 id（部分表） |
 
@@ -44,7 +44,7 @@
 
 历史文档对监测表与设备表的关联键说法不一，**实测（2026-07-16 全表复核）**结论如下：
 
-**所有监测表都同时具备 `eq_id`(BIGINT) 与 `eq_code`(varchar) 两列**，因此设备关联统一走 `eq_id`：
+**绝大多数监测表都同时具备 `eq_id` 与 `eq_code` 两列**（实测 2026-07-30：`rei_gate_r`/`rei_pump_r` 等有 `eq_code`，但 `st_soil_moisture_r`/`st_termite_monitor_r` **无 `eq_code`**；而 `eq_id` 所有监测表都有），因此设备关联**统一走 `eq_id`**：
 
 | 业务表 | 首选关联键 | 关联方式 | 检测字段 |
 |--------|-----------|----------|----------|
@@ -72,6 +72,121 @@
 | 设备类型列是 `type` | 实际是 **`type_flag`** |
 | 设备表有 `freq` 采集频率列 | 无；采集频率默认 **10 分钟** |
 | pymysql 用 `conn.execute(sql)` | 正确: **`conn.cursor().execute(sql)`** |
+
+---
+
+## 📖 列名速查字典（全列 + 中文含义，2026-07-17 实测）
+
+> **写 SQL 前查列名的权威来源**。程序化取用调 `from db import columns; columns("表名")`（永远准确）；
+> 人工查阅用本表。★ = 检测主字段。框架列（`id`/`deleted`/`tenant_id`/`creator`/`create_time`/`updater`/`update_time`）
+> 每张业务表都有：`id`=主键、`deleted`=逻辑删除(查询必带`=0`)、`create_time`/`update_time`=审计时间(**非观测**)，下表不再重复列。
+
+### 监测表
+
+**st_rsvr_r**（水库水情，19.4 万行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间（分析窗口用这个，非 create_time） |
+| rz | decimal(8,3) | ★库水位(m) |
+| inq | decimal(10,3) | 入库流量(m³/s) |
+| otq | decimal(10,3) | 出库流量(m³/s) |
+| w | decimal(10,3) | 蓄水量(万m³) |
+| blrz | decimal(7,3) | 库下水位(m) |
+| inqdr | decimal(5,2) | 入库流量差 |
+| eq_id | bigint | ★关联键 → eq_equip_base.id |
+| st_id | bigint | 测站ID |
+| stcd | varchar(20) | 测站编码（**99.8% 空，勿用于 JOIN**） |
+| eq_code | varchar(20) | 设备编码 |
+
+**st_river_r**（河道水情，**本库 0 行空表，勿查**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| z | decimal(8,3) | ★河道水位(m) |
+| q | decimal(10,3) | 流量(m³/s) |
+| wptn | char(2) | 水势(4涨/5落/6平) |
+| eq_id | bigint | ★关联键 |
+
+**st_pptn_r**（雨量，26.1 万行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| p | decimal(5,1) | ★时段雨量(mm) |
+| dyp | decimal(5,1) | 日雨量(mm) |
+| cump | decimal(5,1) | 累计雨量(mm) |
+| dr | decimal(6,1) | 时段长(min) |
+| eq_id | bigint | ★关联键 |
+
+**st_pressure_r**（渗压，1835 行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| ext_pressure | decimal(11,5) | ★外水压力/渗压(kPa) |
+| water_pressure | decimal(11,5) | 孔隙水压力/测压管水位(m) |
+| ext_temperature | decimal(11,5) | 温度(℃) |
+| point_id | bigint | 测点ID |
+| section_id | bigint | 断面ID |
+| eq_id | bigint | ★关联键 |
+
+**st_percolation_r**（渗流，766 行）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| percolation | decimal(11,5) | ★渗流量(L/s)，NOT NULL |
+| eq_id | bigint | ★关联键 |
+| stcd | varchar(20) | 测站编码（**92.2% 空，勿用于 JOIN**） |
+
+**dsm_dfr_srvrds_srhrds**（GNSS 位移，1.9 万行，⚠️**无 stcd 列，eq_id 是 int 非 bigint**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| tm | datetime | ★观测时间 |
+| wgs84_delta_h | double(20,4) | ★高程位移变化量(mm) |
+| wgs84_delta_x/y | double(20,4) | X/Y 向位移变化量(mm) |
+| wgs84_total_h/x/y | double(20,4) | 累计位移(mm) |
+| speed_gh | double(20,4) | ★高程位移速率(mm) |
+| speed_gx/gy | double(20,4) | X/Y 向位移速率(mm) |
+| eq_id | int | ★关联键（注意类型 int） |
+| point_id | int | 测点ID |
+
+### 设备 / 映射 / 治理表
+
+**eq_equip_base**（设备台账，149 台）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| id | bigint | ★主键（被各监测表 eq_id 引用） |
+| name | varchar(128) | ★设备名称 |
+| code | varchar(64) | ★设备编码（字符串，如 606K215001） |
+| type_flag | tinyint | ★设备类型标志 |
+| status | tinyint | ★状态(0离线/1在线/2异常) |
+| position | varchar(255) | 安装位置 |
+| manufacturer | varchar(128) | 厂商 |
+| st_base_id | bigint | 测站基础ID |
+
+**eq_business_equip_relation**（设备-业务映射，70 条）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| business_table | varchar(255) | ★业务表名（如 st_rsvr_r） |
+| eq_id | bigint | ★设备ID |
+| st_id | bigint | ★测站ID |
+| st_type | varchar(4) | ★站类型 |
+| frequency | int | ★采集频率(min) |
+| offline_threshold | int | ★离线阈值(min) |
+
+**eq_data_anomaly_record / eq_data_missing_record**（治理输出，时间列是 create_time 非 tm）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| equipment_code | bigint | ★设备编码 |
+| data_anomaly_datetime / data_missing_datetime | datetime | ★异常/缺失时间 |
+| table_name | varchar(255) | ★业务表名 |
+| fix_data_content / filled_data_content | json | ★修复/填充内容 |
+| whether_fix / whether_add | int | 是否已处理(0/1) |
+
+**dg_equip_offline**（离线阈值配置，⚠️**此表 tm 是阈值不是时间**）
+| 列名 | 类型 | 中文含义 |
+|------|------|---------|
+| st_type | varchar(4) | ★站类型 |
+| tm | varchar(4) | ★离线阈值(min)（不是时间！） |
+| frequency | varchar(4) | ★采集频率(min) |
 
 ---
 
@@ -217,30 +332,72 @@ CREATE TABLE st_flood_r (
 
 #### rei_gate_r — 闸门工情
 ```sql
-CREATE TABLE rei_gate_r (
-    st_id INT NOT NULL, tm DATETIME NOT NULL,
-    gtq     DECIMAL(10,2) COMMENT '流量(m³/s)',
-    gtophgt DECIMAL(5,2)  COMMENT '开启高度(m)',
-    gtopnum TINYINT       COMMENT '开启孔数',
-    status  TINYINT       COMMENT '闸门状态(1=开启/2=关闭/3=异常)',
-    stcd    VARCHAR(20)   COMMENT '站码',
-    slcd    VARCHAR(20)   COMMENT '闸码',
-    PRIMARY KEY (st_id, tm)
-);
+CREATE TABLE `rei_gate_r` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `creator` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户编号',
+  `eq_id` bigint DEFAULT NULL COMMENT '设备id',
+  `status` bit(1) NOT NULL COMMENT '闸门状态(0:关闭,1:开启)',
+  `tm` datetime DEFAULT NULL COMMENT '采集时间',
+  `msqmt` char(2) DEFAULT NULL COMMENT '测流方法编码',
+  `gtq` decimal(10,3) NOT NULL COMMENT '过闸流量(m³/s)',
+  `gtophgt` decimal(6,2) NOT NULL COMMENT '开启高度(m)',
+  `gtopnum` tinyint NOT NULL COMMENT '开启孔数',
+  `st_id` bigint NOT NULL COMMENT '测站id',
+  `slcd` char(18) NOT NULL COMMENT '水闸信息code',
+  `stcd` varchar(20) NOT NULL COMMENT '测站编码',
+  `eq_code` varchar(20) NOT NULL COMMENT '设备编码',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB COMMENT='闸门工情历史表';
 ```
+> 📌 实测校准（2026-07-30 `SHOW CREATE TABLE`）：主键为 `id`（非 `(st_id,tm)`），含 `deleted`/`tenant_id`/`eq_id`/`eq_code` 框架列；`status` 是 `bit(1)`（0=关闭/1=开启），**不是** TINYINT 三态。
 
 #### rei_pump_r — 泵站工情
 ```sql
-CREATE TABLE rei_pump_r (
-    st_id INT NOT NULL, tm DATETIME NOT NULL,
-    uab VARCHAR(10) COMMENT 'AB相电压', ubc VARCHAR(10) COMMENT 'BC相电压', uca VARCHAR(10) COMMENT 'CA相电压',
-    ia  VARCHAR(10) COMMENT 'A相电流', ib VARCHAR(10) COMMENT 'B相电流', ic VARCHAR(10) COMMENT 'C相电流',
-    p   VARCHAR(10) COMMENT '有功功率', freq VARCHAR(10) COMMENT '频率', speed VARCHAR(10) COMMENT '转速',
-    status TINYINT     COMMENT '运行状态(0=停止/1=运行/2=故障)',
-    angle  DECIMAL(5,1) COMMENT '叶片角度(°)',
-    PRIMARY KEY (st_id, tm)
-);
+CREATE TABLE `rei_pump_r` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `creator` varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户编号',
+  `uab` varchar(255) DEFAULT NULL COMMENT '电压Uab',
+  `ubc` varchar(255) DEFAULT NULL COMMENT '电压Ubc',
+  `uca` varchar(255) DEFAULT NULL COMMENT '电压Uca',
+  `ia` varchar(255) DEFAULT NULL COMMENT '电流Ia',
+  `ib` varchar(255) DEFAULT NULL COMMENT '电流Ib',
+  `ic` varchar(255) DEFAULT NULL COMMENT '电流Ic',
+  `p` varchar(255) DEFAULT NULL COMMENT '有功P',
+  `q` varchar(255) DEFAULT NULL COMMENT '无功Q',
+  `cos` varchar(255) DEFAULT NULL COMMENT '功率因数COS',
+  `status` bit(1) DEFAULT NULL COMMENT '运行状态(0:停机,1:运行)',
+  `lx` decimal(8,1) DEFAULT NULL COMMENT '冷却水流量(L/s)',
+  `lu` decimal(8,1) DEFAULT NULL COMMENT '冷却水压力(MPa)',
+  `fan_run` bit(1) DEFAULT NULL COMMENT '风机状态(0:停转,1:运转)',
+  `fan_fault` bit(1) DEFAULT NULL COMMENT '风机故障(0:正常,1:故障)',
+  `ot` decimal(8,1) DEFAULT NULL COMMENT '上游水温(℃)',
+  `it` decimal(8,1) DEFAULT NULL COMMENT '下游水温(℃)',
+  `freq` decimal(8,1) DEFAULT NULL COMMENT '机组频率(Hz)',
+  `ul` decimal(8,1) DEFAULT NULL COMMENT '励磁电压(V)',
+  `al` decimal(8,1) DEFAULT NULL COMMENT '励磁电流(A)',
+  `angle` decimal(8,1) DEFAULT NULL COMMENT '叶片角度(°)',
+  `speed` decimal(8,1) DEFAULT NULL COMMENT '机组转速(rpm)',
+  `extend` json DEFAULT NULL COMMENT '扩展字段',
+  `tm` datetime DEFAULT NULL COMMENT '采集时间',
+  `eq_id` bigint DEFAULT NULL COMMENT '设备id',
+  `st_id` bigint NOT NULL COMMENT '测站id',
+  `idstcd` char(18) NOT NULL COMMENT '机电排灌站代码',
+  `stcd` varchar(20) DEFAULT NULL COMMENT '测站编码',
+  `eq_code` varchar(20) DEFAULT NULL COMMENT '设备编码',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB COMMENT='泵站工情历史表';
 ```
+> 📌 实测校准（2026-07-30）：主键 `id`，含框架列；旧文档仅 13 列，实测 35 列（补 `q`/`cos`/`lx`/`lu`/`fan_run`/`fan_fault`/`ot`/`it`/`ul`/`al`/`extend` 等）；`status` 为 `bit(1)`。
 > ⚠️ 电气参数（uab/ubc/uca/ia/ib/ic/p/freq/speed）为 **varchar**，数值比较前需 CAST 或应用层转换
 
 ### 1.3 大坝安全
@@ -336,30 +493,70 @@ CREATE TABLE wq_pcp_d (
 
 #### st_soil_moisture_r — 墒情
 ```sql
-CREATE TABLE st_soil_moisture_r (
-    st_id INT NOT NULL, tm DATETIME NOT NULL,
-    soil_water10cm .. soil_water100cm DECIMAL(5,1) COMMENT '各深度含水量(%)',
-    soil_temp10cm  .. soil_temp100cm  DECIMAL(4,1) COMMENT '各深度温度(℃)',
-    ec                DECIMAL(8,2) COMMENT '电导率(uS/cm)',
-    ph                DECIMAL(3,1) COMMENT 'pH值',
-    tension           DECIMAL(6,2) COMMENT '张力(kPa)',
-    groundwater_depth DECIMAL(6,2) COMMENT '地下水位(m)',
-    soil_moist_evaluation VARCHAR(10) COMMENT '评价(正常/轻度/中度/严重干旱)',
-    PRIMARY KEY (st_id, tm)
-);
+CREATE TABLE `st_soil_moisture_r` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+  `tm` datetime NOT NULL COMMENT '监测时间',
+  `st_id` varchar(20) DEFAULT NULL COMMENT '测站id',
+  `eq_id` varchar(20) DEFAULT NULL COMMENT '设备id',
+  `point_id` varchar(20) DEFAULT NULL COMMENT '测点id',
+  `soil_water10cm` decimal(6,2) DEFAULT NULL COMMENT '10cm土层含水量',
+  `soil_water20cm` decimal(6,2) DEFAULT NULL COMMENT '20cm土层含水量',
+  `soil_water30cm` decimal(6,2) DEFAULT NULL COMMENT '30cm土层含水量',
+  `soil_water60cm` decimal(6,2) DEFAULT NULL COMMENT '60cm土层含水量',
+  `soil_water100cm` decimal(6,2) DEFAULT NULL COMMENT '100cm土层含水量',
+  `soil_temp10cm` decimal(6,2) DEFAULT NULL COMMENT '10cm土层温度',
+  `soil_temp20cm` decimal(6,2) DEFAULT NULL COMMENT '20cm土层温度',
+  `soil_temp30cm` decimal(6,2) DEFAULT NULL COMMENT '30cm土层温度',
+  `soil_temp60cm` decimal(6,2) DEFAULT NULL COMMENT '60cm土层温度',
+  `soil_temp100cm` decimal(6,2) DEFAULT NULL COMMENT '100cm土层温度',
+  `ec` decimal(6,2) DEFAULT NULL COMMENT '电导率(μS/cm)',
+  `ph` decimal(6,2) DEFAULT NULL COMMENT '酸碱度',
+  `p` decimal(6,2) DEFAULT NULL COMMENT '有效磷(mg/kg)',
+  `n` decimal(6,2) DEFAULT NULL COMMENT '全氮/有效氮(mg/kg)',
+  `k` decimal(6,2) DEFAULT NULL COMMENT '有效钾(mg/kg)',
+  `tension` decimal(6,2) DEFAULT NULL COMMENT '张力(kPa)',
+  `heat_flux` decimal(6,2) DEFAULT NULL COMMENT '热通量(W/m²)',
+  `groundwater_depth` decimal(6,2) DEFAULT NULL COMMENT '地下水埋深(m)',
+  `period_precipitation` decimal(6,2) DEFAULT NULL COMMENT '时段降水量(mm)',
+  `crop_name` varchar(20) DEFAULT NULL COMMENT '主要作物名称',
+  `soil_moist_evaluation` varchar(10) DEFAULT NULL COMMENT '墒情评价(适宜/不足/轻中重度干旱)',
+  `remark` varchar(200) DEFAULT NULL COMMENT '备注',
+  `creator` bigint DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` bigint DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB COMMENT='土壤墒情实时监测记录表';
 ```
+> 📌 实测校准（2026-07-30）：主键 `id`；`st_id`/`eq_id`/`point_id` 为 **varchar(20)**（非 bigint）；**本表无 `eq_code`**（设备关联只能走 `eq_id`，见铁律例外）。
 
 #### st_termite_monitor_r — 白蚁
 ```sql
-CREATE TABLE st_termite_monitor_r (
-    st_id INT NOT NULL, tm DATETIME NOT NULL,
-    termite_species VARCHAR(50) COMMENT '蚁种',
-    pest_density    TINYINT     COMMENT '密度等级(0-4)',
-    damage_level    TINYINT     COMMENT '危害等级',
-    check_result    VARCHAR(20) COMMENT '检查结果(无白蚁/发现/疑似痕迹)',
-    PRIMARY KEY (st_id, tm)
-);
+CREATE TABLE `st_termite_monitor_r` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `tm` datetime NOT NULL COMMENT '监测时间',
+  `st_id` varchar(25) NOT NULL COMMENT '测站id',
+  `eq_id` varchar(25) NOT NULL COMMENT '设备id',
+  `point_id` varchar(25) NOT NULL COMMENT '测点id',
+  `termite_species` varchar(30) DEFAULT '' COMMENT '白蚁种类(GB/T 31755-2015)',
+  `pest_density` tinyint DEFAULT '0' COMMENT '虫口密度等级0-4(GB/T 33668-2017)',
+  `damage_level` varchar(10) DEFAULT '' COMMENT '危害等级(无/轻度/中度/重度)',
+  `damage_range` varchar(50) DEFAULT '' COMMENT '危害范围(50cm范围)',
+  `check_result` varchar(10) NOT NULL COMMENT '监测结果(未发现/发现/疑似痕迹)',
+  `dispose_suggest` varchar(100) DEFAULT '' COMMENT '处置建议',
+  `remark` varchar(200) DEFAULT '' COMMENT '备注',
+  `creator` bigint DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` bigint DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` bigint NOT NULL DEFAULT '1' COMMENT '租户编号',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB COMMENT='白蚁实时监测记录表';
 ```
+> 📌 实测校准（2026-07-30）：主键 `id`；`st_id`/`eq_id`/`point_id` 为 **varchar(25)**；**本表无 `eq_code`**；`damage_level` 是 **varchar(10)**（非 TINYINT）。
 
 ---
 

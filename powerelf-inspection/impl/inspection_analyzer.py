@@ -32,6 +32,8 @@ sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "
 import anomaly as _anomaly
 sys.path = _sys_path_orig
 
+from registry import _validate_identifiers  # P1-5: 标识符白名单校验（防 SQL 注入）
+
 try:
     import pandas as pd
     import numpy as np
@@ -120,7 +122,8 @@ def get_registry_threshold(thresholds, source_table, path, default=None):
 
 def read_sensor_data(engine, table, fields, st_id=None, days=30, time_field="tm", limit=20000):
     """读取传感器数据"""
-    where_parts = [f"{time_field} >= NOW()-INTERVAL :days DAY"]
+    _validate_identifiers(table, fields, time_field)  # P1-5: 标识符白名单校验（防注入）
+    where_parts = [f"{time_field} >= NOW()-INTERVAL :days DAY", "deleted = 0"]  # P1-1: 铁律 deleted=0
     params = {"days": days, "limit": limit}
     if st_id:
         where_parts.append("st_id = :st_id")
@@ -412,8 +415,6 @@ def analyze_pressure(engine, days=30, thresholds=None):
                     "message": f"渗压计{st_id}: 统计异常 z_score={_r['score']:.1f} (当前{wp:.2f}kPa, 中位数{_r['median']:.2f}kPa)",
                     "detail": "偏离历史分布，需人工确认"
                 })
-                        "detail": "偏离历史分布，需人工确认"
-                    })
 
     if not findings:
         findings.append({"level": "OK", "message": "渗压正常", "detail": f"分析{len(df['st_id'].unique())}个测站"})
@@ -451,20 +452,15 @@ def analyze_percolation(engine, days=30):
                     })
                     break  # 只报一次
 
-        # 统计异常（稳健 MAD 替换 2-sigma）
+        # 统计异常（委托 lib/anomaly.mad_anomaly；P2-11：消除重复实现 + 修 perc_values.values 潜在 AttributeError）
         if len(perc_values) >= 10:
-            _perc = perc_values.values
-            _median = float(np.median(_perc))
-            _mad = float(np.median(np.abs(_perc - _median))) * 1.4826
-            if _mad > 0:
-                latest = float(_perc[-1])
-                _z = abs(latest - _median) / _mad
-                if _z > 3.0:
-                    findings.append({
-                        "level": "WARNING",
-                        "message": f"渗流计{st_id}: 渗流量{latest:.3f}L/s MAD统计异常 z={_z:.1f} (中位数{_median:.3f})",
-                        "detail": "偏离历史分布，需确认"
-                    })
+            _r = _anomaly.mad_anomaly(perc_values.tolist(), threshold=3.0, min_samples=10)
+            if _r["is_anomaly"]:
+                findings.append({
+                    "level": "WARNING",
+                    "message": f"渗流计{st_id}: 渗流量{float(perc_values[-1]):.3f}L/s MAD统计异常 z={_r['score']:.1f} (中位数{_r['median']:.3f})",
+                    "detail": "偏离历史分布，需确认"
+                })
 
     if not findings:
         findings.append({"level": "OK", "message": "渗流正常", "detail": f"分析{len(df['st_id'].unique())}个测站"})

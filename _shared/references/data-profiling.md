@@ -395,9 +395,8 @@ print(result["flags"])               # 准确性红旗列表
 
 `profiler.py` 内置白名单，防止误操作生产库：
 
-- **允许表**：`st_rsvr_r`、`st_river_r`、`st_pptn_r`、`st_pressure_r`、`st_percolation_r`、
-  `st_deformation_r`、`st_gnss_r`、`st_seepage_r`、`st_rain_r`、`st_wind_r`、`st_temp_r`、
-  `st_strlevel_r`、`st_strain_r`、`st_tilt_r`、`st_environment_r`
+- **允许表**：`st_rsvr_r`、`st_river_r`、`st_pptn_r`、`st_pressure_r`、`st_percolation_r`、`dsm_dfr_srvrds_srhrds`（GNSS）
+  （旧文档曾列 `st_deformation_r`/`st_gnss_r`/`st_seepage_r` 等 schema.md 不存在的幽灵表名，已在 `profiler.py` 删除，权威清单见 `impl/profiler.py` 与 `_shared/lib/db.py::ALLOWED_TABLES`）
 - **允许字段**：`rz`、`z`、`p`、`water_pressure`、`ext_pressure`、`percolation`、
   `wgs84_delta_h`、`inq`、`otq`、`temperature`、`humidity`、`wind_speed`、`wind_direction`、
   `strain`、`tilt_x`、`tilt_y`、`displacement`

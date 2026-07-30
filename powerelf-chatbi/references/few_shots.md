@@ -275,11 +275,11 @@ SELECT s.name AS 站名,
        soil_moist_evaluation AS 墒情评价,
        r.tm AS 采集时间
 FROM (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY stcd ORDER BY tm DESC) AS rn
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY st_id ORDER BY tm DESC) AS rn
   FROM st_soil_moisture_r
   WHERE deleted = 0 AND tenant_id = 1
 ) r
-JOIN att_st_base s ON r.stcd = s.code
+JOIN att_st_base s ON r.st_id = s.id
 WHERE r.rn = 1 AND s.deleted = 0
 ```
 
@@ -294,7 +294,7 @@ SELECT s.name AS 站名, r.termite_species AS 蚁种,
        r.pest_density AS 密度等级, r.damage_level AS 危害等级,
        r.check_result AS 检查结果, r.tm AS 监测时间
 FROM st_termite_monitor_r r
-JOIN att_st_base s ON r.stcd = s.code
+JOIN att_st_base s ON r.st_id = s.id
 WHERE r.check_result LIKE '%发现%'
   AND r.deleted = 0 AND s.deleted = 0
   AND r.tenant_id = 1

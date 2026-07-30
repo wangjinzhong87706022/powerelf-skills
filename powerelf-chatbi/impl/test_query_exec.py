@@ -23,7 +23,10 @@ def test_readonly_url_uses_readonly_creds(monkeypatch):
 
 
 def test_readonly_url_falls_back_to_main(monkeypatch):
-    """层1 降级：未配只读账号时，后备主账号（告警由调用方/部署保证）。"""
+    """层1 降级：readonly 凭证全缺（env + .env 文件）时，后备主账号。"""
+    import db
+    # 基线 db.py 会读 ~/.hermes/.env；清空 _FILE_ENV 以模拟"无 readonly 凭证"，测试降级路径
+    monkeypatch.setattr(db, "_FILE_ENV", {})
     monkeypatch.delenv("POWERELF_DB_READONLY_USER", raising=False)
     monkeypatch.delenv("POWERELF_DB_READONLY_PASSWORD", raising=False)
     monkeypatch.setenv("POWERELF_DB_USER", "root")
@@ -77,6 +80,27 @@ def test_reject_truncate():
     with pytest.raises(ValueError):
         validate_readonly("TRUNCATE TABLE t")
 
+# --- P0-3：DoS + 文件写出向量（SELECT 形态，靠关键字黑名单拦截）---
+def test_reject_sleep_dos():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT SLEEP(5)")
+
+def test_reject_benchmark_dos():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT BENCHMARK(1000000, MD5('x'))")
+
+def test_reject_into_outfile():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT * FROM st_rsvr_r INTO OUTFILE '/tmp/x'")
+
+def test_reject_into_dumpfile():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT * FROM st_rsvr_r INTO DUMPFILE '/tmp/x'")
+
 # --- 层2：合法 SELECT / CTE ---
 def test_accept_simple_select():
     out = validate_readonly("SELECT * FROM st_rsvr_r")
@@ -128,6 +152,47 @@ def test_preserve_existing_limit():
 def test_injected_limit_uses_custom_max():
     out = validate_readonly("SELECT * FROM st_rsvr_r", limit=500)
     assert "500" in out
+
+# --- P1-8：已有 LIMIT 超上限 → clamp 到 MAX_LIMIT ---
+def test_clamp_oversized_limit():
+    out = validate_readonly("SELECT * FROM st_rsvr_r LIMIT 999999999")
+    assert "999999999" not in out
+    assert str(MAX_LIMIT) in out  # 被 clamp 到上限
+
+# --- P1-10：反引号绕过系统库黑名单（`mysql`.`user`）---
+def test_reject_backtick_schema_bypass():
+    import pytest
+    with pytest.raises(ValueError, match="系统库"):
+        validate_readonly("SELECT * FROM `mysql`.`user`")
+
+# --- P1-11：层6(超时)/层7(只读事务) 执行时下发 SET SESSION（mock，无 DB）---
+def test_l6_l7_set_readonly_and_timeout(monkeypatch):
+    executed = []
+
+    class FakeResult:
+        def keys(self):
+            return ["c"]
+        def fetchmany(self, n):
+            return []
+
+    class FakeConn:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def execute(self, stmt):
+            executed.append(str(stmt).upper())
+            return FakeResult()  # 主查询需要一个 result 对象
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConn()
+
+    import query_exec
+    monkeypatch.setattr(query_exec, "create_engine", lambda *a, **k: FakeEngine())
+    query_exec.execute("SELECT 1 AS c", "mysql+pymysql://u:p@h/d")
+    assert any("READ ONLY" in s for s in executed), f"L7 未下发只读事务: {executed}"
+    assert any("MAX_EXECUTION_TIME" in s for s in executed), f"L6 未下发超时: {executed}"
 
 # --- 空 SQL ---
 def test_reject_empty_sql():
