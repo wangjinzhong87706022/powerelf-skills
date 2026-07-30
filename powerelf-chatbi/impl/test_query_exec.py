@@ -77,6 +77,27 @@ def test_reject_truncate():
     with pytest.raises(ValueError):
         validate_readonly("TRUNCATE TABLE t")
 
+# --- P0-3：DoS + 文件写出向量（SELECT 形态，靠关键字黑名单拦截）---
+def test_reject_sleep_dos():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT SLEEP(5)")
+
+def test_reject_benchmark_dos():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT BENCHMARK(1000000, MD5('x'))")
+
+def test_reject_into_outfile():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT * FROM st_rsvr_r INTO OUTFILE '/tmp/x'")
+
+def test_reject_into_dumpfile():
+    import pytest
+    with pytest.raises(ValueError, match="写操作关键字"):
+        validate_readonly("SELECT * FROM st_rsvr_r INTO DUMPFILE '/tmp/x'")
+
 # --- 层2：合法 SELECT / CTE ---
 def test_accept_simple_select():
     out = validate_readonly("SELECT * FROM st_rsvr_r")

@@ -43,6 +43,8 @@ FORBIDDEN_KEYWORDS = frozenset({
     "insert", "update", "delete", "drop", "alter", "create",
     "truncate", "grant", "revoke", "replace", "merge",
     "call", "load", "handler", "rename", "lock", "unlock",
+    # DoS + 文件写出向量：sleep/benchmark 耗时函数；outfile/dumpfile 写服务器文件
+    "sleep", "benchmark", "outfile", "dumpfile",
 })
 SYSTEM_SCHEMAS = frozenset({
     "mysql", "information_schema", "performance_schema", "sys",

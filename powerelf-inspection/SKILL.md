@@ -9,7 +9,7 @@ metadata:
   hermes:
     tags: [inspection, anomaly-detection, water-conservancy, dam-safety]
     category: industrial
-    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-monitor]
+    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-monitor, powerelf-chatbi]
 ---
 
 # 水利工程智能巡检智能体

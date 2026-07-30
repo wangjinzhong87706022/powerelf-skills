@@ -8,7 +8,7 @@ platforms: [linux, windows, macos]
 metadata:
   hermes:
     tags: [water-conservancy, real-time-monitoring, sensor, reservoir, dam, gnss]
-    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection]
+    related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection, powerelf-chatbi]
 prerequisites:
   env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
 ---

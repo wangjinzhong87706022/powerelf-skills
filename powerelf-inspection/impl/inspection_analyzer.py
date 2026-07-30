@@ -412,8 +412,6 @@ def analyze_pressure(engine, days=30, thresholds=None):
                     "message": f"渗压计{st_id}: 统计异常 z_score={_r['score']:.1f} (当前{wp:.2f}kPa, 中位数{_r['median']:.2f}kPa)",
                     "detail": "偏离历史分布，需人工确认"
                 })
-                        "detail": "偏离历史分布，需人工确认"
-                    })
 
     if not findings:
         findings.append({"level": "OK", "message": "渗压正常", "detail": f"分析{len(df['st_id'].unique())}个测站"})

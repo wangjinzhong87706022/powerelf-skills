@@ -8,7 +8,7 @@ platforms: [linux, windows, macos]
 metadata:
   hermes:
     tags: [water-conservancy, early-warning, alarm, notification, threshold]
-    related_skills: [powerelf-data-governance, powerelf-monitor]
+    related_skills: [powerelf-data-governance, powerelf-monitor, powerelf-inspection, powerelf-chatbi]
 prerequisites:
   env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
 ---
@@ -16,6 +16,37 @@ prerequisites:
 # 预警系统 Skill v2
 
 水利工程预警规则引擎。规则内嵌，Agent 可独立执行预警判断。
+
+## 适用场景
+
+本 skill 适用于：
+- **阈值预警**：水位/流量/雨量越限判定（Ⅰ~Ⅳ级动态等级）
+- **开关量/状态变化预警**：闸门启闭、泵组运行状态翻转
+- **大坝安全预警**：多测点或关系触发（渗压/位移/裂缝）
+- **趋势预警**：连续上升/位移速率异常
+- **视频 AI 报警**接入与**通知分发**（沉默期/升级/多渠道）
+
+## When NOT to Use
+
+| 你想要的 | 应使用 |
+|---|---|
+| 某站**当前**实时值、趋势看盘 | `powerelf-monitor` |
+| 数据质量（异常/缺失/离线检测、评分、插值） | `powerelf-data-governance` |
+| 离线巡检回顾、日报、复合工况、质量评分 | `powerelf-inspection` |
+| 纯数据查询 / "某站水位是多少" | `powerelf-chatbi` |
+
+## Related Skills
+
+- `powerelf-monitor`：实时看盘 → 触发阈值后转本 skill 判定告警等级（monitor 的"阈值/告警判定"指向 early-warning，形成路由闭环）
+- `powerelf-data-governance`：数据质量治理（异常值/缺失会影响预警准确性）
+- `powerelf-inspection`：巡检"告警确认"环节回调 early-warning
+- `powerelf-chatbi`：SQL 查询"哪些设备有告警"也走 early-warning 判定
+
+## 共享引用（_shared）
+
+- `_shared/references/schema.md`：监测表 DDL 与 `ew_info_rules` / `ew_notice_tactics` 字段定义
+- `_shared/references/api-auth.md`：REST API 鉴权头（`tenant-id` / `Authorization`）
+- `_shared/algorithms/`、`_shared/rules/`：通用算法与规则指针
 
 ## 核心数据表
 
