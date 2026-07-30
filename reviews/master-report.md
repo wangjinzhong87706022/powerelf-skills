@@ -15,13 +15,13 @@
 
 | Skill | Blocker | High | Medium | Low | 加权分 (B×4+H×3+M×2+L×1) |
 |-------|:-------:|:----:|:------:|:---:|:-------------------------:|
-| powerelf-data-governance | 0 | 4 | 10 | 8 | **32** |
-| powerelf-inspection | 1 | 5 | 7 | 7 | **40** |
-| powerelf-early-warning | 0 | 1 | 3 | 8 | **17** |
+| powerelf-data-governance | 0 | 4 | 10 | 8 | **40** |
+| powerelf-inspection | 1 | 5 | 8 | 7 | **42** |
+| powerelf-early-warning | 0 | 1 | 3 | 7 | **16** |
 | powerelf-monitor | 0 | 1 | 4 | 5 | **16** |
 | powerelf-chatbi | 0 | 3 | 8 | 5 | **30** |
 | _shared | 1 | 2 | 5 | 3 | **23** |
-| **合计** | **2** | **16** | **37** | **36** | **158** |
+| **合计** | **2** | **16** | **38** | **35** | **167** |
 
 ### 0.2 Per-Skill 质量评分（0-10）
 
@@ -158,7 +158,7 @@
 
 ## §3 系统性 Medium（按主题聚类）
 
-共 **37 个 Medium**，归为 **7 个主题类**。
+共 **38 个 Medium**，归为 **7 个主题类**。
 
 ### 主题 1: "自我进化"机制形式化无运行证据（5+ skills 共性）
 
@@ -303,6 +303,8 @@ chatbi 代码密度最高（344 行 Python）：
 ## §5 跨报告关联矩阵
 
 下表标记每个跨报告系统性问题的涉及 skill（● = 直接 finding，○ = 间接受影响，· = 不受影响）：
+
+> **行数说明**：本矩阵共 **14 行** = **11 个跨报告系统性模式**（4 个 High 根因类 A/B/C/D + 5 个 Medium 主题 1/2/3/4/6 + 2 个本次新发现 version-footer / hook 死代码）+ **2 个 Blocker 条目**（B-1 inspection 编译错误、B-2 schema 铁律矛盾）+ **1 个仅单 skill 的 High**（F early-warning 路由表缺失，为纵览完整一并列入）。§0/§8.1 所称"11 个跨报告系统性模式"即前 11 行。
 
 | 系统性问题 | governance | inspection | early-warning | monitor | chatbi | _shared |
 |-----------|:----------:|:----------:|:-------------:|:-------:|:------:|:-------:|
