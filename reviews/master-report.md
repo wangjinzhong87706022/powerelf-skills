@@ -3,7 +3,7 @@
 - **评审日期**：2026-07-29 ~ 2026-07-30
 - **评审版本**：HEAD `e99d2ed` → `b75ecce`（branch `review/2026-07-29-skills-deep`），working tree dirty（`_shared/lib/db.py`、`_shared/references/schema.md` 有未提交改动）
 - **评审范围**：5 主 skill + `_shared/` 共享层
-- **总 finding 数**：**91**（2 Blocker + 16 High + 37 Medium + 36 Low）
+- **总 finding 数**：**91**（2 Blocker + 16 High + 38 Medium + 35 Low）
 - **子报告数**：6 份（见 §7 索引）
 - **评审人**：Claude（Task 1-6 子 agent + Task 7 opus 综合）
 
@@ -27,12 +27,12 @@
 
 | Skill | 评分 | 缺陷密度 (findings/kLOC) | 关键因素 |
 |-------|:----:|:------------------------:|----------|
-| powerelf-early-warning | **7.5** | 15.3 | 纯文档，0 代码风险；主要扣分：路由表完全缺失（H1） |
+| powerelf-early-warning | **7.5** | 14.0 | 纯文档，0 代码风险；主要扣分：路由表完全缺失（H1） |
 | powerelf-monitor | **7.0** | 42.6 | 纯文档，路由表最完整；扣分：frontmatter 不一致 + tags 覆盖不足 |
 | powerelf-chatbi | **6.5** | 13.6 | 7 层安全护栏优秀；扣分：DoS/文件写出安全缺口 + JOIN 键错误 |
 | powerelf-data-governance | **5.5** | 4.6 | 评分公式 doc-code 完美一致；扣分：测试覆盖 18% + SQL f-string 注入面 + 幽灵表名 |
 | _shared | **5.5** | 3.6 | db.py 工程质量高；扣分：schema.md 铁律自相矛盾（B1）+ hook 死代码 |
-| powerelf-inspection | **4.5** | 4.6 | lib/ 内核层质量高；**严重扣分**：Blocker 编译错误（整个引擎不可用）+ 裸 except + 质量评分分母错误 |
+| powerelf-inspection | **4.5** | 4.8 | lib/ 内核层质量高；**严重扣分**：Blocker 编译错误（整个引擎不可用）+ 裸 except + 质量评分分母错误 |
 
 ### 0.3 正面发现摘要
 
@@ -485,7 +485,7 @@ chatbi 代码密度最高（344 行 Python）：
 
 ### 8.1 Executive Summary
 
-本次评审覆盖 5 个主 skill + `_shared/` 共享层，共发现 **91 个问题**（2 Blocker + 16 High + 37 Medium + 36 Low），识别出 **11 个跨报告系统性模式**。
+本次评审覆盖 5 个主 skill + `_shared/` 共享层，共发现 **91 个问题**（2 Blocker + 16 High + 38 Medium + 35 Low），识别出 **11 个跨报告系统性模式**。
 
 **仓库整体健康度**：架构设计良好（单一事实源、7 层护栏、纯函数内核），但 **实现与文档之间存在系统性脱节**。核心矛盾是：文档层面声称的纪律（deleted=0 铁律、禁止 raw pymysql、铁律框架列）在代码层面未被严格执行；同时"自我进化"机制虽有完善的格式模板，但 0 次实际触发。
 
@@ -533,8 +533,8 @@ chatbi 代码密度最高（344 行 Python）：
 | # | 子报告 | Findings | 路径 |
 |---|--------|:--------:|------|
 | 1 | governance | 22 (0B/4H/10M/8L) | `reviews/review-powerelf-data-governance.md` |
-| 2 | inspection | 20 (1B/5H/7M/7L) | `reviews/review-powerelf-inspection.md` |
-| 3 | early-warning | 12 (0B/1H/3M/8L) | `reviews/review-powerelf-early-warning.md` |
+| 2 | inspection | 21 (1B/5H/8M/7L) | `reviews/review-powerelf-inspection.md` |
+| 3 | early-warning | 11 (0B/1H/3M/7L) | `reviews/review-powerelf-early-warning.md` |
 | 4 | monitor | 10 (0B/1H/4M/5L) | `reviews/review-powerelf-monitor.md` |
 | 5 | chatbi | 16 (0B/3H/8M/5L) | `reviews/review-powerelf-chatbi.md` |
 | 6 | _shared | 11 (1B/2H/5M/3L) | `reviews/review-shared.md` |
