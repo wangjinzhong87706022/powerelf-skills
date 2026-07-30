@@ -30,9 +30,9 @@
 | powerelf-early-warning | **7.5** | 14.0 | 纯文档，0 代码风险；主要扣分：路由表完全缺失（H1） |
 | powerelf-monitor | **7.0** | 42.6 | 纯文档，路由表最完整；扣分：frontmatter 不一致 + tags 覆盖不足 |
 | powerelf-chatbi | **6.5** | 13.6 | 7 层安全护栏优秀；扣分：DoS/文件写出安全缺口 + JOIN 键错误 |
-| powerelf-data-governance | **5.5** | 4.6 | 评分公式 doc-code 完美一致；扣分：测试覆盖 18% + SQL f-string 注入面 + 幽灵表名 |
+| powerelf-data-governance | **5.5** | 3.1 | 评分公式 doc-code 完美一致；扣分：测试覆盖 18% + SQL f-string 注入面 + 幽灵表名 |
 | _shared | **5.5** | 3.6 | db.py 工程质量高；扣分：schema.md 铁律自相矛盾（B1）+ hook 死代码 |
-| powerelf-inspection | **4.5** | 4.8 | lib/ 内核层质量高；**严重扣分**：Blocker 编译错误（整个引擎不可用）+ 裸 except + 质量评分分母错误 |
+| powerelf-inspection | **4.5** | 4.9 | lib/ 内核层质量高；**严重扣分**：Blocker 编译错误（整个引擎不可用）+ 裸 except + 质量评分分母错误 |
 
 ### 0.3 正面发现摘要
 
@@ -73,7 +73,7 @@
 
 ## §2 系统性 High（跨报告 High 列表，按根因去重）
 
-共 **16 个 High**，去重后归为 **6 个根因类**。
+共 **16 个 High**，去重后归为 **6 个根因类**（注：为呈现共性，部分类纳入相关 Medium / 实证观察，并非每行均为独立 High finding；各类标题已标注实际 High 计数）。
 
 ### 根因类 A: SQL 安全 defense-in-depth 缺口（4 个 High）
 
@@ -86,15 +86,14 @@
 
 **共性**：5 个 skill 中 3 个有代码的 skill（governance / inspection / chatbi）都存在 SQL 消毒缺口。chatbi 的 7 层护栏最严密但仍有 4 个遗漏词；governance 和 inspection 的 lib/ 层缺乏与 impl/ 层同等级的白名单防护。
 
-### 根因类 B: 查询缺失 `deleted=0` 过滤（3 个 High）
+### 根因类 B: 查询缺失 `deleted=0` 过滤（2 个 High）
 
 | 子报告 | Finding | 描述 |
 |--------|---------|------|
 | governance | H1 | `lib/report.py:386` UNION ALL 无 `WHERE deleted=0`（日报测站数虚高） |
 | inspection | H1 | `read_sensor_data()` 全量传感器查询缺失 `deleted=0`（9 个分析函数受影响） |
-| inspection | H2 | 质量评分缺陷率分母用错（`real_checkobj` vs `real_objitem`，虚高 3-10 倍） |
 
-**共性**：schema.md 铁律第 2 条"必须 `WHERE deleted=0`"，但 2 个最大 skill 的核心查询函数都遗漏了。这是文档纪律与代码实践脱节的典型案例。
+**共性**：schema.md 铁律第 2 条"必须 `WHERE deleted=0`"，但 2 个最大 skill 的核心查询函数都遗漏了。这是文档纪律与代码实践脱节的典型案例。（inspection H2 质量评分分母 bug 与 deleted=0 无关，已移至下方"额外 High"。）
 
 ### 根因类 C: `related_skills` frontmatter 不完整（3 个 High）
 
@@ -150,6 +149,7 @@
 
 | 子报告 | Finding | 描述 |
 |--------|---------|------|
+| inspection | H2 | 质量评分缺陷率分母用错（`real_checkobj` vs `real_objitem`，虚高 3-10 倍）——单 skill 代码逻辑 bug，非跨报告根因 |
 | chatbi | H3 | L5 强制 LIMIT 只检测存在性、不检查上限值（`LIMIT 999999999` 可过） |
 | _shared | H1 | `hooks/block_raw_pymysql.py` 87 行完善 hook 无 `.claude` 配置（死代码） |
 | _shared | H2 | `rules/gate-pump-status.md` vs `schema.md` 列定义冲突（25+ 列 vs 8/13 列） |
@@ -165,7 +165,7 @@
 | 子报告 | Finding | 描述 |
 |--------|---------|------|
 | monitor | M3 | feedback-log 空 + parameters.md 全 2026-05-30（61 天无调整） |
-| early-warning | M3(派生) | feedback-log 空 + parameters 全 2026-05-30 |
+| early-warning | L3 | feedback-log 空 + parameters 全 2026-05-30 |
 | chatbi | L1 | feedback-log 空 + parameters 全 2026-05-30（61 天） |
 | inspection | L2(派生) | feedback-log 空 + parameters 全 2026-05-31/06-01 |
 | governance | L2 | parameters 全 2026-05-30（60 天） |
@@ -173,6 +173,8 @@
 **实证**：5 个 skill 的 `evolution/feedback-log.md` 全部为空（"暂无记录"），`parameters.md` 全部参数的"最后调整"日期停留在 2026-05-30 前后（距今 60+ 天）。README 和 SKILL.md 宣传的"自我进化"机制有完善的格式模板和流程设计，但 **0 次实际触发**。
 
 **影响评估**：这是"机制设计 ≠ 机制运行"的典型 gap。当前不影响功能正确性，但长期会使参数漂移失修、反馈闭环断裂。
+
+> **严重度校准注（终审发现）**：同一系统性问题在 5 skill 中严重度不一致——仅 **monitor M3 标 Medium**，其余 4 skill（early-warning L3 / chatbi L1 / inspection L2 / governance L2）均为 **Low**。monitor 自身的定级理由"小 skill 影响面相对小"方向反了（影响面小应指向 Low，而非 Medium），且 monitor 报告正文已显式引用"对比 early-warning sub-report L3（同样问题）"——即 monitor 自己也认其为 Low 级问题。鉴于"0 触发、无功能影响"，**建议修复时将 monitor M3 对齐降为 L3**（计数随之 4M/5L → 3M/6L，总数 10 不变），使 5 skill 严重度统一为 Low。本表暂保留 monitor M3 原定级以不动已复核的计数，仅在此标注分歧。
 
 ### 主题 2: schema.md 不一致的级联传播（4-5 个 finding 链）
 
