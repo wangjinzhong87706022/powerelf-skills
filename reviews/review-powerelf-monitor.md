@@ -25,7 +25,7 @@
 
 | 严重度 | 维度 | 文件:行 | 描述 | 建议 |
 |--------|------|---------|------|------|
-| High | 架构 | `SKILL.md:11` frontmatter `metadata.hermes.related_skills` vs `:30-35` body "When NOT to Use" 表 | **frontmatter `related_skills` 缺 `powerelf-chatbi`**。frontmatter line 11 声明 `related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection]`（3 个），但 body "When NOT to Use" 表 line 30-35 显式列出 inspection / governance / early-warning / **chatbi**（4 个）。这是一处 frontmatter ↔ body 不一致：`powerelf-chatbi` 在"5 主 skill 生态"中是事实存在的伙伴（与 monitor 同样消费 st_* 表 + REST API），monitor 的"实时看盘"↔ chatbi 的"纯查询"是天然的分工边界，但 frontmatter 漏写会导致 hermes routing 在"依赖元数据"通道错过这一指针。**对比 early-warning sub-report L4**：early-warning 的 frontmatter `related_skills` 也只列 2 个（governance + monitor），同样漏 inspection + chatbi——这是一个跨 skill 的系统性问题，monitor 与 early-warning 是同病相怜。 | 在 frontmatter `related_skills` 追加 `powerelf-chatbi`（形成完整 4 元组：`[powerelf-data-governance, powerelf-early-warning, powerelf-inspection, powerelf-chatbi]`），与 body "When NOT to Use" 表对齐。这是 hermes 路由的关键元数据，不应漏。 |
+| High | 架构 | `SKILL.md:11` frontmatter `metadata.hermes.related_skills` vs `:30-35` body "When NOT to Use" 表 | **frontmatter `related_skills` 缺 `powerelf-chatbi`**。frontmatter line 11 声明 `related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection]`（3 个），但 body "When NOT to Use" 表 line 30-35 显式列出 inspection / governance / early-warning / **chatbi**（4 个）。这是一处 frontmatter ↔ body 不一致：`powerelf-chatbi` 在"5 主 skill 生态"中是事实存在的伙伴（与 monitor 同样消费 st_* 表 + REST API），monitor 的"实时看盘"↔ chatbi 的"纯查询"是天然的分工边界，但 frontmatter 漏写会导致 hermes routing 在"依赖元数据"通道错过这一指针。**对比 early-warning sub-report H1 + §5 行 72**：early-warning 的 frontmatter `related_skills` 也只列 2 个（governance + monitor），同样漏 inspection + chatbi——这是一个跨 skill 的系统性问题，monitor 与 early-warning 是同病相怜。 | 在 frontmatter `related_skills` 追加 `powerelf-chatbi`（形成完整 4 元组：`[powerelf-data-governance, powerelf-early-warning, powerelf-inspection, powerelf-chatbi]`），与 body "When NOT to Use" 表对齐。这是 hermes 路由的关键元数据，不应漏。 |
 
 ---
 
@@ -35,7 +35,7 @@
 |--------|------|---------|------|------|
 | Medium | 文档-代码一致 | `SKILL.md:25, 37, 39, 51, 59, 67, 73, 81-94` | **"12类监测"与"12大监测类型"声明 vs 实际 14 行**。SKILL.md line 25（"适用场景"第 3 条）"实时 12 类监测分析"、line 37 "## 12大监测类型" 标题、line 73-76 "趋势异常检测 / 水位变化率算法 / 位移速率算法 / 时序预测算法" 4 个跨表引用。但实际行计数：水文气象 7（水库/河道/闸站/潮汐/雨情/分区雨情/防洪区）+ 设备工情 2（闸门/泵站）+ 大坝安全 3（GNSS/渗流/渗压）+ 其他 2（墒情/白蚁）= **14 行**，且 line 81-94 "按需加载指令" 也有 14 个关键词组（不含"趋势"和"预测"这两个横切算法）。doc-doc 不一致：Agent 看到 "12 类" 可能漏处理 河道水情/潮汐水情/防洪区水情/渗流量/渗压/白蚁 这 6 个未在 frontmatter 路由中的类别。 | 改 "12 类" 为 "14 类"（或在 12 类之下标 "核心 12 + 扩展 2"，与 line 47-49 防洪区水情、line 64 渗压、line 71 白蚁 等次要类别显式区分）。 |
 | Medium | 架构 | `SKILL.md:124-133` "## 共享引用（_shared）" 段 | **"共享引用" 段未列 `reservoir-analysis`**。line 132 写 `_shared/rules/ 闸门/泵站/GNSS/雨情/趋势规则（单一事实源）`，**5 个 rules 中只提了 4 个**（漏 "水库"）。`rules/reservoir-analysis.md`（line 1-7）明确声明 "monitor / inspection 原各自一份，逐字相同，已合并为跨 skill 单一事实源"，与 line 43 表 "水库水情 \| st_rsvr_r \| ... \| `rules/reservoir-analysis.md`" 形成 SKILL.md 自身内的引用闭环。**当前 line 132 的描述对 reservoir 是"漏挂"**——若按"按需加载"逻辑，Agent 读 line 132 会以为"水库"规则不在 `_shared/` 里，可能回退到 `monitor/rules/reservoir-analysis.md`（只是一个 7 行指针），浪费一次跳转。 | line 132 改为 `闸门/泵站/GNSS/雨情/水库/趋势规则（单一事实源）`，保持 5 类齐全；或在段头加一句"完整 5 类规则见 `powerelf-monitor/rules/` 目录树"。 |
-| Medium | 架构 | `evolution/feedback-log.md:9` + `evolution/parameters.md` 全表 | **"自我进化"机制形式化无运行证据**。`feedback-log.md:9` 仍为 "（暂无记录。）"，所有 19 个参数的"最后调整"列都是 `2026-05-30`（水库 4 / 雨情 4 / GNSS 3 / 闸门泵站 4 + header + 3 分隔行 = 19 行表行；4 个分组 × 4 行 = 16 个数据行 + 4 个 header + 3 个空行 + 1 个标题 = 19）。**距离评审日 2026-07-30 已 60 天无任何参数调整反馈**。这与 SKILL.md:97-100 "自我进化"段、`:9 frontmatter version: 2.0.0"、README 强调的"按需加载 + 自我进化"形成对比：机制存在但 0 次触发。**对比 early-warning sub-report L4**（同样问题：feedback-log 空、parameters 全 2026-05-30），这是 5 skill 的共性弱信号，但 monitor 是 0.2k LOC 小 skill，影响面相对小，标 Medium。 | (a) 在 `feedback-log.md` 补一条"v2.0.0 初始发布（2026-05-30）"占位记录；(b) `parameters.md` 增加一列"上次触发来源（人工 / 用户反馈 / 自动调优）"以建立可观测性；(c) 长期：在 `algorithms/time-series-forecast.md` 加"自动参数寻优"段，给"自我进化"一个具体触发点。 |
+| Medium | 架构 | `evolution/feedback-log.md:9` + `evolution/parameters.md` 全表 | **"自我进化"机制形式化无运行证据**。`feedback-log.md:9` 仍为 "（暂无记录。）"，所有 15 个数据行参数的"最后调整"列都是 `2026-05-30`（水库 4 / 雨情 4 / GNSS 3 / 闸门泵站 4 = 15 行数据行，4 个分组标题 + 4 个表头 + 7 个空行 + 1 个文档标题 = 36 行文件）。**距离评审日 2026-07-30 已 61 天无任何参数调整反馈**。这与 SKILL.md:97-100 "自我进化"段、`:9 frontmatter version: 2.0.0"、README 强调的"按需加载 + 自我进化"形成对比：机制存在但 0 次触发。**对比 early-warning sub-report L3**（同样问题：feedback-log 空、parameters 全 2026-05-30），这是 5 skill 的共性弱信号，但 monitor 是 0.2k LOC 小 skill，影响面相对小，标 Medium。 | (a) 在 `feedback-log.md` 补一条"v2.0.0 初始发布（2026-05-30）"占位记录；(b) `parameters.md` 增加一列"上次触发来源（人工 / 用户反馈 / 自动调优）"以建立可观测性；(c) 长期：在 `algorithms/time-series-forecast.md` 加"自动参数寻优"段，给"自我进化"一个具体触发点。 |
 | Medium | 架构 | `SKILL.md:10` `metadata.hermes.tags` | **tags 缺 `rainfall` / `gate` / `pump` / `trend` / `forecast` 5 个关键词**。当前 tags：`[water-conservancy, real-time-monitoring, sensor, reservoir, dam, gnss]`（6 个）。`rules/` + `algorithms/` 共 8 个文件中，tags 仅覆盖 reservoir / dam / gnss 3 个，**漏**：`rainfall`（rainfall-analysis）/ `gate` 或 `pump`（gate-pump-status）/ `trend`（trend-detection）/ `forecast`（time-series-forecast）。**description 字段实际 52 字符**（"水利工程实时监控：12类监测数据分析规则、趋势异常检测、水位变化率、位移速率计算。规则内嵌，可独立分析。"），前 57 字符窗口内已含"实时监控/监测数据规则/趋势异常/水位变化率/位移速率"，主关键词"趋势"和"位移"在 description 中可被兜底，但 `rainfall`（雨量）/ `gate`（闸门）/ `pump`（泵站）在 description 中**完全没有出现**——若 hermes 走纯 tags 匹配，"今天闸门开启高度多少"会落空。**对比 early-warning L4**（同样 tags 覆盖不足）：monitor 的 tags 缺漏面更大（5/8 = 62.5% 类别未覆盖），影响"按需加载"机制的实际可达性。 | 在 tags 中追加 `rainfall` / `gate-pump` / `trend` / `forecast`（合并为 4 个 tag 字符串），与 description 形成"description 抓主类 + tags 兜子类"双通道路由。 |
 
 ---
@@ -54,25 +54,24 @@
 
 ## 5. 文档-代码一致性矩阵（声明 vs 实际）
 
-| SKILL.md / README 声明 | 实际文件状态 | 一致? | 备注 |
-|----------------------|-------------|-------|------|
-| 5 规则模块（reservoir / rainfall / gate-pump / gnss / trend） | `rules/` 恰好 5 个 .md（reservoir 7L / rainfall 7L / gate-pump 3L / gnss 3L / trend 9L） | ✅ | 完全匹配（与 early-warning 5 规则对称） |
-| 3 算法模块（water-level-change / displacement-rate / time-series-forecast） | `algorithms/` 恰好 3 个 .md（7L / 7L / 9L） | ✅ | 完全匹配（与 early-warning 3 策略对称） |
-| 自我进化：parameters.md + feedback-log.md | `evolution/` 2 文件齐全 | ✅ | 但 feedback-log 空，全参数 2026-05-30（见 Medium M3） |
-| 12类监测分析 | 实际"12大监测类型"表 14 行（7+2+3+2） | ❌ | 见 Medium M1 |
-| 适用场景 | line 20-26 列出 4 条场景 | ✅ | 含"实时值/趋势看盘/REST API/12 类监测分析/趋势异常" |
-| When NOT to Use | line 28-35 表 4 行（inspection / governance / early-warning / chatbi） | ✅ | 4 路由清晰 |
-| Related Skills | frontmatter line 11 列 3 个（governance/early-warning/inspection），body 无独立 Related Skills 段 | ⚠️ | frontmatter 漏 chatbi（见 High H1）；line 135-137 "与 powerelf-inspection 的分工" 是 inspection-only 的非通用 Related Skills 段 |
-| 共享引用（_shared） | line 124-133 表 4 行（schema.md / api-auth.md / rules/ / algorithms/） | ⚠️ | `_shared/rules/` 未列 reservoir（见 Medium M2） |
-| 5 规则 + 3 算法 = 8 子模块 | `rules/` 5 + `algorithms/` 3 = 8 | ✅ | 完全匹配 |
-| frontmatter `related_skills` | 3 个（缺 chatbi） | ❌ | 见 High H1 |
-| frontmatter `tags` | 6 个（缺 rainfall / gate / pump / trend / forecast） | ⚠️ | 见 Medium M4 |
-| description 长度 52 字符 | 实测 52 字符，57 字符窗口内全主类（实时监控/监测数据/趋势异常/水位变化率/位移速率） | ✅ | 全主类在窗口内，但 rainfall/gate/pump 缺位（见 Medium M4） |
-| `related_skills` 双向闭环 | body "When NOT to Use" 列 4 个 ↔ frontmatter 3 个 | ❌ | 见 High H1（4 vs 3 不一致） |
-| `_shared/rules/*.md` 指针 | 5 个本地指针 → 5 个 `_shared` 目标（reservoir 1.3k / rainfall 3.0k / gate-pump 4.3k / gnss 3.3k / trend 1.4k bytes），全部有实质内容 | ✅ | 无断链 |
-| `_shared/algorithms/*.md` 指针 | 3 个本地指针 → 3 个 `_shared` 目标（water-level 0.8k / displacement 0.8k / time-series 6.4k bytes），全部有实质内容 | ✅ | 无断链 |
-| parameters.md 与 rules/algorithms 引用对齐 | water-level-change / reservoir / rainfall / gate-pump / gnss / displacement 6 个模块有对应参数；time-series-forecast / trend-detection 2 个模块无对应参数 | ⚠️ | 见 Low L2 |
-| `related_skills` 闭环 chatbi（5 主 skill 全闭环） | 缺 chatbi | ❌ | 见 High H1 |
+| SKILL.md / README 声明 | 实际文件状态 |
+|----------------------|-------------|
+| 5 规则模块（reservoir / rainfall / gate-pump / gnss / trend） | `rules/` 恰好 5 个 .md（reservoir 7L / rainfall 7L / gate-pump 3L / gnss 3L / trend 9L） — ✅ 完全匹配（与 early-warning 5 规则对称） |
+| 3 算法模块（water-level-change / displacement-rate / time-series-forecast） | `algorithms/` 恰好 3 个 .md（7L / 7L / 9L） — ✅ 完全匹配（与 early-warning 3 策略对称） |
+| 自我进化：parameters.md + feedback-log.md | `evolution/` 2 文件齐全 — ⚠️ 但 feedback-log 空，全参数 2026-05-30（见 Medium M3） |
+| 12类监测分析 | 实际"12大监测类型"表 14 行（7+2+3+2） — ❌ 见 Medium M1 |
+| 适用场景 | line 20-26 列出 4 条场景（含"实时值/趋势看盘/REST API/12 类监测分析/趋势异常"）— ✅ |
+| When NOT to Use | line 28-35 表 4 行（inspection / governance / early-warning / chatbi）— ✅ 4 路由清晰 |
+| Related Skills | frontmatter line 11 列 3 个（governance/early-warning/inspection），body 无独立 Related Skills 段 — ⚠️ frontmatter 漏 chatbi（见 High H1）；line 135-137 "与 powerelf-inspection 的分工" 是 inspection-only 的非通用 Related Skills 段 |
+| 共享引用（_shared） | line 124-133 表 4 行（schema.md / api-auth.md / rules/ / algorithms/）— ⚠️ `_shared/rules/` 未列 reservoir（见 Medium M2） |
+| 5 规则 + 3 算法 = 8 子模块 | `rules/` 5 + `algorithms/` 3 = 8 — ✅ 完全匹配 |
+| frontmatter `related_skills` | 3 个（缺 chatbi）— ❌ 见 High H1 |
+| frontmatter `tags` | 6 个（缺 rainfall / gate / pump / trend / forecast）— ⚠️ 见 Medium M4 |
+| description 长度 52 字符 | 实测 52 字符，57 字符窗口内全主类（实时监控/监测数据/趋势异常/水位变化率/位移速率），但 rainfall/gate/pump 缺位 — ⚠️ 见 Medium M4 |
+| `related_skills` 双向闭环 | body "When NOT to Use" 列 4 个 ↔ frontmatter 3 个 — ❌ 见 High H1（4 vs 3 不一致） |
+| `_shared/rules/*.md` 指针 | 5 个本地指针 → 5 个 `_shared` 目标（reservoir 1.3k / rainfall 3.0k / gate-pump 4.3k / gnss 3.3k / trend 1.4k bytes），全部有实质内容 — ✅ 无断链 |
+| `_shared/algorithms/*.md` 指针 | 3 个本地指针 → 3 个 `_shared` 目标（water-level 0.8k / displacement 0.8k / time-series 6.4k bytes），全部有实质内容 — ✅ 无断链 |
+| parameters.md 与 rules/algorithms 引用对齐 | water-level-change / reservoir / rainfall / gate-pump / gnss / displacement 6 个模块有对应参数；time-series-forecast / trend-detection 2 个模块无对应参数 — ⚠️ 见 Low L2 |
 | `与 powerelf-inspection 的分工` 段 | line 135-137 显式写"monitor=实时，inspection=离线"分工 | ✅ | 是本 skill 独有的对偶段，inspection 报告中应也有镜像 |
 | API 附录 13 个端点 | line 106-120 列 13 个端点（monitor/overview、srm/*、att/dot-user/concern） | ✅ | 与 SKILL.md 表 11 类监测类型 + 2 个特殊端点（关注/水位预警）匹配 |
 
