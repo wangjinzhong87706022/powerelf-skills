@@ -17,7 +17,8 @@
     → 正常发送通知
 
 设置:
-  通知发送完成后，写入 Redis Key，过期时间 = silenceTime
+  通知发送完成后，写入 Redis Key，过期时间 = silenceTime * 60
+  # 注意：silenceTime 单位为"分钟"，Redis TTL 单位为"秒"，必须 × 60 换算
 ```
 
 ## 配置

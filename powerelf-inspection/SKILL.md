@@ -7,7 +7,7 @@ license: MIT
 platforms: [linux]
 metadata:
   hermes:
-    tags: [inspection, anomaly-detection, water-conservancy, dam-safety]
+    tags: [inspection, anomaly-detection, water-conservancy, dam-safety, quality-scoring, defect-prediction, route-optimization]
     category: industrial
     related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-monitor, powerelf-chatbi]
 ---

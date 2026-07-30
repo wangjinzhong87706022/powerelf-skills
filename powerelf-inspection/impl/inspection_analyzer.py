@@ -452,20 +452,15 @@ def analyze_percolation(engine, days=30):
                     })
                     break  # 只报一次
 
-        # 统计异常（稳健 MAD 替换 2-sigma）
+        # 统计异常（委托 lib/anomaly.mad_anomaly；P2-11：消除重复实现 + 修 perc_values.values 潜在 AttributeError）
         if len(perc_values) >= 10:
-            _perc = perc_values.values
-            _median = float(np.median(_perc))
-            _mad = float(np.median(np.abs(_perc - _median))) * 1.4826
-            if _mad > 0:
-                latest = float(_perc[-1])
-                _z = abs(latest - _median) / _mad
-                if _z > 3.0:
-                    findings.append({
-                        "level": "WARNING",
-                        "message": f"渗流计{st_id}: 渗流量{latest:.3f}L/s MAD统计异常 z={_z:.1f} (中位数{_median:.3f})",
-                        "detail": "偏离历史分布，需确认"
-                    })
+            _r = _anomaly.mad_anomaly(perc_values.tolist(), threshold=3.0, min_samples=10)
+            if _r["is_anomaly"]:
+                findings.append({
+                    "level": "WARNING",
+                    "message": f"渗流计{st_id}: 渗流量{float(perc_values[-1]):.3f}L/s MAD统计异常 z={_r['score']:.1f} (中位数{_r['median']:.3f})",
+                    "detail": "偏离历史分布，需确认"
+                })
 
     if not findings:
         findings.append({"level": "OK", "message": "渗流正常", "detail": f"分析{len(df['st_id'].unique())}个测站"})

@@ -1,13 +1,13 @@
 ---
 name: powerelf-monitor
-description: "水利工程实时监控：12类监测数据分析规则、趋势异常检测、水位变化率、位移速率计算。规则内嵌，可独立分析。"
+description: "水利工程实时监控：14类监测数据分析规则、趋势异常检测、水位变化率、位移速率计算。规则内嵌，可独立分析。"
 version: 2.0.0
 author: Powerelf Team
 license: MIT
 platforms: [linux, windows, macos]
 metadata:
   hermes:
-    tags: [water-conservancy, real-time-monitoring, sensor, reservoir, dam, gnss]
+    tags: [water-conservancy, real-time-monitoring, sensor, reservoir, dam, gnss, rainfall, gate-pump, trend, forecast]
     related_skills: [powerelf-data-governance, powerelf-early-warning, powerelf-inspection, powerelf-chatbi]
 prerequisites:
   env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
@@ -22,7 +22,7 @@ prerequisites:
 本 skill 适用于：
 - 某站**当前**水位/流量/雨量实时值、趋势看盘
 - REST API 查询最新监测数据
-- 实时 12 类监测分析（水库/河道/雨量/闸门/泵站/GNSS/渗压/渗流/墒情/白蚁）
+- 实时 14 类监测分析（水库/河道/雨量/闸门/泵站/GNSS/渗压/渗流/墒情/白蚁等）
 - 趋势异常检测、水位变化率预警、位移速率分析
 
 ## When NOT to Use
@@ -34,7 +34,7 @@ prerequisites:
 | 阈值/告警判定与分发 | `powerelf-early-warning` |
 | 纯数据查询 / "某站水位是多少" | `powerelf-chatbi` |
 
-## 12大监测类型
+## 14大监测类型
 
 ### 水文气象监测
 
@@ -129,7 +129,7 @@ prerequisites:
 |------|------|
 | `_shared/references/schema.md` | DDL、关联键、类型定义 |
 | `_shared/references/api-auth.md` | REST API 鉴权约定 |
-| `_shared/rules/` | 闸门/泵站/GNSS/雨情/趋势规则（单一事实源） |
+| `_shared/rules/` | 水库/闸门/泵站/GNSS/雨情/趋势规则（单一事实源） |
 | `_shared/algorithms/` | 水位变化率/位移速率/时序预测算法 |
 
 ## 与 powerelf-inspection 的分工

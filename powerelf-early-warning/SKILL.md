@@ -7,7 +7,7 @@ license: MIT
 platforms: [linux, windows, macos]
 metadata:
   hermes:
-    tags: [water-conservancy, early-warning, alarm, notification, threshold]
+    tags: [water-conservancy, early-warning, alarm, notification, threshold, dam, trend, video-ai]
     related_skills: [powerelf-data-governance, powerelf-monitor, powerelf-inspection, powerelf-chatbi]
 prerequisites:
   env_vars: [POWERELF_API_BASE, POWERELF_API_TOKEN]
@@ -71,6 +71,7 @@ prerequisites:
 | 4 | 开关量预警 | switch-rules (KG) |
 | 5 | 大坝安全预警 | dam-rules (DAM-YZ) |
 | 6 | 洪水预警 | threshold-rules (YZ) |
+| 7 | 趋势预警 | trend-rules (QS) |
 
 ## 能力概览
 

@@ -93,6 +93,7 @@ rows = query("SELECT * FROM st_rsvr_r WHERE deleted=0 LIMIT 5")  # → list[dict
 
 - 🚫 禁止：`conn.execute(`、`cursor().execute(...).fetchall()`、`pymysql.connect(`
 - ✅ 只用：`query(sql)` / `query_multi([sql1, sql2])`
+- 📌 上述禁令针对 **agent 手写脚本**；`lib/writeback.py`（回写）/`lib/overview.py` 等库内模块为受信基础设施，可用 raw connection 完成写操作与复杂查询——agent 应调用其函数，而非自行重写连接
 
 ### 2. 脚本用 terminal 跑，不要用 execute_code
 
