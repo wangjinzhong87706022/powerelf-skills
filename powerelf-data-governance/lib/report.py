@@ -383,7 +383,7 @@ def generate_daily_report_from_db(date_str, conn=None, suggestions=None):
         # ── 批量查询优化:32次串行→4次 ──────────────────────────────
         # ① 所有表的测站数 一次UNION ALL查
         union_parts = '\n    UNION ALL '.join(
-            f"SELECT '{tbl}' AS tbl, COUNT(DISTINCT st_id) AS cnt FROM {tbl}"
+            f"SELECT '{tbl}' AS tbl, COUNT(DISTINCT st_id) AS cnt FROM {tbl} WHERE deleted = 0"
             for tbl in monitor_tables
         )
         cur.execute(f"""

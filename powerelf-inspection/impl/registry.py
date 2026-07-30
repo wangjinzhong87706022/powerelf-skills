@@ -26,7 +26,7 @@ logger = logging.getLogger("inspection.registry")
 _ALLOWED_TABLES = {
     "st_river_r","st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
     "rei_gate_r","rei_pump_r","eq_equip_base","eq_equip_defect","ew_camera_info",
-    "srm_gnss_data_day","srm_robot_data_day","srm_illegal_acts",
+    "dsm_dfr_srvrds_srhrds","srm_robot_data_day","srm_illegal_acts",
 }
 _ALLOWED_TIME_FIELDS = {"tm", "create_time", "discovery_time", None}
 

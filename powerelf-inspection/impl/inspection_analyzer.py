@@ -32,6 +32,8 @@ sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "
 import anomaly as _anomaly
 sys.path = _sys_path_orig
 
+from registry import _validate_identifiers  # P1-5: 标识符白名单校验（防 SQL 注入）
+
 try:
     import pandas as pd
     import numpy as np
@@ -120,7 +122,8 @@ def get_registry_threshold(thresholds, source_table, path, default=None):
 
 def read_sensor_data(engine, table, fields, st_id=None, days=30, time_field="tm", limit=20000):
     """读取传感器数据"""
-    where_parts = [f"{time_field} >= NOW()-INTERVAL :days DAY"]
+    _validate_identifiers(table, fields, time_field)  # P1-5: 标识符白名单校验（防注入）
+    where_parts = [f"{time_field} >= NOW()-INTERVAL :days DAY", "deleted = 0"]  # P1-1: 铁律 deleted=0
     params = {"days": days, "limit": limit}
     if st_id:
         where_parts.append("st_id = :st_id")

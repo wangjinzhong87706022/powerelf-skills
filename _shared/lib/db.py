@@ -285,6 +285,15 @@ _FRAMEWORK_COL_MEANINGS = {
 }
 
 
+# 监测表白名单（单一事实源）——governance/inspection/chatbi 入口校验均应引用此常量，
+# 杜绝幽灵表名（schema.md 不存在的旧名如 st_deformation_r / st_gnss_r 等）。
+ALLOWED_TABLES = frozenset({
+    "st_rsvr_r", "st_river_r", "st_pptn_r",
+    "st_pressure_r", "st_percolation_r",
+    "dsm_dfr_srvrds_srhrds",  # GNSS 位移
+})
+
+
 def _sanitize_table_name(table: str) -> str:
     """防注入：表名只允许 [A-Za-z0-9_]。"""
     import re

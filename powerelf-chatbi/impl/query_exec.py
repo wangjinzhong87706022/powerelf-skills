@@ -58,10 +58,16 @@ QUERY_TIMEOUT_SEC = 120
 # ============================================================
 
 def ensure_limit(sql, limit):
-    """层5：若无 LIMIT 则子查询包裹注入；已有 LIMIT 则保留（信任 agent 语义）。"""
-    if re.search(r"\blimit\b", sql.lower()):
-        return sql
-    return f"SELECT * FROM ({sql.rstrip(';').strip()}) AS _chatbi_t LIMIT {limit}"
+    """层5：强制 LIMIT 且不超过上限。无 LIMIT→子查询包裹注入；已有→解析数值并 clamp 到 limit。"""
+    s = sql.rstrip(';').strip()
+    m = re.search(r"\blimit\s+(\d+)\b", s.lower())
+    if m:
+        n = int(m.group(1))
+        if n <= limit:
+            return sql  # 已在安全范围内，保留 agent 语义
+        # P1-8：超过上限（如 LIMIT 999999999）→ clamp 到 limit
+        return re.sub(r"\blimit\s+\d+\b", f"LIMIT {limit}", s, count=1, flags=re.IGNORECASE)
+    return f"SELECT * FROM ({s}) AS _chatbi_t LIMIT {limit}"
 
 
 def validate_readonly(sql, limit=MAX_LIMIT):
@@ -92,9 +98,9 @@ def validate_readonly(sql, limit=MAX_LIMIT):
         if re.search(rf"\b{kw}\b", lowered):
             raise ValueError(f"检测到写操作关键字: {kw}，已拒绝")
 
-    # 层4：系统库黑名单
+    # 层4：系统库黑名单（P1-10：正则容忍反引号/引号/空格，堵 `mysql`.`user` 绕过）
     for sch in SYSTEM_SCHEMAS:
-        if f"{sch}." in lowered:
+        if re.search(rf"[`'\"]?{re.escape(sch)}[`'\"]?\s*\.", lowered):
             raise ValueError(f"禁止访问系统库: {sch}")
 
     # 层5：强制 LIMIT

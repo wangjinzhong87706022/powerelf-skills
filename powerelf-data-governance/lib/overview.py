@@ -50,6 +50,8 @@ _PRESSURE_NAME_HINTS = ("渗压", "pressure", "渗流", "percolation")
 
 def _table_overview(conn, table: str) -> Dict:
     """单表：行数 + tm 时间范围（deleted=0）。表不存在/无 tm 列则记 error。"""
+    if table not in MONITOR_TABLES:  # P1-7: 入口白名单校验（防 --table SQL 注入）
+        raise ValueError(f"非法表名: {table}")
     cur = conn.cursor()
     out = {"table": table}
     try:

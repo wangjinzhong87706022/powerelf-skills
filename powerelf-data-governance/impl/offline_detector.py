@@ -18,12 +18,12 @@ import os
 import sys
 from datetime import datetime, timedelta
 
+# 监测表白名单（应与 _shared/lib/db.py::ALLOWED_TABLES 单一事实源一致；
+# 删除 schema.md 不存在的 10 个幽灵表名，补 GNSS 实表 dsm_dfr_srvrds_srhrds）
 ALLOWED_TABLES = frozenset({
-    "st_rsvr_r", "st_river_r", "st_pptn_r", "st_pressure_r",
-    "st_percolation_r", "st_deformation_r", "st_gnss_r",
-    "st_seepage_r", "st_rain_r", "st_wind_r", "st_temp_r",
-    "st_strlevel_r", "st_strain_r", "st_tilt_r",
-    "st_environment_r",
+    "st_rsvr_r", "st_river_r", "st_pptn_r",
+    "st_pressure_r", "st_percolation_r",
+    "dsm_dfr_srvrds_srhrds",
 })
 ALLOWED_TIME_FIELDS = frozenset({"tm", "time", "timestamp", "collect_time"})
 
