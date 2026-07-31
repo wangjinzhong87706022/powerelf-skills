@@ -108,7 +108,19 @@ SQL 错误（BadSqlGrammar/Unknown column）由 agent 见错误信息自修正�
 
 ```
 ## **sql语句**
-SELECT * FROM st_rsvr_r WHERE ...
+SELECT tm, rz AS 水位_m, inq AS 入库流量, otq AS 出库流量
+FROM st_rsvr_r
+WHERE stcd = (SELECT code FROM att_st_base WHERE name LIKE '%XX水库%' AND deleted=0 LIMIT 1)
+  AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY) AND deleted=0 AND tenant_id=1
+ORDER BY tm
+
+## **表与假设**（envelope：把隐性选择显式化，便于 VALIDATE 校验与捕获错配）
+tables_used: [st_rsvr_r, att_st_base]
+assumptions:
+  - "水位" → st_rsvr_r.rz（水库库水位；非河道 st_river_r.z / 闸站 st_was_r.upz）
+  - 时间窗：最近 7 天
+  - 站名 LIKE '%XX水库%' 匹配（命中唯一 → Ready；多义/未消歧 → Share with caveats 并列候选）
+note:（可选）聚合方式 / 特殊处理说明；无则省略
 
 ## **数据**
 | 水位 | 入库流量 | 出库流量 |

@@ -39,7 +39,7 @@ TEXT_TO_SQL 流水线:
   意图分类 → agent 生成 SQL（用 sql-discipline.md/schema.md/few_shots.md；生成步内做 pre-exec 自检，见 validation-checklist.md §一）
            → chatbi/impl/query_exec.py 只读执行（7 层护栏）→ 数据
            → 【VALIDATE】post-exec 结果健全（validation-checklist.md §二）+ 过 _shared/analysis-qa-checklist.md / statistical-caution.md → 填 confidence_tier
-           → 数据表格（附 confidence_tier）
+           → 数据表格（附 tables_used/assumptions + confidence_tier）
 
 VISUALIZATION 流水线:
   数据 → agent 按 chart-selection.md 选图 → 生成 ECharts option
