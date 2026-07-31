@@ -113,6 +113,11 @@ SELECT * FROM st_rsvr_r WHERE ...
 ## **数据**
 | 水位 | 入库流量 | 出库流量 |
 | 150.5 | 120.3 | 80.1 |
+
+## **置信度**
+confidence_tier: Ready to share | Share with caveats | Needs revision
+（三标签为项目 canonical；判定见 references/validation-checklist.md §三 与 _shared/references/analysis-qa-checklist.md。
+ Share with caveats 必附 caveat；Needs revision 不交付、回炉重试。）
 ```
 
 ## 注意事项

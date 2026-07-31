@@ -29,14 +29,17 @@
 默认行为:
   首次提问 → TEXT_TO_SQL + VISUALIZATION + INTERPRETATION 三步流水线
   后续提问 → 通过意图分类决定执行步骤
+  所有交付均带 confidence_tier（Ready to share / Share with caveats / Needs revision；Needs revision 不交付，回炉重试）
 ```
 
 ## 流水线组合（hermes agent 编排，弃后端 Vanna）
 
 ```
 TEXT_TO_SQL 流水线:
-  意图分类 → agent 生成 SQL（用 sql-discipline.md/schema.md/few_shots.md）
-           → chatbi/impl/query_exec.py 只读执行（7 层护栏）→ 数据表格
+  意图分类 → agent 生成 SQL（用 sql-discipline.md/schema.md/few_shots.md；生成步内做 pre-exec 自检，见 validation-checklist.md §一）
+           → chatbi/impl/query_exec.py 只读执行（7 层护栏）→ 数据
+           → 【VALIDATE】post-exec 结果健全（validation-checklist.md §二）+ 过 _shared/analysis-qa-checklist.md / statistical-caution.md → 填 confidence_tier
+           → 数据表格（附 confidence_tier）
 
 VISUALIZATION 流水线:
   数据 → agent 按 chart-selection.md 选图 → 生成 ECharts option
@@ -45,5 +48,6 @@ INTERPRETATION 流水线:
   数据 → agent 解读（过 analysis-qa-checklist.md / statistical-caution.md）→ 分析文本
 
 完整流水线 (首次):
-  意图分类 → 生成SQL → query_exec 执行 → 图表决策 → 图表生成 → 数据解读
+  意图分类 → 生成SQL（含 pre-exec 自检）→ query_exec 执行 → 【VALIDATE → 填 confidence_tier】 → 图表决策 → 图表生成 → 数据解读
+  （VALIDATE 细则见 references/validation-checklist.md；Needs revision 回"生成SQL"修正重试，复用现有 MySQL 错误自修正通路）
 ```
