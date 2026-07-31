@@ -24,7 +24,7 @@
 - [ ] **单位陷阱**：`st_pptn_r.dr` 是**分钟**，`st_pptn_region_r.intv` 是**小时**——小时/分钟换算勿混。
 - [ ] **类型陷阱**：泵站 `rei_pump_r` 的 `uab/ubc/uca/ia/ib/ic/p/freq` 均为 **varchar**，数值比较/聚合前 `CAST(... AS DECIMAL)`。
 - [ ] **JOIN 爆炸**：多表 JOIN 后用 `COUNT(DISTINCT id)` 而非 `COUNT(*)` 核数；行数异常爆增→检查是否many-to-many。
-- [ ] **实体消歧**：用户说的"水位"映射对了表/列吗？水库=`st_rsvr_r.rz`、河道=`st_river_r.z`、闸站上游=`st_was_r.upz`——选错表是根本性错误。（待 `references/domain-knowledge.md` 建成后与之呼应。）
+- [ ] **实体消歧**：用户说的"水位"映射对了表/列吗？水库=`st_rsvr_r.rz`、河道=`st_river_r.z`、闸站上游=`st_was_r.upz`——选错表是根本性错误。（**消歧权威出处**：`references/domain-knowledge.md` §一，含水位/流量/雨量/压力/电气全候选表 + 消歧线索；另见 §二"本项目无特征水位列"——勿写 `WHERE rz > 汛限水位`。）
 - [ ] **聚合粒度**：`GROUP BY` 含所有非聚合列；`AVG(SUM(...))` 这类"平均的平均"是经典错（见 `_shared` 陷阱目录）。
 
 **任一红旗命中**：回到"生成SQL"修正后重试，**不要带着已知错执行**。
