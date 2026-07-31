@@ -107,5 +107,5 @@ else:
      调用屏蔽判断(WarningShield.check)
      if 未屏蔽:
        生成预警记录
-       触发通知分发
+       触发通知分发   ← ⚠️ T2 通知触发：若由 agent 实际发起（非后端自动），必先过 rules/write-gate.md 的 preview→confirm（直达真人，preview 必列收件人+渠道+沉默期）
 ```

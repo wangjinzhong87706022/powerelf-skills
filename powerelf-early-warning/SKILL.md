@@ -17,6 +17,15 @@ prerequisites:
 
 水利工程预警规则引擎。规则内嵌，Agent 可独立执行预警判断。
 
+## ⚠️ 强制指令：写护栏（写操作前必读，优先级高于一切）
+
+> 本 skill 会**改预警配置 / 发通知到真人**。任何写操作（建/改/删规则、屏蔽、触发通知）**必须先 preview + 等用户当次显式确认**才执行——**不得**以"自动化 / 演示 / 模拟"为由跳过（抄 cms critical rule #12）。不确认 = 不写。只读查询（GET）不受限。
+
+- 详见 `rules/write-gate.md`（写操作分级 T1/T2/T3 + preview 模板 + 边界）
+- 一句话流程：**出 preview（固定格式，id→名称、条件→中文句）→ 等用户回"确认" → 才调写接口**
+- **屏蔽（ignoreConfirm）按 T1** 对待（会压掉真实告警）；**删除优先软删**（`status=0`），硬删二次确认
+- **通知触发（T2）** preview 必列"收件人 + 渠道 + 沉默期"——直达真人最高谨慎
+
 ## 适用场景
 
 本 skill 适用于：
@@ -85,6 +94,7 @@ prerequisites:
 | 通知分发 | `strategies/notification-strategy.md` | SMS/Email/IM 多通道 |
 | 沉默期 | `strategies/silence-period.md` | 防重复通知 |
 | 屏蔽机制 | `strategies/warning-shield.md` | 临时屏蔽规则 |
+| **写护栏** | `rules/write-gate.md` | 写操作 preview→confirm→execute，分级 T1/T2/T3 + 边界 |
 
 ## 按需加载指令
 
@@ -97,6 +107,7 @@ prerequisites:
 "通知"/"短信"/"邮件"      → strategies/notification-strategy.md
 "沉默期"/"通知频率"       → strategies/silence-period.md
 "屏蔽"/"忽略预警"         → strategies/warning-shield.md
+"创建/改/删规则"/"发通知"/"确认预警" → rules/write-gate.md（写前必读：preview→confirm）
 ```
 
 ## 自我进化
