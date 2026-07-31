@@ -261,7 +261,7 @@ python3 impl/generate_report.py --date 2026-07 --type anomaly
 1. **数据完整性** — 时间窗口内的数据是否完整？
 2. **异常判定合理性** — 异常值是否经过 MAD/IQR 验证？
 3. **设备状态一致性** — 离线设备是否与 eq_equip_base.status 一致？
-4. **置信度评级** — 高/中/低
+4. **置信度评级** — `Ready to share` / `Share with caveats` / `Needs revision`（项目 canonical，与 `_shared/references/analysis-qa-checklist.md` 及 `lib/report.py` 实际输出一致；Agent 自填，不自动打分）
 
 **详细清单**: `references/best-practices.md`
 
