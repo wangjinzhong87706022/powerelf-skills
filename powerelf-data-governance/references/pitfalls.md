@@ -14,27 +14,28 @@
 - 建议设最小变化阈值（如 0.005m），低于阈值的站点标记为"数据近乎常数"而非"正常"
 - 实际案例：627B9680 站点水位几乎不变，MAD 接近 0，Z-score 溢出到数十亿
 
-## 双数据库陷阱（重要）
+## 多数据库陷阱（重要，2026-07-31 更新）
 
-分析水库数据时存在两套数据库，选择错误会导致数据为空或极稀疏：
+本机 MySQL 上并存多个库，选择错误会导致数据为空、极稀疏或分析的是演示数据：
 
 | 库名 | 地址 | 内容 | 用途 |
 |------|------|------|------|
-| powerelf_data | **127.0.0.1:3306** | 水库水情实时数据（3站×3个月） | **本 skill 分析必须用这个** |
+| **powerelf_srm_yml** | **127.0.0.1:3306** | 真实水库业务库（三岔/石盘水库，79 表，SmartResMatrix 系统主从库均指向它） | **全仓统一标准库，分析必须用这个** |
+| powerelf_data | 127.0.0.1:3306 | 旧模拟演示库（测站名带 `_sp` 后缀，49 表，数据止于 2026-05-31） | 已废弃，禁止新代码引用 |
 | sl323/sl325/slztk | 192.168.100.103:3306 | 远程生产库，水库表大部分为空 | water-resources skill 用 |
 
-**关键**：本 skill 的 db.py 连的是 `127.0.0.1/powerelf_data`，不要用 water-resources 的 db.py（连 192.168.100.103/sl323）。
-如果查询返回 0 条或仅 1 天数据，大概率连错了数据库。
+**关键**：`~/.hermes/.env` 的 `POWERELF_DB_NAME`/`SRM_DB_NAME` 均指向 `powerelf_srm_yml`，与 SmartResMatrix `application-{dev,prod}.yaml` 的 datasource 一致。
+如果查询返回 0 条、仅 1 天数据、或测站名带 `_sp` 后缀，大概率连错了数据库。
 
 ## 数据库连接
 
-- **必须**用 powerelf 专用 db.py：`sys.path.insert(0, '/opt/git/hermes-agent/skills/powerelf/lib')`
+- **必须**用 `_shared/lib/db.py`（自动加载 `~/.hermes/.env`），不要各 skill 自建连接
 - **不要**用 `/opt/git/hermes-agent/skills/water-resources/lib`（连远程 192.168.100.103/sl323）
-- 本地库：`127.0.0.1:3306/powerelf_data`，user=root，密码从环境变量 `POWERELF_DB_PASSWORD` / `SRM_DB_PASSWORD` 读取（禁止在文档中落盘明文）
+- 本地库：`127.0.0.1:3306/powerelf_srm_yml`，user=root，密码从环境变量 `POWERELF_DB_PASSWORD` / `SRM_DB_PASSWORD` 读取（禁止在文档中落盘明文）
 
 ## 数据概况（2026-06 更新）
 
-### powerelf_data 库（127.0.0.1:3306）
+### ~~powerelf_data 库~~（已废弃演示库，以下为 2026-06 历史快照，勿用于当前分析）
 
 共 45 张表，95 台设备。
 

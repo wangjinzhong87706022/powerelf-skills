@@ -1,6 +1,6 @@
 ---
 name: powerelf-early-warning
-description: "预警规则引擎 — 10种阈值条件判断/动态等级调整/大坝多测点预警/趋势预警/通知分发/沉默期/屏蔽。判断是否触发预警，不是查预警记录。核心表: powerelf_data.ew_info_rules, powerelf_data.ew_info_message"
+description: "预警规则引擎 — 10种阈值条件判断/动态等级调整/大坝多测点预警/趋势预警/通知分发/沉默期/屏蔽。判断是否触发预警，不是查预警记录。核心表: powerelf_srm_yml.ew_info_rules, powerelf_srm_yml.ew_info_message"
 version: 2.0.0
 author: dataagent-powerelf
 license: MIT
@@ -28,7 +28,7 @@ metadata:
 
 | 依赖 | 说明 |
 |------|------|
-| **本地 MySQL** | `127.0.0.1:3306/powerelf_data`（环境变量 POWERELF_DB_* / SRM_DB_*） |
+| **本地 MySQL** | `127.0.0.1:3306/powerelf_srm_yml`（环境变量 POWERELF_DB_* / SRM_DB_*） |
 | `db.py` helper | **必须用** `skills/powerelf/lib/db.py`（不要用 water-resources 的） |
 
 ```python

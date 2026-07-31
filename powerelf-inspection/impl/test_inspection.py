@@ -193,6 +193,238 @@ def test_all_15_dimensions():
 
 
 # ============================================================
+# envelope 输出契约单元测试（Phase 1，无需 DB）
+# ============================================================
+
+try:
+    from inspection_analyzer import (
+        build_envelope, make_error, envelope_exit_code, get_run_id,
+    )
+    HAS_ENVELOPE = True
+except ImportError:
+    HAS_ENVELOPE = False
+
+envelope_only = pytest.mark.skipif(not HAS_ENVELOPE, reason="无法导入 envelope 层") if _HAS_PYTEST else (lambda f: f)
+
+_SAMPLE_ANALYSES = [
+    {"category": "水库水情", "findings": [
+        {"level": "CRITICAL", "message": "测站1: 水位超汛限", "detail": "rz=105.2m"},
+        {"level": "WARNING", "message": "测站2: 水位连续上升", "detail": "趋势"},
+    ], "data_points": 100},
+    {"category": "渗压监测", "findings": [
+        {"level": "OK", "message": "渗压正常", "detail": "分析3个测站"},
+    ], "data_points": 50},
+    {"category": "白蚁监测", "status": "无数据", "findings": []},
+]
+
+
+@envelope_only
+def test_envelope_structure():
+    env = build_envelope(_SAMPLE_ANALYSES, "insp-test", "cmd", days=7)
+    assert env["ok"] is True
+    assert env["error"] is None
+    assert env["run_id"] == "insp-test"
+    agent = env["agent"]
+    assert agent["status"] in ("critical", "warning", "ok", "no_data", "inconclusive")
+    for f in agent["findings"]:
+        assert set(f) >= {"id", "severity", "title", "detail", "category",
+                          "data_source", "correlated_with"}
+        assert f["severity"] in ("critical", "warning", "info")
+        assert f["category"] in ("root_cause", "anomaly", "data_quality", "info")
+        assert "@" in f["data_source"]  # 表.列 + 时间窗锚点
+
+
+@envelope_only
+def test_envelope_summary_matches_findings():
+    """输出纪律 #4：summary 计数 ≡ findings 明细"""
+    env = build_envelope(_SAMPLE_ANALYSES, "insp-test", "cmd", days=7)
+    agent = env["agent"]
+    critical_n = sum(1 for f in agent["findings"] if f["severity"] == "critical")
+    warning_n = sum(1 for f in agent["findings"] if f["severity"] == "warning")
+    assert f"CRITICAL {critical_n}" in agent["summary"]
+    assert f"WARNING {warning_n}" in agent["summary"]
+    assert agent["status"] == "critical"  # 有 CRITICAL 即 critical
+
+
+@envelope_only
+def test_envelope_ok_not_in_findings():
+    """OK 级占位条目不进 findings"""
+    env = build_envelope(_SAMPLE_ANALYSES, "insp-test", "cmd")
+    assert not any("正常" in f["title"] and f["severity"] == "info"
+                   and "渗压正常" in f["title"] for f in env["agent"]["findings"])
+    titles = [f["title"] for f in env["agent"]["findings"]]
+    assert all("渗压正常" not in t for t in titles)
+
+
+@envelope_only
+def test_envelope_no_data():
+    env = build_envelope([{"category": "水库水情", "status": "无数据", "findings": []}],
+                         "insp-test", "cmd")
+    assert env["agent"]["status"] == "no_data"
+    assert envelope_exit_code(env) == 0  # no_data 但 ok=True 不算 CRITICAL
+
+
+@envelope_only
+def test_envelope_inconclusive():
+    """数据质量红档维度 → envelope inconclusive → 退出码 4；CRITICAL 优先级更高"""
+    inconclusive_dim = {"category": "渗压监测", "status": "inconclusive",
+                        "status_code": "INCONCLUSIVE",
+                        "status_note": "数据质量红档: 完整性 60% < 80%", "findings": []}
+    ok_dim = {"category": "渗流监测", "findings": [
+        {"level": "OK", "message": "渗流正常", "detail": ""}]}
+    env = build_envelope([inconclusive_dim, ok_dim], "insp-test", "cmd")
+    assert env["agent"]["status"] == "inconclusive"
+    assert envelope_exit_code(env) == 4
+    assert any("先修数据" in s["label"] for s in env["agent"]["next_steps"])
+    # CRITICAL 存在时优先报 critical
+    env2 = build_envelope([inconclusive_dim] + _SAMPLE_ANALYSES, "insp-test", "cmd")
+    assert env2["agent"]["status"] == "critical"
+    assert envelope_exit_code(env2) == 2
+
+
+@envelope_only
+def test_envelope_error():
+    err = make_error("DB_CONNECT_FAILED", "Connection refused")
+    assert set(err) == {"code", "message", "fix_hint"}
+    env = build_envelope([], "insp-test", "cmd", error=err)
+    assert env["ok"] is False
+    assert env["error"]["code"] == "DB_CONNECT_FAILED"
+    assert envelope_exit_code(env) == 3
+
+
+@envelope_only
+def test_envelope_exit_codes():
+    env_crit = build_envelope(_SAMPLE_ANALYSES, "r", "c")
+    assert envelope_exit_code(env_crit) == 2
+    env_ok = build_envelope([{"category": "渗压监测", "findings": [
+        {"level": "OK", "message": "正常", "detail": ""}]}], "r", "c")
+    assert envelope_exit_code(env_ok) == 0
+    env_missing = build_envelope([], "r", "c", error=make_error("TABLE_MISSING", "x"))
+    assert envelope_exit_code(env_missing) == 5
+
+
+@envelope_only
+def test_make_error_unknown_code_falls_back():
+    err = make_error("NOT_A_CODE", "msg")
+    assert err["code"] == "BAD_ARGS"
+
+
+@envelope_only
+def test_run_id_format():
+    _os.environ.pop("SKILL_SESSION_ID", None)
+    rid = get_run_id()
+    assert rid.startswith("insp-")
+    assert _os.environ["SKILL_SESSION_ID"] == rid  # 回写 env 保证同进程一致
+    assert get_run_id() == rid  # 二次调用复用
+
+
+# ============================================================
+# 自动诊断路由单元测试（Phase 2，无需 DB）
+# ============================================================
+
+try:
+    import inspection_analyzer as _ia
+    HAS_DIAG = hasattr(_ia, "run_auto_diagnosis")
+except ImportError:
+    HAS_DIAG = False
+
+diag_only = pytest.mark.skipif(not HAS_DIAG, reason="无法导入诊断层") if _HAS_PYTEST else (lambda f: f)
+
+
+def _fake_route(name, root_cause=None):
+    def fn(engine, st_id=None):
+        return {"root_cause": root_cause,
+                "conclusion": "排除结论", "trace": [f"{name} 已查 -2h/-12h/-3d 均空"]}
+    return fn
+
+
+@diag_only
+def test_diag_route_match():
+    assert _ia._match_diag_route("渗压监测", "渗压计3: 统计异常 z_score=5.0")[0] == "pressure_outlier"
+    assert _ia._match_diag_route("水库水情", "测站1: 水位连续上升")[0] == "water_level_rate"
+    assert _ia._match_diag_route("闸门工情", "闸门关闭但有流量")[0] == "gate_closed_flow"
+    assert _ia._match_diag_route("白蚁监测", "蚁情高危") is None
+
+
+@diag_only
+def test_diag_root_cause_backfill(monkeypatch):
+    """命中根因 → diagnosis_root_cause 标 + detail 证据链；envelope category 升级 root_cause"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("pressure_outlier", lambda c, m: "渗压" in m, _fake_route("R1", "上游水位抬升→渗压响应"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "CRITICAL", "message": "渗压计3: 统计异常", "detail": "z=5.0"}]}]
+    n = _ia.run_auto_diagnosis(None, analyses)
+    assert n == 1
+    f = analyses[0]["findings"][0]
+    assert f["diagnosis_root_cause"] == "上游水位抬升→渗压响应"
+    assert "证据链" in f["detail"]
+    env = build_envelope(analyses, "r", "c")
+    assert env["agent"]["findings"][0]["category"] == "root_cause"
+
+
+@diag_only
+def test_diag_no_evidence_trace(monkeypatch):
+    """未命中也要把'已查窗口与结果'写入 detail（已检为空 ≠ 忘了检）"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("pressure_outlier", lambda c, m: "渗压" in m, _fake_route("R1"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "CRITICAL", "message": "渗压计3: 统计异常", "detail": ""}]}]
+    _ia.run_auto_diagnosis(None, analyses)
+    f = analyses[0]["findings"][0]
+    assert "diagnosis_root_cause" not in f
+    assert "已查" in f["detail"]
+
+
+@diag_only
+def test_diag_chain_limit(monkeypatch):
+    """限流：每轮巡检最多 MAX_DIAG_CHAINS=3 条诊断链"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("any", lambda c, m: True, _fake_route("R", "根因"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "CRITICAL", "message": f"渗压计{i}: 异常", "detail": ""} for i in range(5)]}]
+    assert _ia.run_auto_diagnosis(None, analyses) == 3
+
+
+@diag_only
+def test_diag_warning_with_route_triggers(monkeypatch):
+    """WARNING 命中路由即触发（渗压/水位/闸门只发 WARNING，仅收 CRITICAL 则路由不可达）"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("any", lambda c, m: True, _fake_route("R", "根因"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "message": "渗压计3: 突变5.1kPa", "detail": ""}]}]
+    assert _ia.run_auto_diagnosis(None, analyses) == 1
+    assert analyses[0]["findings"][0]["diagnosis_root_cause"] == "根因"
+
+
+@diag_only
+def test_diag_skips_info_and_ok(monkeypatch):
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("any", lambda c, m: True, _fake_route("R", "根因"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "INFO", "message": "渗压计3: 缓慢变化", "detail": ""},
+        {"level": "OK", "message": "渗压正常", "detail": ""}]}]
+    assert _ia.run_auto_diagnosis(None, analyses) == 0
+    assert all("diagnosis_root_cause" not in f for f in analyses[0]["findings"])
+
+
+@diag_only
+def test_diag_critical_takes_quota_priority(monkeypatch):
+    """CRITICAL 优先占 MAX_DIAG_CHAINS 配额，WARNING 排后"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [
+        ("any", lambda c, m: True, _fake_route("R", "根因"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "message": "渗压计1: 轻微异常", "detail": ""},
+        {"level": "WARNING", "message": "渗压计2: 轻微异常", "detail": ""},
+        {"level": "CRITICAL", "message": "渗压计7: 严重异常", "detail": ""},
+        {"level": "CRITICAL", "message": "渗压计8: 严重异常", "detail": ""},
+        {"level": "CRITICAL", "message": "渗压计9: 严重异常", "detail": ""}]}]
+    assert _ia.run_auto_diagnosis(None, analyses) == 3
+    fs = analyses[0]["findings"]
+    assert all("diagnosis_root_cause" in f for f in fs if f["level"] == "CRITICAL")
+    assert all("diagnosis_root_cause" not in f for f in fs if f["level"] == "WARNING")
+
+
+# ============================================================
 # 入口（兼容旧版直接调用）
 # ============================================================
 

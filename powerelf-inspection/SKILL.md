@@ -137,10 +137,67 @@ pip install pandas numpy sqlalchemy pymysql scikit-learn
 ```bash
 python3 impl/inspection_analyzer.py --db "$DB_URL"
 python3 impl/inspection_analyzer.py --db "$DB_URL" --days 30 --output report.md
-python3 impl/inspection_analyzer.py --db "$DB_URL" --days 7 --json
+python3 impl/inspection_analyzer.py --db "$DB_URL" --days 7 --json          # envelope 契约输出
+python3 impl/inspection_analyzer.py --db "$DB_URL" --days 7 --legacy-json   # 旧版裸数组（过渡）
+python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # 关闭自动诊断链
 ```
 
 分析维度：水库水情、雨量、渗压、渗流、GNSS位移、闸门、泵站、水质、墒情、白蚁、巡检结果、设备状态、告警、MAD统计异常、多指标关联异常
+
+#### 高风险自动诊断（Phase 2）
+
+15 维分析完成后，CRITICAL findings（恒候选）与命中路由的 WARNING findings 自动走诊断路由表
+（`references/diagnosis-routing.md`），CRITICAL 优先占配额：
+分层时间窗 `[-2h]→[-12h]→[-3d]` + 横向 fallback，按根因先验概率序查询，命中即停。
+命中的 finding `category` 升级为 `root_cause`（stop-ready），`detail` 追加证据链；
+未命中也记录"已查窗口与结果"。限流每轮 ≤3 条链；只读 SELECT；`--no-auto-diagnosis` 关闭。
+**扩展指引**：新增巡检维度的专项诊断复用本路由表模式（加一行 `DIAG_ROUTES` + 一个 `_diagnose_*` 函数）。
+
+#### 输出契约（envelope，`--json`）
+
+```json
+{
+  "ok": true, "run_id": "insp-<uuid>", "command": "inspection_analyzer --days 30",
+  "error": null,
+  "agent": {
+    "status": "critical | warning | ok | no_data | inconclusive",
+    "summary": "N 项巡检，M 项异常，最严重的是……",
+    "findings": [{
+      "id": "F001", "severity": "critical|warning|info",
+      "title": "[渗压监测] 渗压计 P03 MAD 离群",
+      "detail": "…（含测点/eq_id/时间窗/当前值与窗口峰值双值）",
+      "category": "root_cause | anomaly | data_quality | info",
+      "data_source": "st_pressure_r.water_pressure @ [-30d, now]",
+      "correlated_with": []
+    }],
+    "next_steps": [{"kind": "command|manual", "label": "…", "command": null, "reason": "…"}]
+  }
+}
+```
+
+错误对象定型 `{code, message, fix_hint}`，code 封闭枚举：`DB_CONNECT_FAILED / TABLE_MISSING / QUERY_TIMEOUT / BAD_ARGS`——**下游按 code 分支，不解析 message**。
+
+**退出码**：`0` 无异常 / `2` 检出 CRITICAL / `3` DB 连接失败 / `4` inconclusive（数据不足以下结论）/ `5` 关键表缺失。
+
+#### 输出纪律（6 条）
+
+1. findings 核心 4 字段（severity/title/detail/category）+ 附注 `data_source`（表.列+时间窗锚点，防结论漂移）、`correlated_with`（同一份证据只归属一条主 finding，被关联者降为佐证不独立计数）；
+2. 必需实体写进 title/detail：测点编码、eq_id、所属工程/坝段、异常时间窗、量级（**当前值与窗口峰值双值**，区分"持续高位"与"瞬时尖峰"）——报告读者不需回查数据库即可行动；
+3. `category=root_cause` 即 stop-ready：detail 已含必要实体+安全下一步时不再追加分析轮次；`next_steps[]` 是优先级计划不是 checklist，只为补"具名缺失实体"才执行下一条；
+4. summary 计数 ≡ findings 明细：禁止口径漂移；
+5. 0 是有效读数，不是缺失：水位 0、流量 0、开度 0 是合法观测值，禁止归入 no_data 分支；
+6. 推断性表述用区间不用点值：预测/外推类 detail 写"预计 4-6 kPa"而非"4.73 kPa"，防假精度。
+
+报告遵循"三问"结构：**严重程度如何？最可能根因在哪？下一步该由谁采取什么行动？**
+
+#### 实体缺口 → 聚焦动作（Phase 3，交互式追问路由）
+
+finding 不完备时按 `references/entity-gap-actions.md` 的五类实体缺口表补齐（传感器归属/外因事件/量级基线/阈值依据/数据质量佐证）。纪律：
+
+- 只根据**已点名的缺失实体**选下一步（一次一条），不凭症状措辞推断；已闭合实体不重复核查；
+- 5 类实体全齐 → finding 升格 `root_cause`，stop-ready；
+- **禁止实体替换**：查空时不得拿相邻测点/相似时段/同类工程数据顶替，只能呈现候选让用户选择，或按固定终止模板收束（"该实体经 X/Y/Z 三途径查询均无数据，无法闭合，本 finding 维持 [Unverified]"）；
+- **禁止跨字段拼凑**：不得把 A 测点的量级 + B 测点的时间窗拼成一条"完备"证据。
 
 #### 2. 质量评分 / 缺陷预测 / 路线分析
 
@@ -152,11 +209,15 @@ python3 impl/inspection_tool.py --mode routes --db "$DB_URL"
 python3 impl/inspection_tool.py --mode registry --db "$DB_URL"
 ```
 
-#### 3. 自动化测试
+#### 3. 自动化测试 / 输出校验
 
 ```bash
 python3 impl/test_inspection.py --db "$DB_URL" --days 7
+python3 impl/inspection_analyzer.py --db "$DB_URL" --json > /tmp/env.json; ec=$?
+python3 impl/verify_output.py /tmp/env.json --exit-code $ec   # envelope 一致性 + red-flag 元检查
 ```
+
+静态评测用例见 `autoresearch/eval_cases/`（✅/❌ 成对 + 空数据三态）。
 
 ### 15 分析维度一览
 

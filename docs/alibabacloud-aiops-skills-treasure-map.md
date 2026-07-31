@@ -736,6 +736,47 @@ cluster 中 craft 最密。只读分析器带硬不变量：
 
 ---
 
+### 11.5 inspection 向交叉分析（2026-07-31 二次精读补）
+
+> §11.1 从 chatbi 视角读了这 10 个 skill；本节以 `docs/inspection-sysom-adoption-plan.md` 的 5 个 Phase 为透镜二次精读，只列对**巡检引擎**有增量的项。
+
+#### 🔴 高价值（直接修订实施方案）
+
+**1. 每表数据新鲜度契约 → 判别 NO_DATA vs 站点离线**（`data-context-extractor/references/domain-template.md` "Data Freshness" 表）
+- 范本给每表登记 `| 表 | 更新频率 | 典型滞后 |`，并给 `SELECT MAX(date_col)` 探针。
+- **→ inspection**：方案 Phase 4.1 四分法里 `NO_DATA`（窗口真空）与"站点离线/采集中断"目前不可判别。建 `references/data-freshness.md` 登记 SL323 各监测表的**期望上报周期**（如雨量 5min/水位 1h），`MAX(tm)` 滞后超 N 个周期 → 归入采集中断而非"无该类数据"。这是四分法落地的前提数据。
+
+**2. 时序异常三分法：点异常 / 变点 / 趋势**（`statistical-analysis` "Time Series Anomaly Detection"）
+- "Distinguish between point anomalies (single unusual value) and change points (sustained shift)"。
+- **→ inspection**：方案 Phase 4.9 双通道（持续 vs 尖峰）应扩成**三分**：尖峰（单点）/ 台阶变点（水平位移，最像传感器重标定或真实工况切换）/ 缓变趋势——三者根因先验完全不同，诊断路由应分流。
+
+**3. 季节性护栏：同期对比防"把汛期当异常"**（`statistical-analysis` "Seasonality Detection"）
+- "比较期间永远用 YoY/同期，避免把季节混入趋势"。
+- **→ inspection**：水利数据季节性极强（汛期/非汛期）。趋势层与 MAD 层的基线窗口若只用"近 30 天"，7 月初汛必然误报。基线应优先**历年同期**（方案 Phase 3 量级基线已写"近 3 年同月"，需把该纪律前移到检测层本身，不只在诊断层）。
+
+**4. 离群处置四分法：不自动删、先归因**（`statistical-analysis` "Handling Outliers"）
+- 调查 → 数据错误（修/剔）/ 真实极值（保留改用稳健统计）/ 不同总体（分开分析），且**报告做了什么**（"剔除 47 条 0.3%…"）。
+- **→ inspection**：MAD 层检出离群后 finding 应带这三分类假设入诊断路由，且报告声明剔除动作——与方案 Phase 2 渗压路由的"传感器漂移 vs 真实渗漏"是同一思想的通用化。
+
+**5. 报告自检 red-flag 目录**（`validate-data` "Red Flags That Warrant Investigation"）
+- 值得怀疑的输出：跨期变化>50% 无解释、精确整数（暗示过滤器/默认值问题）、恰好 0%/100%（数据不全）、跨期/跨段完全相同值（查询丢了维度）、结果完美符合预期。
+- **→ inspection**：这 5 条是对**巡检输出自身**的元检查，可直接进方案 Phase 5.1 的 `verify_output.py` 断言集。
+
+#### 🟡 中价值（打磨项）
+
+- **完整性色阶四档**（`explore-data` 质量框架）：>99% 绿 / 95-99 黄 / 80-95 橙 / <80 红——给方案 Phase 4.6 数据质量闸的"采样密度"一个现成分级标准。
+- **准确性红旗清单**（`explore-data`）：占位值（0/-1/999999/"N/A"）、单值频率异常高（默认值嫌疑）、不可能值、**跨列一致性**（status=完成但 completed_at 为空 ⇔ 闸门状态=关但流量>0，正是方案首批路由 #3 的通用形态）、round-number bias（全是整数 → 估计值非实测值，水位数据出现即疑）。
+- **假精度纪律**（`statistical-analysis`）：findings 的预测/推断性表述用区间不用点值（"预计 4-6%"非"4.73%"）——写进 Phase 1 detail 措辞规范。
+- **列 7 分类法**（`explore-data`）：Identifier/Dimension/Metric/Temporal/Text/Boolean/Structural——为 15 维配置文件里的列打类型标签，检测层按类型选判定方法。
+
+#### 🟢 低价值/暂缓
+
+- `build-dashboard` 自包含 HTML 看板——巡检批量报告的可选形态（Part 1 家风格已提），非本轮范围。
+- `analyze` 复杂度三档路由——巡检是固定流程，不适用。
+- `data-context-extractor` Bootstrap/Iteration 双模——沉淀维度知识的元流程，可供 `evolution/` 机制参考，非代码改动。
+
+---
+
 ## 附录 · 关键文件路径索引
 
 > 所有路径相对 `/opt/git/alibabacloud-aiops-skills/`。

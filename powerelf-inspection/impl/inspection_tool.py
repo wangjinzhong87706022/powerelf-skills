@@ -9,13 +9,11 @@
   routes   — 路线效率分析（遗漏率/超时率）
   full     — 综合报告
   registry — 数据源注册表查看
-  collect  — 数据采集演示
 
 用法:
   python inspection_tool.py --mode quality --db "$DB_URL"
   python inspection_tool.py --mode full --db "..." --start 2026-01-01 --end 2026-12-31
   python inspection_tool.py --mode registry --db "..."
-  python inspection_tool.py --mode collect --db "..." --route-id 1
 
 注意：传感器数据巡检分析（水情/雨量/渗压/位移/闸门/泵站/水质/墒情/白蚁）由 inspection_analyzer.py 负责。
 """
@@ -35,7 +33,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 import quality as _quality
 
 # 导入采集层（P2-T7 最小分离 S4）
-from registry import load_registry, get_builtin_registry, match_data_sources, collect_from_source, show_registry, demo_collect
+from registry import load_registry, get_builtin_registry, collect_from_source, show_registry
 
 # 标识符白名单（防 SQL 注入：table/fields/time_field 来自 sys_data_source_registry，DB 可写）
 _ALLOWED_TABLES = {
@@ -163,16 +161,6 @@ def get_builtin_registry():
          "judge_rules": None, "sort_order": 72},
     ]
     return pd.DataFrame(data)
-
-
-def match_data_sources(required_text, registry):
-    """根据检查项文本匹配数据源"""
-    matched = []
-    for _, source in registry.iterrows():
-        keywords = [kw.strip() for kw in str(source['keywords']).split(',')]
-        if any(kw in required_text for kw in keywords):
-            matched.append(source)
-    return matched
 
 
 def collect_from_source(engine, source, st_id=None, project_id=None):
@@ -409,68 +397,6 @@ def show_registry(engine):
     print(f"\n扩展方式: INSERT INTO sys_data_source_registry ... (详见 docs/18-数据源动态注册机制.md)")
 
 
-def demo_collect(engine, route_id):
-    """演示基于注册表的数据采集"""
-    registry = load_registry(engine)
-    if registry.empty:
-        registry = get_builtin_registry()
-
-    print(f"\n=== 巡检路线 {route_id} 数据采集演示 ===\n")
-
-    try:
-        route = pd.read_sql(
-            "SELECT * FROM business_check_route WHERE id=:id", engine,
-            params={"id": route_id}
-        )
-    except Exception as e:
-        print(f"查询路线失败: {e}")
-        return
-
-    if route.empty:
-        print(f"路线 {route_id} 不存在")
-        return
-
-    route = route.iloc[0]
-    print(f"路线: {route['name']}")
-    point_ids = str(route['select_id']).rstrip(',').split(',')
-    print(f"巡检点: {point_ids}\n")
-
-    for point_id in point_ids:
-        try:
-            point = pd.read_sql(
-                "SELECT * FROM business_check_point WHERE id=:id", engine,
-                params={"id": int(point_id)}
-            )
-        except Exception:
-            continue
-        if point.empty:
-            continue
-        point = point.iloc[0]
-        print(f"  巡检点 [{point_id}] {point['point_name']}")
-
-        # 遍历检查项
-        try:
-            items = pd.read_sql("""
-                SELECT i.id, i.required, o.obj_name
-                FROM business_check_obj_type_item i
-                JOIN business_check_obj_type t ON i.check_obj_type_id = t.id
-                JOIN business_check_obj o ON o.type_id = t.id
-                WHERE o.point_id = :pid AND i.deleted = 0
-            """, engine, params={"pid": int(point_id)})
-        except Exception:
-            continue
-
-        for _, item in items.iterrows():
-            required = str(item['required'])
-            matched = match_data_sources(required, registry)
-            if matched:
-                sources = ", ".join([s['name'] for s in matched])
-                print(f"    检查项: {required[:40]}... → 采集: {sources}")
-            else:
-                print(f"    检查项: {required[:40]}... → 无匹配数据源(需人工)")
-        print()
-
-
 # ============================================================
 # 5. 完整报告
 # ============================================================
@@ -520,12 +446,11 @@ def main():
     parser = argparse.ArgumentParser(description="巡检智能分析工具")
     parser.add_argument("--mode",
                         choices=["quality", "defects", "routes", "full",
-                                 "registry", "collect"],
+                                 "registry"],
                         default="full", help="分析模式")
     parser.add_argument("--db", help="数据库连接 (mysql+pymysql://user:pass@host:3306/powerelf)")
     parser.add_argument("--start", default="2026-01-01", help="开始日期")
     parser.add_argument("--end", default="2026-12-31", help="结束日期")
-    parser.add_argument("--route-id", type=int, help="巡检路线ID(collect模式用)")
     parser.add_argument("--output", help="输出JSON文件路径")
 
     args = parser.parse_args()
@@ -543,11 +468,6 @@ def main():
 
     if args.mode == "registry":
         show_registry(engine)
-    elif args.mode == "collect":
-        if not args.route_id:
-            print("错误: collect 模式需要 --route-id 参数")
-            sys.exit(1)
-        demo_collect(engine, args.route_id)
     elif args.mode == "quality":
         result = calc_inspection_quality(engine, args.start, args.end)
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -566,7 +486,7 @@ def main():
             print(f"\n报告已保存到: {args.output}")
         return
 
-    if args.output and args.mode not in ("registry", "collect"):
+    if args.output and args.mode != "registry":
         with open(args.output, 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
         print(f"\n结果已保存到: {args.output}")

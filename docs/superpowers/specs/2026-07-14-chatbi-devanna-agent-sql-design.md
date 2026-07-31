@@ -26,7 +26,7 @@
 - **方法论嫁接**：把外部 `write-query`/`sql-queries` 的 SQL 写作纪律搬入，作为 agent 自主写 SQL 的护栏。
 
 同时修两个既有事实源对齐问题（chatbi 探索 agent 发现）：chatbi 未引用 `_shared/references/schema.md`
-（自维护冗余表映射）；`few_shots.md` 用 `st_id`/`powerelf_data.` 前缀，与 schema.md 关联键铁律（`stcd`/`eq_id`）
+（自维护冗余表映射）；`few_shots.md` 用 `st_id`/`powerelf_srm_yml.` 前缀，与 schema.md 关联键铁律（`stcd`/`eq_id`）
 及 `_shared/lib/db.py` 默认库名（`powerelf_srm_yml`）冲突——这是 agent 写出 `Unknown column` 错误的根因。
 
 形态沿用 A 簇约定：**方法论文档进 `_shared/`、可运行代码进 skill、判断类护栏为被动文档**；安全护栏为代码层强制。
@@ -43,7 +43,7 @@
   ChartCodeAgent/InterpretationAgent）→ hermes agent 编排描述。
 - 改造 `powerelf-chatbi/SKILL.md`：删 `/chatbi/aiReporter/*` 三端点；加 query_exec 使用说明；
   `prerequisites.env_vars` 加只读账号变量。
-- 改造 `powerelf-chatbi/references/few_shots.md`：修正 `st_id`→`stcd`/`eq_id`、`powerelf_data.`→统一库名。
+- 改造 `powerelf-chatbi/references/few_shots.md`：修正 `st_id`→`stcd`/`eq_id`、`powerelf_srm_yml.`→统一库名。
 - 改造 `_shared/lib/db.py`：加 `get_readonly_sqlalchemy_url()`（单一事实源导出只读 URL）。
 - 最小改 `powerelf-chatbi/rules/chart-selection.md`：去掉 Builder 类名列的后端耦合（类型扩充留 B' 簇）。
 - 配置只读账号 `chatbi_ro`（`GRANT SELECT ON powerelf_srm_yml.*`），凭证走 `~/.hermes/.env`。
@@ -72,7 +72,7 @@
 | `powerelf-chatbi/rules/sql-generation.md` | `:8` Vanna 流程→agent 自主；顶部加 schema.md 关联键铁律引用+摘要；表映射段(`:16-62`)瘦身指向 schema.md；注意事项段加 sql-discipline.md 引用 |
 | `powerelf-chatbi/rules/intent-classification.md` | `:38-44` 后端 Agent 流水线→hermes agent 编排（意图→生成SQL→query_exec→解读） |
 | `powerelf-chatbi/SKILL.md` | 删 `:47-49` aiReporter 三端点；加 query_exec 使用段；`prerequisites.env_vars` 加 `POWERELF_DB_READONLY_USER/PASSWORD` |
-| `powerelf-chatbi/references/few_shots.md` | 全量修正 `st_id`→`stcd`/`eq_id`（按 schema.md 铁律表）、`powerelf_data.`→裸表名（库名由 db.py 统一） |
+| `powerelf-chatbi/references/few_shots.md` | 全量修正 `st_id`→`stcd`/`eq_id`（按 schema.md 铁律表）、`powerelf_srm_yml.`→裸表名（库名由 db.py 统一） |
 | `powerelf-chatbi/rules/chart-selection.md` | `:5-13` Builder 类名列→图表语义描述（去后端耦合）；类型不扩充 |
 | `_shared/lib/db.py` | 加 `get_readonly_sqlalchemy_url()`（读 `POWERELF_DB_READONLY_*`，后备 `SRM_DB_*`，再后备主账号） |
 | `_shared/bootstrap.sh` | 扩展导出 `RO_DB_URL`（调 `get_readonly_sqlalchemy_url`），供 chatbi query_exec 使用 |
@@ -204,7 +204,7 @@ def get_readonly_sqlalchemy_url(...) -> str:
   意图分类→生成SQL(用sql-discipline/schema/few_shots)→query_exec执行→选图(chart-selection)→解读"。
 - **SKILL.md**：删 aiReporter 三端点（`:47-49`，已废弃）；保留其余 4 端点（knowledge/graph/llm/menu，与 NL2SQL 无关）；
   加 query_exec 使用段；env_vars 加只读账号。
-- **few_shots.md**：全量按 schema.md 铁律修正关联键 + 统一库名（去 `powerelf_data.` 前缀）。
+- **few_shots.md**：全量按 schema.md 铁律修正关联键 + 统一库名（去 `powerelf_srm_yml.` 前缀）。
 - **chart-selection.md**：Builder 类名列→图表语义（去后端耦合），类型不扩充（B' 簇）。
 
 ## 5. 数据流
@@ -250,7 +250,7 @@ chatbi/impl/query_exec.py --sql "..." --db "$RO_DB_URL"
   - 空/大结果分别返回 `row_count=0` / `truncated=true`
   - 纯函数 `validate_readonly` 无 DB 依赖，可入 CI
 - **文档验证**：(a) sql-discipline.md 无 PG/Snowflake/BQ 方言泄漏；(b) sql-generation.md 链接完整；
-  (c) few_shots.md 全量 grep `st_id`/`powerelf_data.` 零残留（与 schema.md 铁律一致）。
+  (c) few_shots.md 全量 grep `st_id`/`powerelf_srm_yml.` 零残留（与 schema.md 铁律一致）。
 - **链接完整性**：sql-discipline.md 被 sql-generation.md + query_exec.py docstring 引用；
   schema.md 关联键铁律被 sql-generation.md + few_shots.md 引用。
 - **冒烟**（手动 runbook）：配 chatbi_ro 账号 → `source 引导 && python3 impl/query_exec.py --sql "SELECT ... FROM st_pressure_r WHERE eq_id=..." --db "$RO_DB_URL"` 真实库产出合理 JSON，人工核对。

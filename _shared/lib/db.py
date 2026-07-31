@@ -105,10 +105,12 @@ def get_connection(
     password: Optional[str] = None,
     database: Optional[str] = None,
     read_timeout: Optional[int] = None,
+    connect_timeout: int = 10,
 ) -> pymysql.Connection:
     """pymysql 连接（DictCursor，utf8mb4）。供 lib/ 模块使用。
 
-    read_timeout: pymysql 读超时秒数（None=不限）。query() 默认 30s，防慢查询挂死 agent。
+    双超时（Phase 4.7）：connect_timeout 默认 10s（防连不上挂死），
+    read_timeout 默认 None=不限（query() 默认传 30s，防慢查询挂死 agent）。
     """
     conn = pymysql.connect(
         host=host or DB_HOST,
@@ -118,6 +120,7 @@ def get_connection(
         database=database or DB_NAME,
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=connect_timeout,
         **({"read_timeout": read_timeout} if read_timeout is not None else {}),
     )
     return conn
@@ -344,11 +347,19 @@ def get_sqlalchemy_url(
     )
 
 
-def create_engine(url: Optional[str] = None):
-    """懒加载创建 SQLAlchemy engine（避免无 sqlalchemy 环境下 import 失败）。"""
+def create_engine(url: Optional[str] = None, connect_timeout: int = 10,
+                  read_timeout: int = 120):
+    """懒加载创建 SQLAlchemy engine（避免无 sqlalchemy 环境下 import 失败）。
+
+    双超时强制（Phase 4.7）：connect_timeout 10s + read_timeout 120s，
+    防单查询挂死整轮巡检/治理批处理。"""
     from sqlalchemy import create_engine as _create
 
-    return _create(url or get_sqlalchemy_url())
+    return _create(
+        url or get_sqlalchemy_url(),
+        connect_args={"connect_timeout": connect_timeout,
+                      "read_timeout": read_timeout},
+    )
 
 
 def get_readonly_sqlalchemy_url(

@@ -1,4 +1,4 @@
-# powerelf_data 全库 Schema 参考
+# powerelf_srm_yml 全库 Schema 参考
 
 > 覆盖 20+ 业务表，按域分组。所有表均有 `id`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted` 基础字段（下文省略）。
 

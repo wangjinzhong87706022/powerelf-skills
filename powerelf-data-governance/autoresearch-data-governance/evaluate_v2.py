@@ -93,7 +93,7 @@ def test_05_periodic_missing():
         SELECT HOUR(tm) AS h, COUNT(*) AS c
         FROM st_pptn_r WHERE eq_id=262
         GROUP BY HOUR(tm) ORDER BY h
-    """, db='powerelf_data')
+    """, db='powerelf_srm_yml')
     hour_counts = {r['h']: r['c'] for r in rows}
     missing_hours = [h for h in range(24) if hour_counts.get(h, 0) == 0]
     return {"db_host": "127.0.0.1", "modules_used": 2, "has_numbers": True,
@@ -256,7 +256,7 @@ def test_14_interpolation():
 def test_15_writeback():
     """Q15: 数据回写 — 创建并修复一条异常记录"""
     conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password=os.getenv('POWERELF_DB_PASSWORD') or os.getenv('SRM_DB_PASSWORD', ''),
-                           database='powerelf_data', charset='utf8mb4')
+                           database='powerelf_srm_yml', charset='utf8mb4')
     cur = conn.cursor()
     cur.execute("INSERT INTO eq_data_anomaly_record (equipment_code,data_anomaly_datetime,data_anomaly_date,whether_fix,table_name,tenant_id) VALUES (250,'2026-06-01 14:00:00','2026-06-01',0,'st_rsvr_r',1)")
     conn.commit()

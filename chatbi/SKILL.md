@@ -13,7 +13,7 @@ metadata:
 
 # ChatBI NL2SQL 智能查询
 
-自然语言转 SQL 查询引擎，覆盖 powerelf_data 全库 20+ 业务表，支持水文气象、设备工情、大坝安全、预警、巡检、数据治理等全域查询。
+自然语言转 SQL 查询引擎，覆盖 powerelf_srm_yml 全库 20+ 业务表，支持水文气象、设备工情、大坝安全、预警、巡检、数据治理等全域查询。
 
 ## When to Use
 
@@ -28,7 +28,7 @@ metadata:
 
 ## Prerequisites
 
-- **数据库:** **本地 MySQL** `127.0.0.1:3306/powerelf_data`（环境变量 POWERELF_DB_* / SRM_DB_*）
+- **数据库:** **本地 MySQL** `127.0.0.1:3306/powerelf_srm_yml`（环境变量 POWERELF_DB_* / SRM_DB_*）
 - **DB 助手:** **必须用** `skills/powerelf/lib/db.py`（不要用 water-resources 的）
 
 ```python
@@ -54,7 +54,7 @@ from db import query
   │               用户说了"最近一周"→ INTERVAL 7 DAY
   │               用户说了"本月"→ MONTH(tm) = MONTH(NOW())
   │               用户未指定时间 → 先查数据实际范围:
-  │                 SELECT MIN(tm), MAX(tm) FROM powerelf_data.{主表} WHERE tenant_id=1
+  │                 SELECT MIN(tm), MAX(tm) FROM powerelf_srm_yml.{主表} WHERE tenant_id=1
   │               用实际范围作为默认，避免查空数据
   │               SQL 必须带时间条件，禁止全表扫描
   │
@@ -71,7 +71,7 @@ from db import query
   │               import sys, os
   │               sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lib'))
   │               from db import query
-  │               rows = query("SELECT ...", db='powerelf_data')
+  │               rows = query("SELECT ...", db='powerelf_srm_yml')
   │
   ▼
 6. 输出格式化 ──→ 表格 + 可选 ECharts 图表 + 数据解读

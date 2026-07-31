@@ -1,6 +1,6 @@
 ---
 name: powerelf-monitor
-description: "实时监控分析 — 水位变化率/库容平衡/GNSS位移速率/闸泵电气校验/雨情强度/Mann-Kendall趋势检测。分析水位变化趋势，不是查水位也不是查异常。核心表: powerelf_data.st_rsvr_r, powerelf_data.dsm_dfr_srvrds_srhrds"
+description: "实时监控分析 — 水位变化率/库容平衡/GNSS位移速率/闸泵电气校验/雨情强度/Mann-Kendall趋势检测。分析水位变化趋势，不是查水位也不是查异常。核心表: powerelf_srm_yml.st_rsvr_r, powerelf_srm_yml.dsm_dfr_srvrds_srhrds"
 version: 2.0.0
 author: dataagent-powerelf
 license: MIT
@@ -32,7 +32,7 @@ metadata:
 
 ## Prerequisites
 
-- **数据库:** **本地 MySQL** `127.0.0.1:3306/powerelf_data`（环境变量 POWERELF_DB_* / SRM_DB_*）
+- **数据库:** **本地 MySQL** `127.0.0.1:3306/powerelf_srm_yml`（环境变量 POWERELF_DB_* / SRM_DB_*）
 - **DB 助手:** **必须用** `skills/powerelf/lib/db.py`（不要用 water-resources 的）
 
 ```python
@@ -131,7 +131,7 @@ from db import query
   │               有时间条件的 SQL 带 WHERE tm BETWEEN '{START}' AND '{END}'
   │
   ▼
-1. 获取数据 ──→ 用 execute_code 从 powerelf_data 查询原始监测数据（限定时间窗口）
+1. 获取数据 ──→ 用 execute_code 从 powerelf_srm_yml 查询原始监测数据（限定时间窗口）
   │               (参考下方"数据输入"确定查哪张表)
   │
   ▼
@@ -155,7 +155,7 @@ from db import query
 
 ## 数据输入
 
-所有数据通过 `execute_code` 从 `powerelf_data` 查询。关键表和字段:
+所有数据通过 `execute_code` 从 `powerelf_srm_yml` 查询。关键表和字段:
 
 ```python
 import sys, os
@@ -163,22 +163,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lib'))
 from db import query
 
 # 水库水情
-rows = query("SELECT stcd, tm, rz, inq, otq, w, blrz FROM st_rsvr_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC LIMIT 100", params=('ST001', '2026-05-01'), db='powerelf_data')
+rows = query("SELECT stcd, tm, rz, inq, otq, w, blrz FROM st_rsvr_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC LIMIT 100", params=('ST001', '2026-05-01'), db='powerelf_srm_yml')
 
 # GNSS变形
-rows = query("SELECT point_id, tm, wgs84_delta_h, wgs84_delta_x, wgs84_delta_y, wgs84_total_h, wgs84_total_x, wgs84_total_y, speed_gh, speed_gx, speed_gy FROM dsm_dfr_srvrds_srhrds WHERE point_id=%s AND tm >= %s ORDER BY tm", params=('P001', '2026-01-01'), db='powerelf_data')
+rows = query("SELECT point_id, tm, wgs84_delta_h, wgs84_delta_x, wgs84_delta_y, wgs84_total_h, wgs84_total_x, wgs84_total_y, speed_gh, speed_gx, speed_gy FROM dsm_dfr_srvrds_srhrds WHERE point_id=%s AND tm >= %s ORDER BY tm", params=('P001', '2026-01-01'), db='powerelf_srm_yml')
 
 # 闸门工情
-rows = query("SELECT stcd, slcd, tm, gtq, gtophgt, gtopnum, status FROM rei_gate_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC", params=('ST001', '2026-05-31'), db='powerelf_data')
+rows = query("SELECT stcd, slcd, tm, gtq, gtophgt, gtopnum, status FROM rei_gate_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC", params=('ST001', '2026-05-31'), db='powerelf_srm_yml')
 
 # 泵站工情 (电气参数为varchar, 需parseFloat)
-rows = query("SELECT stcd, tm, uab, ubc, uca, ia, ib, ic, p, freq, speed, status, fan_run, fan_fault, ot, it, ul, al FROM rei_pump_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC", params=('ST001', '2026-05-31'), db='powerelf_data')
+rows = query("SELECT stcd, tm, uab, ubc, uca, ia, ib, ic, p, freq, speed, status, fan_run, fan_fault, ot, it, ul, al FROM rei_pump_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC", params=('ST001', '2026-05-31'), db='powerelf_srm_yml')
 
 # 测站雨量 (dr单位为分钟!)
-rows = query("SELECT stcd, tm, p, dr, dyp, cump FROM st_pptn_r WHERE stcd=%s AND tm >= %s ORDER BY tm", params=('ST001', '2026-05-01'), db='powerelf_data')
+rows = query("SELECT stcd, tm, p, dr, dyp, cump FROM st_pptn_r WHERE stcd=%s AND tm >= %s ORDER BY tm", params=('ST001', '2026-05-01'), db='powerelf_srm_yml')
 
 # GNSS日统计
-rows = query("SELECT st_id, eq_id, tm, maxh, minh, avgh, maxx, minx, avgx, maxy, miny, avgy FROM srm_gnss_stat_day WHERE st_id=%s AND tm >= %s ORDER BY tm", params=(1, '2026-01-01'), db='powerelf_data')
+rows = query("SELECT st_id, eq_id, tm, maxh, minh, avgh, maxx, minx, avgx, maxy, miny, avgy FROM srm_gnss_stat_day WHERE st_id=%s AND tm >= %s ORDER BY tm", params=(1, '2026-01-01'), db='powerelf_srm_yml')
 
 # 渗流量 / 渗压 / 墒情
 rows = query("SELECT stcd, tm, percolation FROM st_percolation_r WHERE stcd=%s AND tm >= %s ORDER BY tm DESC", ...)

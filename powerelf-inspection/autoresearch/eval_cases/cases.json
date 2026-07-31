@@ -1,0 +1,358 @@
+{
+  "version": 2,
+  "note": "占位实体 st-9xxx；15 维度成对用例 + 3 态空数据 + 质量闸/占位值/零值/季节护栏/诊断链场景用例。❌ 用例必带边界理由。",
+  "cases": [
+    {
+      "id": "WL-POS-1",
+      "dimension": "水库水情",
+      "kind": "should_report",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.5（6点5次连续上升）"},
+      "expected": {"min_level": "WARNING", "message_contains": "连续上升"},
+      "reason": "6 点窗口 5 次连续上升，达 consecutive_monotonic(rise,5) 阈值"
+    },
+    {
+      "id": "WL-NEG-1",
+      "dimension": "水库水情",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.4（末点持平）"},
+      "expected": {"no_finding_contains": "连续上升"},
+      "reason": "仅 4 次连续上升，阈值 5 次，差 1 不应触发"
+    },
+    {
+      "id": "WL-POS-2",
+      "dimension": "水库水情",
+      "kind": "should_report",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9001, 末条 inq=21.0, otq=10.0（比值 2.1）"},
+      "expected": {"min_level": "WARNING", "message_contains": "入库流量"},
+      "reason": "入库/出库比 2.1 > 2，蓄水过快"
+    },
+    {
+      "id": "WL-NEG-2",
+      "dimension": "水库水情",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9001, 末条 inq=20.0, otq=10.0（比值恰 2.0）"},
+      "expected": {"no_finding_contains": "入库流量"},
+      "reason": "比值恰等于阈值 2，判定为严格大于，不应触发"
+    },
+    {
+      "id": "RAIN-POS-1",
+      "dimension": "雨量监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_pptn_r", "rows_desc": "st_id=9002, 单时段 p=100.1mm"},
+      "expected": {"min_level": "CRITICAL", "message_contains": "红色预警"},
+      "reason": "100.1mm > 红色阈值 100mm（ew_info_rules 缺省兜底）"
+    },
+    {
+      "id": "RAIN-NEG-1",
+      "dimension": "雨量监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_pptn_r", "rows_desc": "st_id=9002, 单时段 p=29.9mm"},
+      "expected": {"no_finding_contains": "预警"},
+      "reason": "29.9mm，蓝色阈值 30mm，差 0.1 不应触发任何预警级"
+    },
+    {
+      "id": "PRES-POS-1",
+      "dimension": "渗压监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 相邻两点 50.0→55.1（突变 5.1kPa）"},
+      "expected": {"min_level": "WARNING", "message_contains": "突变"},
+      "reason": "5.1kPa > 突变阈值 5kPa（registry rate.max_change 缺省兜底）"
+    },
+    {
+      "id": "PRES-NEG-1",
+      "dimension": "渗压监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 相邻两点 50.0→54.9（变化 4.9kPa）"},
+      "expected": {"no_finding_contains": "突变"},
+      "reason": "变化 4.9kPa，阈值 5kPa，差 0.1 不应触发"
+    },
+    {
+      "id": "PERC-POS-1",
+      "dimension": "渗流监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_percolation_r", "rows_desc": "st_id=9004, percolation 相邻 1.000→1.201（+20.1%）"},
+      "expected": {"min_level": "WARNING", "message_contains": "突变"},
+      "reason": "20.1% > 突变阈值 20%"
+    },
+    {
+      "id": "PERC-NEG-1",
+      "dimension": "渗流监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_percolation_r", "rows_desc": "st_id=9004, percolation 相邻 1.000→1.199（+19.9%）"},
+      "expected": {"no_finding_contains": "突变"},
+      "reason": "19.9%，阈值 20%，差 0.1pct 不应触发"
+    },
+    {
+      "id": "GNSS-POS-1",
+      "dimension": "位移监测",
+      "kind": "should_report",
+      "fixture": {"table": "dsm_dfr_srvrds_srhrds", "rows_desc": "st_id=9005, speed_gh 5 点 4 次连续加速"},
+      "expected": {"min_level": "WARNING", "message_contains": "加速"},
+      "reason": "GNSS 5 点窗口 4 次连续加速，达趋势阈值"
+    },
+    {
+      "id": "GNSS-NEG-1",
+      "dimension": "位移监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "dsm_dfr_srvrds_srhrds", "rows_desc": "st_id=9005, speed_gh 5 点仅 3 次连续加速"},
+      "expected": {"no_finding_contains": "加速"},
+      "reason": "仅 3 次连续加速，阈值 4 次，差 1 不应触发"
+    },
+    {
+      "id": "GATE-POS-1",
+      "dimension": "闸门工情",
+      "kind": "should_report",
+      "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, gtophgt 相邻两点 1.00→2.01（突变 1.01m）"},
+      "expected": {"min_level": "WARNING", "message_contains": "开度突变"},
+      "reason": "1.01m > 单步开度突变阈值 1.0m（gate_opening_jump_m）"
+    },
+    {
+      "id": "GATE-NEG-1",
+      "dimension": "闸门工情",
+      "kind": "should_not_report",
+      "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, gtophgt 相邻两点 1.00→2.00（突变恰 1.00m）"},
+      "expected": {"no_finding_contains": "开度突变"},
+      "reason": "变化恰等于阈值 1.0m，判定为严格大于，不应触发"
+    },
+    {
+      "id": "GATE-POS-2",
+      "dimension": "闸门工情",
+      "kind": "should_report",
+      "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, 单条 gtophgt=2.5, gtq=0"},
+      "expected": {"min_level": "WARNING", "message_contains": "流量为0"},
+      "reason": "开度 2.5m>0 且流量为 0，疑似卡阻或流量计故障"
+    },
+    {
+      "id": "GATE-NEG-2",
+      "dimension": "闸门工情",
+      "kind": "should_not_report",
+      "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, 全窗口 gtophgt=0, gtq=0（闸门全关）"},
+      "expected": {"no_finding_contains": "流量为0", "not_no_data": true},
+      "reason": "输出纪律 #5：开度 0/流量 0 是合法观测（闸门关闭），不报卡阻也不归 no_data"
+    },
+    {
+      "id": "PUMP-POS-1",
+      "dimension": "泵站工情",
+      "kind": "should_report",
+      "fixture": {"table": "rei_pump_r", "rows_desc": "st_id=9007, 单条 freq=44.9"},
+      "expected": {"min_level": "WARNING", "message_contains": "频率"},
+      "reason": "44.9Hz < 下界 45Hz（工频 50Hz -10%）"
+    },
+    {
+      "id": "PUMP-NEG-1",
+      "dimension": "泵站工情",
+      "kind": "should_not_report",
+      "fixture": {"table": "rei_pump_r", "rows_desc": "st_id=9007, 单条 freq=45.0"},
+      "expected": {"no_finding_contains": "频率"},
+      "reason": "恰等于下界 45Hz，判定为严格小于，不应触发"
+    },
+    {
+      "id": "PUMP-POS-2",
+      "dimension": "泵站工情",
+      "kind": "should_report",
+      "fixture": {"table": "rei_pump_r", "rows_desc": "st_id=9007, 单条 uab=400, ubc=400, uca=464（不平衡 10.1%）"},
+      "expected": {"min_level": "WARNING", "message_contains": "三相不平衡"},
+      "reason": "max_dev/avg = 42.67/421.33 ≈ 10.1% > 阈值 10%（GB/T 15543）"
+    },
+    {
+      "id": "WQ-POS-1",
+      "dimension": "水质监测",
+      "kind": "should_report",
+      "fixture": {"table": "wq_pcp_d", "rows_desc": "stcd=9008, 最新一条 ph=5.99"},
+      "expected": {"min_level": "WARNING", "message_contains": "pH偏低"},
+      "reason": "5.99 < 标准下限 6（注意：检测只取最新一条读数）"
+    },
+    {
+      "id": "WQ-NEG-1",
+      "dimension": "水质监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "wq_pcp_d", "rows_desc": "stcd=9008, 最新一条 ph=6.00"},
+      "expected": {"no_finding_contains": "pH"},
+      "reason": "恰等于下限 6，判定为严格小于，不应触发"
+    },
+    {
+      "id": "SOIL-POS-1",
+      "dimension": "土壤墒情",
+      "kind": "should_report",
+      "fixture": {"table": "st_soil_moisture_r", "rows_desc": "st_id=9009, soil_moist_evaluation='重度干旱'"},
+      "expected": {"min_level": "WARNING", "message_contains": "墒情评价"},
+      "reason": "评价文本命中关键词（干旱/不足/重度）"
+    },
+    {
+      "id": "SOIL-NEG-1",
+      "dimension": "土壤墒情",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_soil_moisture_r", "rows_desc": "st_id=9009, soil_moist_evaluation='适宜', soil_water100cm=25.0"},
+      "expected": {"no_finding_contains": "墒情评价"},
+      "reason": "评价不含干旱/不足/重度关键词，且 100cm 含水量 25% ≥ 10% 下限"
+    },
+    {
+      "id": "TERM-POS-1",
+      "dimension": "白蚁监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_termite_monitor_r", "rows_desc": "st_id=9010, damage_level='重度' 1 条"},
+      "expected": {"min_level": "CRITICAL", "message_contains": "危害等级"},
+      "reason": "重度危害 → CRITICAL（中度仅 WARNING）"
+    },
+    {
+      "id": "TERM-POS-2",
+      "dimension": "白蚁监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_termite_monitor_r", "rows_desc": "st_id=9010, pest_density=3, check_result='未发现', damage_level=NULL"},
+      "expected": {"min_level": "WARNING", "message_contains": "虫口密度"},
+      "reason": "密度恰达阈值 3（判定 ≥3 含边界，与多数严格比较不同）"
+    },
+    {
+      "id": "TERM-NEG-1",
+      "dimension": "白蚁监测",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_termite_monitor_r", "rows_desc": "st_id=9010, pest_density=2, check_result='未发现', damage_level=NULL"},
+      "expected": {"no_finding_contains": "白蚁"},
+      "reason": "密度 2 < 3，未发现白蚁，无危害等级，差 1 级不应触发"
+    },
+    {
+      "id": "INSP-POS-1",
+      "dimension": "巡检结果",
+      "kind": "should_report",
+      "fixture": {"table": "business_check_task", "rows_desc": "100 条任务，69 条 status='3'（完成率 69%），无超时"},
+      "expected": {"min_level": "WARNING", "message_contains": "完成率偏低"},
+      "reason": "69% < 考核线 70%（completion_rate_min）"
+    },
+    {
+      "id": "INSP-NEG-1",
+      "dimension": "巡检结果",
+      "kind": "should_not_report",
+      "fixture": {"table": "business_check_task", "rows_desc": "100 条任务，70 条 status='3'（完成率恰 70%），无超时"},
+      "expected": {"no_finding_contains": "完成率"},
+      "reason": "恰等于考核线 70%，判定为严格小于，不应触发"
+    },
+    {
+      "id": "EQUIP-POS-1",
+      "dimension": "设备状态",
+      "kind": "should_report",
+      "fixture": {"table": "eq_equip_base", "rows_desc": "100 台设备，31 台 status=0（离线率 31%），0 台 status=2"},
+      "expected": {"min_level": "WARNING", "message_contains": "离线率偏高"},
+      "reason": "31% > 阈值 30%（equip_offline_rate_max）"
+    },
+    {
+      "id": "EQUIP-NEG-1",
+      "dimension": "设备状态",
+      "kind": "should_not_report",
+      "fixture": {"table": "eq_equip_base", "rows_desc": "100 台设备，30 台 status=0（离线率恰 30%），0 台 status=2（异常必须为 0，否则另一分支触发）"},
+      "expected": {"no_finding_contains": "离线率"},
+      "reason": "恰等于阈值 30%，判定为严格大于，不应触发"
+    },
+    {
+      "id": "ALERT-POS-1",
+      "dimension": "告警分析",
+      "kind": "should_report",
+      "fixture": {"table": "ew_info_message", "rows_desc": "1 条 level_r='1' 未确认告警"},
+      "expected": {"min_level": "CRITICAL", "message_contains": "I级告警"},
+      "reason": "I 级告警 ≥1 条即 CRITICAL"
+    },
+    {
+      "id": "ALERT-NEG-1",
+      "dimension": "告警分析",
+      "kind": "should_not_report",
+      "fixture": {"table": "ew_info_message", "rows_desc": "10 条 level_r='4' 未确认告警（无 I/II 级）"},
+      "expected": {"no_finding_contains": "告警"},
+      "reason": "无 I/II 级；未确认恰 10 条，积压阈值为严格 >10，不应触发"
+    },
+    {
+      "id": "MAD-POS-1",
+      "dimension": "MAD统计异常",
+      "kind": "should_report",
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9011, water_pressure 30 点稳定 50.00±0.05，末点 60.0"},
+      "expected": {"min_level": "WARNING", "message_contains": "MAD统计异常"},
+      "reason": "末点偏离中位数，z 远超渗压 MAD 阈值 4.0，样本 30 ≥ 下限 20"
+    },
+    {
+      "id": "MAD-NEG-1",
+      "dimension": "MAD统计异常",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9011, 同形态离群序列但总共仅 19 点"},
+      "expected": {"no_finding_contains": "MAD统计异常"},
+      "reason": "样本 19 < min_samples 20，统计不可靠不应触发（样本量下限护栏）"
+    },
+    {
+      "id": "CORR-POS-1",
+      "dimension": "关联异常",
+      "kind": "should_report",
+      "fixture": {"table": "st_pptn_r + st_rsvr_r", "rows_desc": "累计雨量 60mm，同期 rz 变化 0.04m（正常波动非平线）"},
+      "expected": {"min_level": "INFO", "message_contains": "累计"},
+      "reason": "雨量 >50mm 且水位变化 <0.05m，且水位序列 CV≥idle_cv_min（真实矛盾）"
+    },
+    {
+      "id": "CORR-NEG-1",
+      "dimension": "关联异常",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_pptn_r + st_rsvr_r", "rows_desc": "累计雨量 60mm，同期 rz 全程恒等 100.000（死值平线）"},
+      "expected": {"no_finding_contains": "累计"},
+      "reason": "水位序列为死值平线（CV<0.001），idle 护栏应抑制伪相关——该报的是数据质量问题不是关联异常"
+    },
+    {
+      "id": "QG-RED-1",
+      "dimension": "水库水情（质量闸）",
+      "kind": "quality_gate",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9012, 30 天窗口仅注入 3 天数据（完整性 <80% 红档）"},
+      "expected": {"dimension_status": "INCONCLUSIVE", "envelope_status": "inconclusive", "exit_code": 4, "next_steps_contains": "先修数据"},
+      "reason": "完整性红档（<80%）不硬跑：维度 INCONCLUSIVE → envelope inconclusive → 退出码 4，转 governance"
+    },
+    {
+      "id": "QG-PLACEHOLDER-1",
+      "dimension": "水库水情（质量闸）",
+      "kind": "quality_gate",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9012, rz 序列混入 -99 与 999 各若干，另含合法 0.00 读数"},
+      "expected": {"quality_issues_contains": "占位", "zero_not_counted_as_placeholder": true},
+      "reason": "-99/999 属占位值集合应计入质量 issues；0 是合法观测值（纪律 #5）不得计入占位"
+    },
+    {
+      "id": "SEASON-GUARD-1",
+      "dimension": "水库水情（季节护栏）",
+      "kind": "guardrail",
+      "fixture": {"table": "st_rsvr_r", "rows_desc": "st_id=9013, 7 月汛期注入 MAD 离群高水位（历史同期水位普涨）"},
+      "expected": {"max_level": "INFO", "message_contains": "MAD统计异常"},
+      "reason": "汛期 in_season 命中 → 水位普涨降级 INFO 而非 WARNING，防季节性误报"
+    },
+    {
+      "id": "DIAG-HIT-1",
+      "dimension": "渗压监测（诊断链）",
+      "kind": "diagnosis",
+      "fixture": {"table": "st_pressure_r + st_rsvr_r", "rows_desc": "st_id=9014 渗压突变 5.5kPa（WARNING 命中 R1 路由）；同期 -2h 窗口内 rz 上升 0.25m（≥0.2m）"},
+      "expected": {"finding_has": "diagnosis_root_cause", "detail_contains": "证据链", "envelope_category": "root_cause"},
+      "reason": "R1 第一层（水位Δ≥0.2m，先验 ~50%）命中即停 → root_cause 回填，category 升级 stop-ready"
+    },
+    {
+      "id": "DIAG-MISS-1",
+      "dimension": "渗压监测（诊断链）",
+      "kind": "diagnosis",
+      "fixture": {"table": "st_pressure_r + st_rsvr_r + st_pptn_r + rei_gate_r", "rows_desc": "st_id=9014 渗压突变 5.5kPa；同期水位平稳（Δ<0.2m）、无降雨、闸门无动作"},
+      "expected": {"finding_not_has": "diagnosis_root_cause", "detail_contains": "已查"},
+      "reason": "三层候选与横向 fallback 均无证据 → 不编造根因，detail 记录已查窗口（已检为空 ≠ 忘了检）"
+    },
+    {
+      "id": "EMPTY-NA-1",
+      "dimension": "河道水情（借 st_river_r 天然空表）",
+      "kind": "empty_data",
+      "fixture": {"table": "st_river_r", "rows_desc": "不注入任何数据（表历史即空）"},
+      "expected": {"status_code": "NOT_APPLICABLE", "no_fabricated_values": true},
+      "reason": "MAX(tm) 探针为 NULL → 本工程无此类监测，不算异常，勿重试"
+    },
+    {
+      "id": "EMPTY-ND-1",
+      "dimension": "渗流监测",
+      "kind": "empty_data",
+      "fixture": {"table": "st_percolation_r", "rows_desc": "仅注入 30 天前的历史行，窗口 7 天内为空"},
+      "expected": {"status_code": "NO_DATA", "note_contains": "采集", "no_fabricated_values": true},
+      "reason": "有历史 MAX(tm) 但窗口空 → NO_DATA（子类型采集中断），转 governance 排查"
+    },
+    {
+      "id": "EMPTY-QF-1",
+      "dimension": "任一维度",
+      "kind": "empty_data",
+      "fixture": {"table": "（模拟）临时 REVOKE SELECT 或改坏表名", "rows_desc": "查询抛异常"},
+      "expected": {"status_code": "QUERY_FAILED", "no_fabricated_values": true},
+      "reason": "查询失败 ≠ 无数据，严禁以 0 或空充数"
+    }
+  ]
+}

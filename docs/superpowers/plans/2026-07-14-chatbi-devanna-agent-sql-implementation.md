@@ -30,7 +30,7 @@
 | `powerelf-chatbi/impl/test_query_exec.py` | 护栏纯函数单测 + db 只读 URL 单测 + CLI 参数单测 | Task 1-3 |
 | `_shared/references/sql-discipline.md` | 通用 SQL 写作纪律（跨域） | Task 4 |
 | `powerelf-chatbi/rules/sql-generation.md` | 删 Vanna 流程 + 接入 schema 铁律 + 表映射瘦身 | Task 5 |
-| `powerelf-chatbi/references/few_shots.md` | 修正 `st_id`→`stcd/eq_id`、去 `powerelf_data.` 前缀 | Task 5 |
+| `powerelf-chatbi/references/few_shots.md` | 修正 `st_id`→`stcd/eq_id`、去 `powerelf_srm_yml.` 前缀 | Task 5 |
 | `powerelf-chatbi/rules/intent-classification.md` | 后端虚构类名→hermes agent 编排 | Task 6 |
 | `powerelf-chatbi/SKILL.md` | 删 aiReporter 端点 + 加 query_exec 说明 + env | Task 6 |
 | `powerelf-chatbi/rules/chart-selection.md` | 去 Builder 类名列后端耦合（类型不扩充） | Task 6 |
@@ -675,16 +675,16 @@ SQL 错误（BadSqlGrammar/Unknown column）由 agent 见错误信息自修正�
 
 Run（先看残留范围）：
 ```bash
-cd /home/scada/powerelf-skills && grep -nE "\bst_id\b|powerelf_data\." powerelf-chatbi/references/few_shots.md
+cd /home/scada/powerelf-skills && grep -nE "\bst_id\b|powerelf_srm_yml\." powerelf-chatbi/references/few_shots.md
 ```
 
 逐处修正（用 Edit/replace）：
 - `r.st_id = s.id` 类 JOIN → 按 schema.md 铁律改为 `stcd = ...` 或 `eq_id = ...`（依据具体表）
-- `powerelf_data.st_rsvr_r` → `st_rsvr_r`（去库名前缀，库名由 db.py 统一）
+- `powerelf_srm_yml.st_rsvr_r` → `st_rsvr_r`（去库名前缀，库名由 db.py 统一）
 - 涉及 `st_pressure_r` 的 JOIN 用 `eq_id`；涉及 `st_rsvr_r/st_pptn_r/st_percolation_r` 的用 `stcd`
 
 修正后验证零残留：
-Run: `cd /home/scada/powerelf-skills && grep -nE "\bst_id\b|powerelf_data\." powerelf-chatbi/references/few_shots.md`
+Run: `cd /home/scada/powerelf-skills && grep -nE "\bst_id\b|powerelf_srm_yml\." powerelf-chatbi/references/few_shots.md`
 Expected: 无输出
 
 - [ ] **Step 3: sql-generation.md 末尾注意事项段加纪律引用**
@@ -827,9 +827,9 @@ Expected: `OK` + usage 打印
 Run: `cd /home/scada/powerelf-skills && grep -rl "sql-discipline.md" powerelf-chatbi/ && grep -rl "schema.md" powerelf-chatbi/rules/sql-generation.md`
 Expected: sql-generation.md 引用了两者
 
-- [ ] **Step 4: Vanna/aiReporter/st_id/powerelf_data. 零残留**
+- [ ] **Step 4: Vanna/aiReporter/st_id/powerelf_srm_yml. 零残留**
 
-Run: `cd /home/scada/powerelf-skills && grep -rniE "vanna|aiReporter" powerelf-chatbi/ ; grep -rnE "\bst_id\b|powerelf_data\." powerelf-chatbi/`
+Run: `cd /home/scada/powerelf-skills && grep -rniE "vanna|aiReporter" powerelf-chatbi/ ; grep -rnE "\bst_id\b|powerelf_srm_yml\." powerelf-chatbi/`
 Expected: 均无输出
 
 - [ ] **Step 5: 冒烟（真实库 + 只读账号，若已配）**
