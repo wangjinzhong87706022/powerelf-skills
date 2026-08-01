@@ -10,15 +10,15 @@
 **问题:** "最近一周XX水库的水位"
 
 ```sql
-SELECT tm, rz AS 水位_m, inq AS 入库流量, otq AS 出库流量, w AS 蓄水量
-FROM st_rsvr_r
-WHERE stcd = (
-  SELECT code FROM att_st_base WHERE name LIKE '%XX水库%' AND deleted = 0 LIMIT 1
-)
-  AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY)
-  AND deleted = 0
-  AND tenant_id = 1
-ORDER BY tm
+SELECT r.tm AS 采集时间, r.rz AS 水位_m, r.inq AS 入库流量, r.otq AS 出库流量, r.w AS 蓄水量
+FROM st_rsvr_r r
+JOIN eq_equip_base e ON r.eq_id = e.id
+JOIN att_st_base s ON e.st_base_id = s.id
+WHERE s.name LIKE '%XX水库%'
+  AND r.tm > DATE_SUB(NOW(), INTERVAL 7 DAY)
+  AND r.deleted = 0 AND e.deleted = 0 AND s.deleted = 0
+  AND r.tenant_id = 1
+ORDER BY r.tm
 ```
 
 ---
@@ -30,12 +30,13 @@ ORDER BY tm
 ```sql
 SELECT s.name AS 水库名称, r.rz AS 库水位_m, r.inq AS 入库流量, r.otq AS 出库流量, r.tm AS 采集时间
 FROM (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY stcd ORDER BY tm DESC) AS rn
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY eq_id ORDER BY tm DESC) AS rn
   FROM st_rsvr_r
   WHERE deleted = 0 AND tenant_id = 1
 ) r
-JOIN att_st_base s ON r.stcd = s.code
-WHERE r.rn = 1 AND s.deleted = 0
+JOIN eq_equip_base e ON r.eq_id = e.id
+JOIN att_st_base s ON e.st_base_id = s.id
+WHERE r.rn = 1 AND e.deleted = 0 AND s.deleted = 0
 ORDER BY r.rz DESC
 ```
 
@@ -48,11 +49,12 @@ ORDER BY r.rz DESC
 ```sql
 SELECT s.name AS 站名, SUM(r.p) AS 总雨量_mm, MAX(r.dyp) AS 最大日雨量_mm
 FROM st_pptn_r r
-JOIN att_st_base s ON r.stcd = s.code
+JOIN eq_equip_base e ON r.eq_id = e.id
+JOIN att_st_base s ON e.st_base_id = s.id
 WHERE DATE(r.tm) = CURDATE()
-  AND r.deleted = 0 AND s.deleted = 0
+  AND r.deleted = 0 AND e.deleted = 0 AND s.deleted = 0
   AND r.tenant_id = 1
-GROUP BY r.stcd, s.name
+GROUP BY s.name
 ORDER BY 总雨量_mm DESC
 ```
 
@@ -85,7 +87,7 @@ FROM eq_equip_base e
 JOIN eq_equip_offline_record o ON e.code = o.equipment_code
 WHERE o.offline_end_time IS NULL
   AND o.total_offline_duration > 86400
-  AND e.deleted = 0 AND o.deleted = 0
+  AND e.deleted = 0
   AND e.tenant_id = 1
 ORDER BY o.total_offline_duration DESC
 ```
@@ -209,11 +211,11 @@ SELECT c.tm AS 日期, c.table_name AS 数据表,
        ROUND((1 - (IFNULL(m.missing_data_number, 0) + IFNULL(a.anomaly_data_number, 0)) / GREATEST(c.collection_data_number, 1)) * 100, 2) AS 质量率_百分比
 FROM stats_data_collection_daily c
 LEFT JOIN stats_data_missing_daily m
-  ON c.tm = m.tm AND c.table_name = m.table_name AND m.deleted = 0
+  ON c.tm = m.tm AND c.table_name = m.table_name
 LEFT JOIN stats_data_anomaly_daily a
-  ON c.tm = a.tm AND c.table_name = a.table_name AND a.deleted = 0
+  ON c.tm = a.tm AND c.table_name = a.table_name
 WHERE c.tm > DATE_SUB(NOW(), INTERVAL 7 DAY)
-  AND c.deleted = 0 AND c.tenant_id = 1
+  AND c.tenant_id = 1
 ORDER BY c.tm DESC, c.table_name
 ```
 
@@ -329,7 +331,7 @@ LIMIT 20
 ```sql
 SELECT tm AS 采集时间, percolation AS 渗流量_Ls
 FROM st_percolation_r
-WHERE stcd = XX
+WHERE eq_id = XX
   AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY)
   AND deleted = 0 AND tenant_id = 1
 ORDER BY tm
@@ -337,20 +339,22 @@ ORDER BY tm
 
 ---
 
-## 19. 河道水位超警戒
+## 19. 河道最新水位
 
-**问题:** "哪些河道水位超过警戒值"
+**问题:** "各河道测站最新水位"
+
+> ⚠️ "超过警戒值"的阈值**不在表里**（项目无警戒水位列），须从 `ew_info_rules.extend` JSON 按 `ew_type`/`level_r` 取——勿硬编码 `r.z > 3.5`。
 
 ```sql
 SELECT s.name AS 站名, r.z AS 当前水位_m, r.q AS 流量_m3s, r.tm AS 采集时间
 FROM (
-  SELECT *, ROW_NUMBER() OVER (PARTITION BY stcd ORDER BY tm DESC) AS rn
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY eq_id ORDER BY tm DESC) AS rn
   FROM st_river_r
   WHERE deleted = 0 AND tenant_id = 1
 ) r
-JOIN att_st_base s ON r.stcd = s.code
-WHERE r.rn = 1 AND s.deleted = 0
-  AND r.z > 3.5  -- 警戒水位（根据实际情况调整）
+JOIN eq_equip_base e ON r.eq_id = e.id
+JOIN att_st_base s ON e.st_base_id = s.id
+WHERE r.rn = 1 AND e.deleted = 0 AND s.deleted = 0
 ORDER BY r.z DESC
 ```
 

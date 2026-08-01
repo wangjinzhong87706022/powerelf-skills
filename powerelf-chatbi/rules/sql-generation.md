@@ -20,11 +20,13 @@ SQL 错误（BadSqlGrammar/Unknown column）由 agent 见错误信息自修正�
 
 | 业务表 | 关联键 | 关联方式 |
 |--------|--------|----------|
-| st_rsvr_r / st_pptn_r / st_percolation_r | **stcd** (varchar) | `WHERE stcd = eq_equip_base.code` |
+| st_rsvr_r / st_pptn_r / st_percolation_r | **eq_id** (bigint) | `JOIN eq_equip_base ON eq_id = eq_equip_base.id`（再 `eq_equip_base.st_base_id = att_st_base.id` 取站名） |
 | st_pressure_r | **eq_id** (bigint) | `WHERE eq_id = eq_equip_base.id` |
 | dsm_dfr_srvrds_srhrds (GNSS) | **eq_id** (int) | `WHERE eq_id = eq_equip_base.id` |
 
-**铁律**：`eq_equip_base.code` 是字符串（如 `'606K215001'`），**不能**写 `eq_id = '606K215001'`（会 Unknown column）。完整铁律见 `schema.md`。
+**铁律**：
+- ⚠️ **这三张表（st_rsvr_r/st_pptn_r/st_percolation_r）的 `stcd` 实测大量为空（st_rsvr_r 99.8% NULL），用 `stcd = att_st_base.code` 关联会沉默返回空集——一律用 `eq_id`。**
+- `eq_equip_base.code` 是字符串（如 `'606K215001'`），**不能**写 `eq_id = '606K215001'`（会 Unknown column）。完整铁律见 `schema.md`。
 
 ## 水利领域表映射
 

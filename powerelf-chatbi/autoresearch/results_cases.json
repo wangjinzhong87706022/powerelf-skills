@@ -1,0 +1,259 @@
+{
+  "experiment": "chatbi-sql-lint",
+  "cases": {
+    "pass": 12,
+    "total": 12,
+    "误报": 0,
+    "漏报": 0
+  },
+  "few_shots": {
+    "clean": 20,
+    "total": 20,
+    "with_bug": 0
+  },
+  "results": [
+    {
+      "suite": "cases",
+      "id": "STCD-POS-1",
+      "status": "passed",
+      "reason": "命中 'stcd'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "在铁律表 ['st_rsvr_r'] 上用 stcd 关联/过滤——stcd 实测大量为空（st_rsvr_r 99.8% NULL），会沉默返回空集；应改 eq_id"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "STCD-NEG-1",
+      "status": "passed",
+      "reason": "干净",
+      "findings": []
+    },
+    {
+      "suite": "cases",
+      "id": "STCD-POS-2",
+      "status": "passed",
+      "reason": "命中 'stcd'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "在铁律表 ['st_pptn_r'] 上用 stcd 关联/过滤——stcd 实测大量为空（st_rsvr_r 99.8% NULL），会沉默返回空集；应改 eq_id"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "DEL-POS-1",
+      "status": "passed",
+      "reason": "命中 'deleted'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "o.deleted：表 `eq_equip_offline_record` 无 deleted 列（移除该过滤）"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "DEL-POS-2",
+      "status": "passed",
+      "reason": "命中 'deleted'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "m.deleted：表 `stats_data_missing_daily` 无 deleted 列（移除该过滤）"
+        },
+        {
+          "sev": "fail",
+          "msg": "c.deleted：表 `stats_data_collection_daily` 无 deleted 列（移除该过滤）"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "DEL-NEG-1",
+      "status": "passed",
+      "reason": "干净",
+      "findings": []
+    },
+    {
+      "suite": "cases",
+      "id": "WATER-POS-1",
+      "status": "passed",
+      "reason": "命中 '警戒水位'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "硬编码特征水位'警戒水位'——项目无此列，阈值须从 ew_info_rules.extend 取"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "WATER-POS-2",
+      "status": "passed",
+      "reason": "命中 '汛限水位'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "硬编码特征水位'汛限水位'——项目无此列，阈值须从 ew_info_rules.extend 取"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "WATER-NEG-1",
+      "status": "passed",
+      "reason": "干净",
+      "findings": []
+    },
+    {
+      "suite": "cases",
+      "id": "TABLE-POS-1",
+      "status": "passed",
+      "reason": "命中 '幽灵表'",
+      "findings": [
+        {
+          "sev": "fail",
+          "msg": "表 `st_deformation_r` 不存在于库（幽灵表，LLM 编造）"
+        }
+      ]
+    },
+    {
+      "suite": "cases",
+      "id": "TABLE-NEG-1",
+      "status": "passed",
+      "reason": "干净",
+      "findings": []
+    },
+    {
+      "suite": "cases",
+      "id": "CLEAN-1",
+      "status": "passed",
+      "reason": "干净",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "1. 水库最近一周水位趋势",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "2. 各水库最新水位",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "3. 今日雨量统计",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "4. 哪些设备离线",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "5. 设备离线时长统计",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "6. 最近预警消息",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "7. 预警等级统计",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "8. GNSS 位移趋势",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "9. 渗压变化",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "10. 本月巡检缺陷",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "11. 未完成的巡检任务",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "12. 数据质量总览",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "13. 闸门当前状态",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "14. 泵站运行参数",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "15. 墒情监测总览",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "16. 白蚁监测情况",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "17. 视频AI报警记录",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "18. 渗流量趋势",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "19. 河道最新水位",
+      "status": "passed",
+      "findings": []
+    },
+    {
+      "suite": "few_shots",
+      "id": "20. 设备在线率统计",
+      "status": "passed",
+      "findings": []
+    }
+  ]
+}

@@ -17,10 +17,11 @@
 - [ ] **软删除**：涉及业务表（`st_*` / `eq_*` / `ew_*` / `business_check_*`）的 WHERE 含 `deleted = 0`。漏写→捞出已删行（最常见静默错误）。
 - [ ] **多租户**：多租户表带 `tenant_id = 1`（除非用户显式跨租户）。
 - [ ] **关联键类型**（铁律，见 `rules/sql-generation.md`）：
-  - `st_rsvr_r` / `st_pptn_r` / `st_percolation_r` 用 `stcd`（varchar）↔ `eq_equip_base.code`
+  - `st_rsvr_r` / `st_pptn_r` / `st_percolation_r` 用 **`eq_id`**（bigint）↔ `eq_equip_base.id`（再 `eq_equip_base.st_base_id = att_st_base.id` 取站名）
   - `st_pressure_r` 用 `eq_id`（bigint）↔ `eq_equip_base.id`
   - GNSS `dsm_dfr_srvrds_srhrds` 用 `eq_id`（int）↔ `eq_equip_base.id`
-  - **红旗**：`eq_id = '606K...'`（把字符串赋给 bigint）、`stcd = eq_equip_base.id`（varchar=int 跨类型）。
+  - ⚠️ **这三表 `stcd` 实测大量为空（st_rsvr_r 99.8% NULL），`stcd = att_st_base.code` 会沉默返回空集——禁用 stcd。**
+  - **红旗**：`eq_id = '606K...'`（把字符串赋给 bigint）、`stcd = ...`（在 st_rsvr_r/st_pptn_r/st_percolation_r 上）、`stcd = eq_equip_base.id`（varchar=int 跨类型）。
 - [ ] **单位陷阱**：`st_pptn_r.dr` 是**分钟**，`st_pptn_region_r.intv` 是**小时**——小时/分钟换算勿混。
 - [ ] **类型陷阱**：泵站 `rei_pump_r` 的 `uab/ubc/uca/ia/ib/ic/p/freq` 均为 **varchar**，数值比较/聚合前 `CAST(... AS DECIMAL)`。
 - [ ] **JOIN 爆炸**：多表 JOIN 后用 `COUNT(DISTINCT id)` 而非 `COUNT(*)` 核数；行数异常爆增→检查是否many-to-many。
