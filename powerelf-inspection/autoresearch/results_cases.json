@@ -1,0 +1,324 @@
+{
+  "experiment": "phase4.9-cases",
+  "score": 21,
+  "max_score": 21,
+  "pass_rate": 1.0,
+  "status": "all_pass",
+  "metrics": {
+    "误报率": 0.0,
+    "漏报率": 0.0,
+    "根因链正确率": 1.0,
+    "coverage": "21/47",
+    "pass_rate": 1.0
+  },
+  "acceptance": {
+    "误报率=0": true,
+    "漏报率≤20%": true,
+    "根因链≥60%": true
+  },
+  "cases": [
+    {
+      "id": "WL-POS-1",
+      "kind": "should_report",
+      "dimension": "水库水情",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "WL-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "水库水情",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "WL-POS-2",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "WL-NEG-2",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "RAIN-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "RAIN-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "PRES-POS-1",
+      "kind": "should_report",
+      "dimension": "渗压监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "PRES-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "渗压监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "PRES-SPIKE-1",
+      "kind": "should_report",
+      "dimension": "渗压监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "PERC-POS-1",
+      "kind": "should_report",
+      "dimension": "渗流监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "PERC-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "渗流监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "GNSS-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "GNSS-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "GATE-POS-1",
+      "kind": "should_report",
+      "dimension": "闸门工情",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "GATE-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "闸门工情",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "GATE-POS-2",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "GATE-NEG-2",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "PUMP-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "PUMP-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "PUMP-POS-2",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "WQ-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "WQ-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "SOIL-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "SOIL-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "TERM-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "TERM-POS-2",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "TERM-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "INSP-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "INSP-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "EQUIP-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "EQUIP-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "ALERT-POS-1",
+      "kind": "should_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "ALERT-NEG-1",
+      "kind": "should_not_report",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "MAD-POS-1",
+      "kind": "should_report",
+      "dimension": "MAD统计异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "MAD-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "MAD统计异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "CORR-POS-1",
+      "kind": "should_report",
+      "dimension": "关联异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "CORR-NEG-1",
+      "kind": "should_not_report",
+      "dimension": "关联异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "CORR-POS-2",
+      "kind": "should_report",
+      "dimension": "关联异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "CORR-NEG-2",
+      "kind": "should_not_report",
+      "dimension": "关联异常",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "QG-RED-1",
+      "kind": "quality_gate",
+      "dimension": "水库水情（质量闸）",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "QG-PLACEHOLDER-1",
+      "kind": "quality_gate",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    },
+    {
+      "id": "SEASON-GUARD-1",
+      "kind": "guardrail",
+      "dimension": "水库水情（季节护栏）",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "DIAG-HIT-1",
+      "kind": "diagnosis",
+      "dimension": "渗压监测（诊断链）",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "DIAG-MISS-1",
+      "kind": "diagnosis",
+      "dimension": "渗压监测（诊断链）",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "EMPTY-NA-1",
+      "kind": "empty_data",
+      "dimension": "河道水情（借 st_river_r 天然空表）",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "EMPTY-ND-1",
+      "kind": "empty_data",
+      "dimension": "渗流监测",
+      "status": "passed",
+      "reason": "ok"
+    },
+    {
+      "id": "EMPTY-QF-1",
+      "kind": "empty_data",
+      "status": "skipped",
+      "reason": "无 fixture（extension：bypassor/专用 reader 维度）"
+    }
+  ]
+}

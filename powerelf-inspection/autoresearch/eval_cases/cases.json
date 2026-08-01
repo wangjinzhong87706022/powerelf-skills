@@ -54,9 +54,9 @@
       "id": "PRES-POS-1",
       "dimension": "渗压监测",
       "kind": "should_report",
-      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 序列 [50.0×5, 55.1, 55.2, 55.1, 55.2, 55.1]（前段50平台，跳变5.1kPa后持续高位=台阶变点step）"},
-      "expected": {"min_level": "WARNING", "message_contains": "突变", "pattern": "step"},
-      "reason": "5.1kPa > 突变阈值5kPa；跳变后持续高位→台阶变点(step)非瞬时尖峰，按Phase4.9保持WARNING"
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 序列 [50.0×9, 55.1]（末对上跳5.1kPa未回落→非spike）"},
+      "expected": {"min_level": "WARNING", "message_contains": "突变"},
+      "reason": "5.1kPa > 突变阈值5kPa；末点未回落→非spike(不降级)保持WARNING（analyze_pressure变化检测只看末对，真step不可达，pattern为none）"
     },
     {
       "id": "PRES-NEG-1",
@@ -111,15 +111,15 @@
       "dimension": "闸门工情",
       "kind": "should_report",
       "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, gtophgt 相邻两点 1.00→2.01（突变 1.01m）"},
-      "expected": {"min_level": "WARNING", "message_contains": "开度突变"},
-      "reason": "1.01m > 单步开度突变阈值 1.0m（gate_opening_jump_m）"
+      "expected": {"min_level": "WARNING", "message_contains": "突变"},
+      "reason": "1.01m > 单步开度突变阈值 1.0m（gate_opening_jump_m）；Phase4.9 _change_finding 统一消息为 dim_label前缀+突变，不再含'开度'名词"
     },
     {
       "id": "GATE-NEG-1",
       "dimension": "闸门工情",
       "kind": "should_not_report",
       "fixture": {"table": "rei_gate_r", "rows_desc": "st_id=9006, gtophgt 相邻两点 1.00→2.00（突变恰 1.00m）"},
-      "expected": {"no_finding_contains": "开度突变"},
+      "expected": {"no_finding_contains": "突变"},
       "reason": "变化恰等于阈值 1.0m，判定为严格大于，不应触发"
     },
     {

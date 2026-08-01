@@ -26,7 +26,24 @@
 }
 ```
 
-## 运行方式（当前为 fixture 注入前的人工/agent 流程）
+## 运行方式
+
+### 自动 runner（Layer A，无 DB，推荐）
+
+`impl/eval_runner.py` mock 数据读取、注入 `fixtures.py` 的构造序列、按 expected 断言、
+算误报/漏报/根因链率/coverage。不连真实库、确定性、可重复。
+
+```bash
+python3 impl/eval_runner.py                       # 跑全部有 fixture 的用例
+python3 impl/eval_runner.py --only PRES-SPIKE-1,SEASON-GUARD-1   # 只跑指定
+python3 impl/eval_runner.py --verbose             # finding 明细写进 results_cases.json
+```
+
+输出 `autoresearch/results_cases.json`（顶层对齐 `results.json` + `metrics` + `cases` 明细）。
+**覆盖进度**：fixtures.py 覆盖走 `read_sensor_data` 的维度（4.9 全覆盖 + 回归）；水质/墒情/
+白蚁/巡检/设备/告警走 inline `pd.read_sql` 或专用 reader，机制不同，列在 skipped，留 extension。
+
+### 人工/agent 流程（连真实库，Layer B 用）
 
 1. 将 fixture rows 写入测试库对应表（占位 st_id 9xxx，跑完清理）；
 2. `python3 impl/inspection_analyzer.py --db "$TEST_DB_URL" --days 7 --json > /tmp/env.json`；
@@ -35,6 +52,7 @@
 
 空数据 3 态用例**不需要 fixture**（NOT_APPLICABLE 用天然空表 `st_river_r`；
 QUERY_FAILED 用改坏表名/权限模拟），断言 envelope 的 status_code 正确且**没有伪造数值**。
+（Layer A runner 用 mock 复现这些分支，见 `fixtures.EMPTY_*` + `PROBE_LATEST_OVERRIDE`。）
 
 ## 评测后闭环
 
