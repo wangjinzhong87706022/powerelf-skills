@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "note": "占位实体 st-9xxx；15 维度成对用例 + 3 态空数据 + 质量闸/占位值/零值/季节护栏/诊断链场景用例。❌ 用例必带边界理由。",
+  "note": "占位实体 st-9xxx；15 维度成对用例 + 3 态空数据 + 质量闸/占位值/零值/季节护栏/诊断链场景用例 + Phase4.9 三分通道(spike降级INFO/step·drift保持WARNING) + 关联2 idle 护栏。❌ 用例必带边界理由。",
   "cases": [
     {
       "id": "WL-POS-1",
@@ -54,9 +54,9 @@
       "id": "PRES-POS-1",
       "dimension": "渗压监测",
       "kind": "should_report",
-      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 相邻两点 50.0→55.1（突变 5.1kPa）"},
-      "expected": {"min_level": "WARNING", "message_contains": "突变"},
-      "reason": "5.1kPa > 突变阈值 5kPa（registry rate.max_change 缺省兜底）"
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 序列 [50.0×5, 55.1, 55.2, 55.1, 55.2, 55.1]（前段50平台，跳变5.1kPa后持续高位=台阶变点step）"},
+      "expected": {"min_level": "WARNING", "message_contains": "突变", "pattern": "step"},
+      "reason": "5.1kPa > 突变阈值5kPa；跳变后持续高位→台阶变点(step)非瞬时尖峰，按Phase4.9保持WARNING"
     },
     {
       "id": "PRES-NEG-1",
@@ -65,6 +65,14 @@
       "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 相邻两点 50.0→54.9（变化 4.9kPa）"},
       "expected": {"no_finding_contains": "突变"},
       "reason": "变化 4.9kPa，阈值 5kPa，差 0.1 不应触发"
+    },
+    {
+      "id": "PRES-SPIKE-1",
+      "dimension": "渗压监测",
+      "kind": "should_report",
+      "fixture": {"table": "st_pressure_r", "rows_desc": "st_id=9003, water_pressure 序列 [50.0×5, 85.0, 50.0×4]（中间单点85尖峰，末点50已回落=spike；35kPa远超5阈值）"},
+      "expected": {"max_level": "INFO", "message_contains": "突变", "pattern": "spike", "no_diagnosis": true},
+      "reason": "单点尖峰latest已回落→spike通道；Phase4.9降级INFO且不触发诊断(防毛刺撞巧合降雨生伪根因)。真实渗漏会同时触发drift趋势层+MAD层WARNING，故降级spike不漏报"
     },
     {
       "id": "PERC-POS-1",
@@ -289,6 +297,22 @@
       "fixture": {"table": "st_pptn_r + st_rsvr_r", "rows_desc": "累计雨量 60mm，同期 rz 全程恒等 100.000（死值平线）"},
       "expected": {"no_finding_contains": "累计"},
       "reason": "水位序列为死值平线（CV<0.001），idle 护栏应抑制伪相关——该报的是数据质量问题不是关联异常"
+    },
+    {
+      "id": "CORR-POS-2",
+      "dimension": "关联异常",
+      "kind": "should_report",
+      "fixture": {"table": "st_pressure_r + st_rsvr_r", "rows_desc": "渗压计9003 wp 6点严格递增 50→52→54→56→58→60；同期水位 rz 在 100.0~100.05 波动（变化<0.1m 且 CV≥idle_cv_min 非平线）"},
+      "expected": {"min_level": "WARNING", "message_contains": "渗压"},
+      "reason": "渗压持续上升 + 水位稳定(非死值平线) → 关联2 应报（防渗体损坏或渗压计故障）"
+    },
+    {
+      "id": "CORR-NEG-2",
+      "dimension": "关联异常",
+      "kind": "should_not_report",
+      "fixture": {"table": "st_pressure_r + st_rsvr_r", "rows_desc": "渗压计9003 wp 6点严格递增；同期水位 rz 全程恒等 100.000（死值平线）"},
+      "expected": {"no_finding_contains": "水位稳定"},
+      "reason": "水位死值平线（CV<0.001）→ idle 护栏抑制关联2（'稳定'可能是水位计卡滞而非真稳定），不应报"
     },
     {
       "id": "QG-RED-1",

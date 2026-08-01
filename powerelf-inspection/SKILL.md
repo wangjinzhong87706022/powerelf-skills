@@ -179,7 +179,7 @@ python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # �
 
 **退出码**：`0` 无异常 / `2` 检出 CRITICAL / `3` DB 连接失败 / `4` inconclusive（数据不足以下结论）/ `5` 关键表缺失。
 
-#### 输出纪律（6 条）
+#### 输出纪律（7 条）
 
 1. findings 核心 4 字段（severity/title/detail/category）+ 附注 `data_source`（表.列+时间窗锚点，防结论漂移）、`correlated_with`（同一份证据只归属一条主 finding，被关联者降为佐证不独立计数）；
 2. 必需实体写进 title/detail：测点编码、eq_id、所属工程/坝段、异常时间窗、量级（**当前值与窗口峰值双值**，区分"持续高位"与"瞬时尖峰"）——报告读者不需回查数据库即可行动；
@@ -187,6 +187,7 @@ python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # �
 4. summary 计数 ≡ findings 明细：禁止口径漂移；
 5. 0 是有效读数，不是缺失：水位 0、流量 0、开度 0 是合法观测值，禁止归入 no_data 分支；
 6. 推断性表述用区间不用点值：预测/外推类 detail 写"预计 4-6 kPa"而非"4.73 kPa"，防假精度。
+7. **变化率类 finding 带可选 `pattern` 字段**（`spike`/`step`/`drift`，三分通道互斥）：`spike`（瞬时尖峰，latest 已回落）降级 INFO 且**不触发自动诊断**（毛刺与降雨/闸门无关，查了白烧诊断预算还会撞巧合生伪根因）；`step`/`drift` 保持 WARNING 走诊断路由。真实渗漏/沉降会同时命中 drift 趋势层 + MAD 层（均 WARNING），故降级 spike 不漏报。趋势层与 MAD 层命中后挂**季节性护栏**（历年同期基线），汛期正常抬升降级 INFO。
 
 报告遵循"三问"结构：**严重程度如何？最可能根因在哪？下一步该由谁采取什么行动？**
 

@@ -425,6 +425,110 @@ def test_diag_critical_takes_quota_priority(monkeypatch):
 
 
 # ============================================================
+# 三分通道 + 护栏单元测试（Phase 4.9，无需 DB）
+# ============================================================
+
+has_4_9 = (_HAS_PYTEST and HAS_DIAG
+           and hasattr(_ia, "classify_timeseries") and hasattr(_ia, "_is_idle")
+           and hasattr(_ia, "_change_finding"))
+unit4_9_only = pytest.mark.skipif(not has_4_9, reason="缺 Phase 4.9 构件") if _HAS_PYTEST else (lambda f: f)
+
+
+@unit4_9_only
+def test_classify_spike():
+    """尖峰：窗口峰值离群但 latest 已回落 → spike"""
+    series = [10.0] * 5 + [50.0] + [10.0] * 6  # 中间一个尖峰，末点=10 已回落
+    assert _ia.classify_timeseries(series)["pattern"] == "spike"
+
+
+@unit4_9_only
+def test_classify_step():
+    """台阶：前后半段水平位移（不平衡分布使 z 差放大）→ step"""
+    series = [10.0] * 9 + [100.0] * 3  # 末点=100 未回落 → 非 spike；后半中位数远抬 → step
+    assert _ia.classify_timeseries(series)["pattern"] == "step"
+
+
+@unit4_9_only
+def test_classify_drift():
+    """缓变：单向持续（同号差分占比>0.8）→ drift"""
+    series = [float(i) for i in range(12)]  # 严格递增
+    assert _ia.classify_timeseries(series)["pattern"] == "drift"
+
+
+@unit4_9_only
+def test_classify_too_short_returns_none():
+    assert _ia.classify_timeseries([1.0, 2.0, 3.0])["pattern"] == "none"
+
+
+@unit4_9_only
+def test_is_idle_flat_line():
+    """死值平线（CV 极低）→ True"""
+    assert _ia._is_idle([100.0, 100.0, 100.0, 100.001]) is True
+
+
+@unit4_9_only
+def test_is_idle_active_series():
+    """有波动序列 → False"""
+    assert _ia._is_idle([10.0, 20.0, 30.0, 40.0]) is False
+
+
+@unit4_9_only
+def test_is_idle_short_or_zero_mean():
+    """len<2 或均值≈0（CV 无相对意义）→ False，交回原判定"""
+    assert _ia._is_idle([5.0]) is False
+    assert _ia._is_idle([0.0, 0.0, 0.0]) is False
+
+
+@unit4_9_only
+def test_is_idle_parametrized_threshold():
+    """可注入 idle_cv_min（参数化测试用）"""
+    assert _ia._is_idle([100.0, 100.0, 100.5], idle_cv_min=0.01) is True
+    assert _ia._is_idle([100.0, 100.0, 100.5], idle_cv_min=0.0001) is False
+
+
+@unit4_9_only
+def test_change_finding_spike_downgrades_to_info():
+    """spike → INFO（不触发诊断）+ 带 pattern 字段"""
+    series = [10.0] * 5 + [50.0] + [10.0] * 6
+    f = _ia._change_finding(series, 10.0, 50.0, st_id=1, unit="kPa", dim_label="渗压计")
+    assert f["level"] == "INFO"
+    assert f["pattern"] == "spike"
+
+
+@unit4_9_only
+def test_change_finding_drift_stays_warning():
+    """drift → WARNING（疑渐进性物理过程）+ pattern=drift"""
+    series = [float(i) for i in range(12)]
+    f = _ia._change_finding(series, 10.0, 11.0, st_id=2, unit="m", dim_label="闸门站")
+    assert f["level"] == "WARNING"
+    assert f["pattern"] == "drift"
+
+
+@diag_only
+def test_diag_skips_spike_pattern(monkeypatch):
+    """三分通道分流（Phase 4.9）：pattern=spike 不进诊断候选（防御性，即使标 WARNING）"""
+    monkeypatch.setattr(_ia, "DIAG_ROUTES", [("any", lambda c, m: True, _fake_route("R", "根因"))])
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "pattern": "spike", "message": "渗压计3: 突变", "detail": ""},
+        {"level": "WARNING", "pattern": "drift", "message": "渗压计4: 上升", "detail": ""}]}]
+    assert _ia.run_auto_diagnosis(None, analyses) == 1  # 仅 drift 触发，spike 被跳过
+    assert "diagnosis_root_cause" not in analyses[0]["findings"][0]  # spike 未诊断
+    assert analyses[0]["findings"][1]["diagnosis_root_cause"] == "根因"
+
+
+@unit4_9_only
+def test_envelope_passes_pattern_through():
+    """envelope 透传 pattern（仅 change-rate 类 finding）"""
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "pattern": "step", "message": "渗压计3: 突变", "detail": ""},
+        {"level": "WARNING", "message": "测站4: 无pattern字段", "detail": ""}]}]
+    env = build_envelope(analyses, "r", "c")
+    fs = env["agent"]["findings"]
+    assert fs[0].get("pattern") == "step"
+    assert "pattern" not in fs[1]  # 无 pattern 的 finding 不强加该键
+
+
+# ============================================================
 # 入口（兼容旧版直接调用）
 # ============================================================
 

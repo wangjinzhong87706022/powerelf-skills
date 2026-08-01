@@ -37,7 +37,7 @@ def _validate_identifiers(table, fields, time_field):
         raise ValueError(f"非法表名: {table}")
     if time_field is not None and time_field not in _ALLOWED_TIME_FIELDS:
         raise ValueError(f"非法时间列: {time_field}")
-    if not re.fullmatch(r"[A-Za-z0-9_]+(,[A-Za-z0-9_]+)*", fields or ""):
+    if not re.fullmatch(r"[A-Za-z0-9_]+(,\s*[A-Za-z0-9_]+)*", fields or ""):
         raise ValueError(f"非法字段列表: {fields}")
 
 

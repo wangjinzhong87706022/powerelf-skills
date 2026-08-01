@@ -72,6 +72,9 @@ THRESHOLDS = {
     "omission_rate_max": 0.2,    # Why: 漏检率 >20% 视为无效巡检（考核线）
     "equip_offline_rate_max": 0.3,  # Why: 离线率 >30% 提示通信/供电系统性问题
     "idle_cv_min": 0.001,        # Why: 基础量变异系数低于此值视为平线，跳过相关性判定防伪相关
+    "seasonal_lookback_years": 3,  # Why: 历年同期取近3个完整年同月（排除当年本月，防当前事件污染基线）
+    "seasonal_z_threshold": 3.0,   # Why: 与 MAD 层 z=3~4 同口径，超即判非季节性
+    "seasonal_min_samples": 10,    # Why: 同月历史样本下限，防小样本中位数失真
     "quality_green_pct": 99,     # Why: 完整性色阶 绿 >99%（kwp explore-data 四档）
     "quality_yellow_pct": 95,    # Why: 完整性色阶 黄 95-99%
     "quality_orange_pct": 80,    # Why: 完整性色阶 橙 80-95%，<80 红 → 维度 inconclusive
@@ -344,20 +347,46 @@ _PATTERN_LABELS = {"spike": "瞬时尖峰(latest已回落)", "step": "台阶变�
                    "drift": "缓变趋势(疑渐进性物理过程)", "none": ""}
 
 
+def _change_finding(values, prev, curr, *, st_id, unit, dim_label):
+    """变化率 finding 定型（Phase 4.9 三分通道驱动）：变化已由调用方检出(prev→curr 超阈)后，
+    按整窗 classify_timeseries 定型 spike/step/drift，决定 severity 与 pattern 字段。
+
+      spike  → INFO  ：窗口峰值离群但 latest 已回落，最像单点毛刺/瞬时干扰；run_auto_diagnosis
+                       按 pattern=spike 跳过(不烧诊断预算、防撞巧合降雨生伪根因)
+      step   → WARNING：前后半段水平位移持续，疑传感器重标定/工况切换
+      drift  → WARNING：单向持续变化，疑渐进性物理过程（渗漏/沉降）
+    （真实异常多层共振：drift 趋势层 + MAD 层仍报 WARNING，故降级 spike 不漏报。）
+    values 为该测站全窗口序列（供 classify 定型）；返回带 pattern 字段的 finding dict。"""
+    ts = classify_timeseries(values.tolist() if hasattr(values, "tolist") else list(values))
+    pat = ts["pattern"]
+    level = "INFO" if pat == "spike" else "WARNING"
+    label = _PATTERN_LABELS.get(pat, "")
+    mag = abs(curr - prev)
+    detail = (f"形态: {label or '无明显模式'}；当前{curr:.2f}{unit}/窗口峰值{ts['window_max']:.2f}{unit}"
+              + ("；单点毛刺最像传感器瞬时干扰，已降级提示" if pat == "spike" else ""))
+    return {
+        "level": level,
+        "pattern": pat,
+        "message": f"{dim_label}{st_id}: 突变{mag:.2f}{unit} ({prev:.2f} → {curr:.2f})",
+        "detail": detail,
+    }
+
+
 def seasonal_check(engine, table, value_col, st_id, current, time_field="tm"):
-    """季节性护栏：与历年同期（近 3 年同月）基线比对，防汛期正常抬升被误报。
+    """季节性护栏：与历年同期（近 N 完整年同月）基线比对，防汛期正常抬升被误报。
 
     昂贵诊断准入：只在异常已命中后调用，不作为例行动作。
-    返回 {"in_season": bool, "seasonal_median": float|None, "note": str}
+    窗口=近 seasonal_lookback_years 个完整年的同月（YEAR <= YEAR(NOW())-1 排除当年本月，
+    防当前事件本身污染基线）。返回 {"in_season": bool, "seasonal_median": float|None, "note": str}
     """
     try:
         _validate_identifiers(table, value_col, time_field)
+        lookback = int(THRESHOLDS["seasonal_lookback_years"])
         df = pd.read_sql(text(f"""
             SELECT {value_col} AS v FROM {table}
             WHERE deleted = 0 AND st_id = :st_id
               AND MONTH({time_field}) = MONTH(NOW())
-              AND {time_field} >= NOW() - INTERVAL 1100 DAY
-              AND {time_field} < NOW() - INTERVAL 60 DAY
+              AND YEAR({time_field}) BETWEEN YEAR(NOW()) - {lookback} AND YEAR(NOW()) - 1
             LIMIT 5000
         """), engine, params={"st_id": int(st_id)})
     except Exception as e:
@@ -365,17 +394,33 @@ def seasonal_check(engine, table, value_col, st_id, current, time_field="tm"):
         return {"in_season": False, "seasonal_median": None,
                 "note": "历年同期基线查询失败，护栏未生效"}
     vals = pd.to_numeric(df["v"], errors="coerce").dropna()
-    if len(vals) < 10:
+    min_samples = int(THRESHOLDS["seasonal_min_samples"])
+    if len(vals) < min_samples:
         return {"in_season": False, "seasonal_median": None,
-                "note": "历年同期样本不足(<10)，护栏未生效"}
+                "note": f"历年同期样本不足(<{min_samples})，护栏未生效"}
     med = float(vals.median())
     mad = float((vals - med).abs().median()) or 1e-9
+    z_threshold = float(THRESHOLDS["seasonal_z_threshold"])
     zscore = abs(0.6745 * (float(current) - med) / mad)
-    if zscore <= 3.0:
+    if zscore <= z_threshold:
         return {"in_season": True, "seasonal_median": med,
                 "note": f"与历年同期一致(同期中位数{med:.2f}, z={zscore:.1f})，季节性护栏放行"}
     return {"in_season": False, "seasonal_median": med,
             "note": f"偏离历年同期(同期中位数{med:.2f}, z={zscore:.1f})，非季节性"}
+
+
+def _is_idle(values, idle_cv_min=None):
+    """平线/空闲护栏（Phase 4.9）：基础量变异系数(CV)低于阈值视为死值/停测。
+
+    用死值当'稳定'参照会造出伪相关（渗压升+水位'稳'≠矛盾，可能只是水位计卡滞）；
+    也用于变化率判定前置——死值序列不应产生有意义的 spike/step/drift 分类。
+    len<2 或均值≈0（CV 无相对意义）时返回 False（不判 idle，交回原判定）。
+    idle_cv_min 缺省读 THRESHOLDS["idle_cv_min"]，可注入以利参数化测试。"""
+    s = pd.Series(values).dropna().astype(float)
+    if len(s) < 2 or abs(s.mean()) < 1e-9:
+        return False
+    cv = s.std() / abs(s.mean())
+    return bool(cv < (idle_cv_min if idle_cv_min is not None else THRESHOLDS["idle_cv_min"]))
 
 
 # 占位值候选（0 不在列——0 是有效读数，输出纪律 #5）
@@ -452,14 +497,15 @@ def analyze_water_level(engine, days=30, thresholds=None):
         if rz is None:
             continue
 
-        # 趋势分析
+        # 趋势分析 + 季节性护栏（Phase 4.9：汛期正常抬升不应报异常）
         rz_values = st_data['rz'].dropna().astype(float)
         if len(rz_values) >= 6:
             if _anomaly.consecutive_monotonic(rz_values.tail(6).values.tolist(), "rise", 5)["is_trend"]:
+                season = seasonal_check(engine, "st_rsvr_r", "rz", st_id, rz)
                 findings.append({
-                    "level": "WARNING",
+                    "level": "INFO" if season["in_season"] else "WARNING",
                     "message": f"测站{st_id}: 水位连续上升6次 ({rz_values.iloc[-6]:.2f}m → {rz:.2f}m)",
-                    "detail": "持续上升趋势，需关注"
+                    "detail": f"持续上升趋势，需关注；{season['note']}"
                 })
             elif _anomaly.consecutive_monotonic(rz_values.tail(6).values.tolist(), "fall", 5)["is_trend"]:
                 findings.append({
@@ -602,31 +648,26 @@ def analyze_pressure(engine, days=30, thresholds=None):
         latest = st_data.iloc[-1]
         wp = float(latest['water_pressure'])
 
-        # 趋势分析 - 连续上升
+        # 趋势分析 - 连续上升 + 季节性护栏（Phase 4.9）
         wp_values = st_data['water_pressure'].values
         if len(wp_values) >= 7:
             if _anomaly.consecutive_monotonic(wp_values[-7:].tolist(), "rise", 6)["is_trend"]:
+                season = seasonal_check(engine, "st_pressure_r", "water_pressure", st_id, wp)
                 findings.append({
-                    "level": "WARNING",
+                    "level": "INFO" if season["in_season"] else "WARNING",
                     "message": f"渗压计{st_id}: 渗压连续上升 ({wp_values[-7]:.2f}kPa → {wp:.2f}kPa)",
-                    "detail": "持续上升趋势，可能存在渗漏，需现场检查"
+                    "detail": f"持续上升趋势，可能存在渗漏，需现场检查；{season['note']}"
                 })
 
-        # 突变检测（阈值从注册表读取，兜底 THRESHOLDS）+ 三分通道标注（Phase 4.9）
+        # 突变检测（阈值从注册表读取，兜底 THRESHOLDS）→ 三分通道定型（Phase 4.9：spike降级INFO）
         pressure_change_threshold = get_registry_threshold(
             thresholds, "st_pressure_r", "rate.max_change", THRESHOLDS["pressure_change_kpa"])
         if len(wp_values) >= 2:
             change = abs(wp_values[-1] - wp_values[-2])
             if change > pressure_change_threshold:
-                ts = classify_timeseries(wp_values.tolist())
-                pat = _PATTERN_LABELS.get(ts["pattern"], "")
-                findings.append({
-                    "level": "WARNING",
-                    "message": f"渗压计{st_id}: 渗压突变{change:.2f}kPa ({wp_values[-2]:.2f} → {wp_values[-1]:.2f})",
-                    "detail": (f"变化幅度>{pressure_change_threshold}kPa，需确认是否有外部因素；"
-                               f"当前值{ts['latest']:.2f}kPa/窗口峰值{ts['window_max']:.2f}kPa"
-                               + (f"；形态判定: {pat}" if pat else ""))
-                })
+                findings.append(_change_finding(
+                    wp_values, wp_values[-2], wp_values[-1],
+                    st_id=st_id, unit="kPa", dim_label="渗压计"))
 
         # MAD异常检测（委托 lib/anomaly）+ 季节性护栏（Phase 4.9，命中后才查历年同期）
         if len(wp_values) >= 10:
@@ -670,28 +711,27 @@ def analyze_percolation(engine, days=30):
         if len(perc_values) < 2:
             continue
 
-        # 扫描所有相邻数据点的突变
+        # 扫描所有相邻数据点的突变 → 三分通道定型（Phase 4.9）
         for i in range(1, len(perc_values)):
             prev = perc_values[i-1]
             curr = perc_values[i]
             if prev > 0:
                 change_pct = abs(curr - prev) / prev * 100
-                if change_pct > 20:
-                    findings.append({
-                        "level": "WARNING",
-                        "message": f"渗流计{st_id}: 渗流量突变{change_pct:.1f}% ({prev:.3f} → {curr:.3f} L/s)",
-                        "detail": "变化幅度>20%，可能存在坝脚渗漏"
-                    })
+                if change_pct > THRESHOLDS["percolation_change_pct"]:
+                    findings.append(_change_finding(
+                        perc_values, prev, curr,
+                        st_id=st_id, unit="L/s", dim_label="渗流计"))
                     break  # 只报一次
 
-        # 统计异常（委托 lib/anomaly.mad_anomaly；P2-11：消除重复实现 + 修 perc_values.values 潜在 AttributeError）
+        # 统计异常（委托 lib/anomaly.mad_anomaly）+ 季节性护栏（Phase 4.9）
         if len(perc_values) >= 10:
             _r = _anomaly.mad_anomaly(perc_values.tolist(), threshold=3.0, min_samples=10)
             if _r["is_anomaly"]:
+                season = seasonal_check(engine, "st_percolation_r", "percolation", st_id, float(perc_values[-1]))
                 findings.append({
-                    "level": "WARNING",
+                    "level": "INFO" if season["in_season"] else "WARNING",
                     "message": f"渗流计{st_id}: 渗流量{float(perc_values[-1]):.3f}L/s MAD统计异常 z={_r['score']:.1f} (中位数{_r['median']:.3f})",
-                    "detail": "偏离历史分布，需确认"
+                    "detail": f"偏离历史分布，需确认；{season['note']}"
                 })
 
     if not findings:
@@ -906,16 +946,14 @@ def analyze_gate(engine, days=30):
         st_data['gtophgt'] = pd.to_numeric(st_data['gtophgt'], errors='coerce')
         st_data['gtq'] = pd.to_numeric(st_data['gtq'], errors='coerce')
 
-        # 扫描所有数据点
+        # 扫描所有数据点 → 三分通道定型（Phase 4.9）
         opening_values = st_data['gtophgt'].dropna().values
         for i in range(1, len(opening_values)):
             change = abs(opening_values[i] - opening_values[i-1])
-            if change > 1.0:
-                findings.append({
-                    "level": "WARNING",
-                    "message": f"闸门站{st_id}: 开度突变{change:.2f}m ({opening_values[i-1]:.2f} → {opening_values[i]:.2f})",
-                    "detail": "开度变化>1m，需确认是否有调度操作"
-                })
+            if change > THRESHOLDS["gate_opening_jump_m"]:
+                findings.append(_change_finding(
+                    opening_values, opening_values[i-1], opening_values[i],
+                    st_id=st_id, unit="m", dim_label="闸门站"))
 
         # 开度频繁波动（滑动窗口检测）
         if len(opening_values) >= 6:
@@ -1257,10 +1295,16 @@ def analyze_mad_anomaly(engine, days=30, thresholds=None):
 
             # 使用lib返回的score（已计算z_score）
             if _r["score"] > mad_threshold:
+                # 季节性护栏（Phase 4.9）：水位/渗压/渗流防汛期正常抬升；位移无季节性不加
+                if table in ("st_rsvr_r", "st_pressure_r", "st_percolation_r"):
+                    season = seasonal_check(engine, table, value_col, st_id, latest)
+                else:
+                    season = {"in_season": False, "note": ""}
                 findings.append({
-                    "level": "WARNING",
+                    "level": "INFO" if season["in_season"] else "WARNING",
                     "message": f"{label}测站{st_id}: MAD统计异常 z={_r['score']:.1f} (阈值{mad_threshold}, 当前{latest:.2f}, 中位数{_r['median']:.2f})",
-                    "detail": f"偏离历史分布，基于{len(values)}个数据点的MAD检测"
+                    "detail": (f"偏离历史分布，基于{len(values)}个数据点的MAD检测"
+                               + (f"；{season['note']}" if season["note"] else ""))
                 })
 
     if not findings:
@@ -1282,14 +1326,6 @@ def analyze_correlation(engine, days=7, thresholds=None):
     if water.empty:
         return no_data_result("关联异常", "st_rsvr_r", engine)
 
-    def _is_idle(vals):
-        """平线护栏（Phase 4.9）：基础量 CV 低于 idle_cv_min 视为死值/停测，
-        用它当'稳定'参照会造出伪相关（渗压升+水位'稳'≠矛盾，可能只是水位计卡滞）。"""
-        s = pd.Series(vals).dropna().astype(float)
-        if len(s) < 2 or abs(s.mean()) < 1e-9:
-            return False
-        return (s.std() / abs(s.mean())) < THRESHOLDS["idle_cv_min"]
-
     # 关联分析1: 水位上升但入库流量下降
     for st_id in water['st_id'].unique():
         st_water = water[water['st_id'] == st_id].sort_values('tm').copy()
@@ -1301,6 +1337,10 @@ def analyze_correlation(engine, days=7, thresholds=None):
 
         rz_trend = st_water['rz'].tail(6).values
         inq_trend = st_water['inq'].tail(6).values
+
+        # 平线护栏（Phase 4.9）：水位或流量任一死值停测，则"上升/下降"趋势不可信
+        if _is_idle(rz_trend) or _is_idle(inq_trend):
+            continue
 
         rz_rising = all(rz_trend[i] > rz_trend[i-1] for i in range(1, len(rz_trend)))
         # 仅在有非零流量可比时才判定下降；全零/无可比项不算下降（修 C3 空真）
@@ -1553,6 +1593,10 @@ def run_auto_diagnosis(engine, analyses):
         for f in a.get("findings", []):
             level = f.get("level")
             if level not in ("CRITICAL", "WARNING"):
+                continue
+            # 三分通道分流（Phase 4.9）：spike=瞬时毛刺，不烧诊断预算、防撞巧合降雨生伪根因。
+            # （spike 已降级为 INFO 会被上一行 level 过滤；此守卫为显式防御 + 防未来回归）
+            if f.get("pattern") == "spike":
                 continue
             hit = _match_diag_route(cat, f.get("message", ""))
             if not hit:
@@ -1844,7 +1888,7 @@ def build_envelope(analyses, run_id, command, days=30, error=None):
                 fcat = "info"
             else:
                 fcat = "anomaly"
-            findings.append({
+            ef = {
                 "id": fid,
                 "severity": _SEVERITY_MAP.get(level, "info"),
                 "title": f"[{cat}] {f.get('message', '')}",
@@ -1852,7 +1896,10 @@ def build_envelope(analyses, run_id, command, days=30, error=None):
                 "category": fcat,
                 "data_source": f"{anchor} @ [-{days}d, now]",
                 "correlated_with": [],
-            })
+            }
+            if f.get("pattern"):  # Phase 4.9：三分通道标签（仅 change-rate 类 finding 有）
+                ef["pattern"] = f["pattern"]
+            findings.append(ef)
 
     critical_n = sum(1 for f in findings if f["severity"] == "critical")
     warning_n = sum(1 for f in findings if f["severity"] == "warning")
