@@ -217,6 +217,223 @@ def CORR_NEG_2():
 
 
 # ============================================================
+# 回归维度（read_sensor_data）：水位入出库比 / 雨量 / 位移 / 闸门流量 / 泵站
+# ============================================================
+
+def WL_POS_2():
+    """应报：末条 inq=21, otq=10，比值 2.1>2 → WARNING 入库流量"""
+    rz = [100.0, 100.01, 100.02, 100.01, 100.02, 100.03]
+    return {"st_rsvr_r": _rsvr_df(rz, inq=[10.0] * 5 + [21.0], otq=[10.0] * 6)}
+
+
+def WL_NEG_2():
+    """不应报：末条 inq=20, otq=10，比值恰 2.0（严格大于才报）"""
+    rz = [100.0, 100.01, 100.02, 100.01, 100.02, 100.03]
+    return {"st_rsvr_r": _rsvr_df(rz, inq=[10.0] * 5 + [20.0], otq=[10.0] * 6)}
+
+
+def _rain_df(p_series, st_id=9002):
+    n = len(p_series)
+    return _df(st_id=[st_id] * n, p=p_series, dr=[0.0] * n, dyp=[0.0] * n, tm=_hours(n))
+
+
+def RAIN_POS_1():
+    """应报 CRITICAL：单时段 p=100.1mm > 红色阈值 100"""
+    return {"st_pptn_r": _rain_df([100.1])}
+
+
+def RAIN_NEG_1():
+    """不应报：p=29.9mm < 蓝色阈值 30"""
+    return {"st_pptn_r": _rain_df([29.9])}
+
+
+def _gnss_df(speed_gh, st_id=9005):
+    n = len(speed_gh)
+    return _df(st_id=[st_id] * n, wgs84_delta_h=[0.0] * n, wgs84_delta_x=[0.0] * n,
+               wgs84_delta_y=[0.0] * n, speed_gh=speed_gh, speed_gx=[0.0] * n,
+               speed_gy=[0.0] * n, tm=_hours(n))
+
+
+def GNSS_POS_1():
+    """应报：speed_gh 5 点 4 次连续加速 → WARNING"""
+    return {"dsm_dfr_srvrds_srhrds": _gnss_df([1.0, 2.0, 3.0, 4.0, 5.0])}
+
+
+def GNSS_NEG_1():
+    """不应报：5 点仅 3 次连续加速（阈值 4）"""
+    return {"dsm_dfr_srvrds_srhrds": _gnss_df([1.0, 2.0, 3.0, 3.0, 4.0])}
+
+
+def GATE_POS_2():
+    """应报：开度 2.5m>0 且流量 0 → WARNING 流量为0"""
+    return {"rei_gate_r": _gate_df([2.5, 2.5], gtq=[0.0, 0.0])}
+
+
+def GATE_NEG_2():
+    """不应报：全窗口开度 0 流量 0（闸门关闭，0 是合法观测，不报卡阻也不归 no_data）"""
+    return {"rei_gate_r": _gate_df([0.0, 0.0], gtq=[0.0, 0.0])}
+
+
+def _pump_df(freq=None, uab=None, ubc=None, uca=None, st_id=9007):
+    n = len(freq) if freq else len(uab)
+    return _df(st_id=[st_id] * n,
+               uab=uab if uab else [400.0] * n, ubc=ubc if ubc else [400.0] * n,
+               uca=uca if uca else [400.0] * n, ia=[10.0] * n, ib=[10.0] * n, ic=[10.0] * n,
+               p=[5.0] * n, freq=freq if freq else [50.0] * n, status=[1] * n, tm=_hours(n))
+
+
+def PUMP_POS_1():
+    """应报：freq=44.9 < 下界 45 → WARNING 频率"""
+    return {"rei_pump_r": _pump_df(freq=[44.9])}
+
+
+def PUMP_NEG_1():
+    """不应报：freq=45.0 恰等于下界（严格小于才报）"""
+    return {"rei_pump_r": _pump_df(freq=[45.0])}
+
+
+def PUMP_POS_2():
+    """应报：uab=400,ubc=400,uca=464 不平衡>10% → WARNING 三相不平衡"""
+    return {"rei_pump_r": _pump_df(uab=[400.0], ubc=[400.0], uca=[464.0])}
+
+
+# ============================================================
+# inline pd.read_sql 维度：水质 / 墒情 / 白蚁
+# ============================================================
+
+def _wq_df(ph, stcd=9008):
+    n = len(ph)
+    return _df(stcd=[stcd] * n, spt=_hours(n), ph=ph, dox=[7.0] * n, nh3n=[0.5] * n,
+               tn=[1.0] * n, tp=[0.1] * n, turb=[5.0] * n, wtmp=[20.0] * n)
+
+
+def WQ_POS_1():
+    """应报：最新一条 ph=5.99<6 → WARNING pH偏低。
+    analyzer 取 values.iloc[0] 为 latest（SQL DESC），故异常值置首行。"""
+    return {"wq_pcp_d": _wq_df([5.99, 7.5, 7.4])}
+
+
+def WQ_NEG_1():
+    """不应报：ph=6.00（恰等于下界，不报）"""
+    return {"wq_pcp_d": _wq_df([6.00, 7.5, 7.4])}
+
+
+def _soil_df(eval_series, water100=None, st_id=9009):
+    n = len(eval_series)
+    return _df(st_id=[st_id] * n, tm=_hours(n), soil_water10cm=[20.0] * n,
+               soil_water20cm=[20.0] * n, soil_water30cm=[20.0] * n,
+               soil_water60cm=[20.0] * n,
+               soil_water100cm=water100 if water100 else [25.0] * n,
+               soil_moist_evaluation=eval_series)
+
+
+def SOIL_POS_1():
+    """应报：soil_moist_evaluation='重度干旱'"""
+    return {"st_soil_moisture_r": _soil_df(["重度干旱"])}
+
+
+def SOIL_NEG_1():
+    """不应报：'适宜'"""
+    return {"st_soil_moisture_r": _soil_df(["适宜"], water100=[25.0])}
+
+
+def _termite_df(damage=None, pest=None, check_result="未发现", st_id=9010):
+    n = len(damage) if damage else len(pest)
+    return _df(st_id=[st_id] * n, tm=_hours(n), termite_species=["黑翅土白蚁"] * n,
+               pest_density=pest if pest else [None] * n,
+               damage_level=damage if damage else [None] * n,
+               damage_range=[""] * n, check_result=[check_result] * n)
+
+
+def TERM_POS_1():
+    """应报 CRITICAL：damage_level='重度'"""
+    return {"st_termite_monitor_r": _termite_df(damage=["重度"])}
+
+
+def TERM_POS_2():
+    """应报 WARNING：pest_density=3（damage_level NULL）"""
+    return {"st_termite_monitor_r": _termite_df(pest=[3])}
+
+
+def TERM_NEG_1():
+    """不应报：pest_density=2（阈值 3，差 1）"""
+    return {"st_termite_monitor_r": _termite_df(pest=[2])}
+
+
+# ============================================================
+# 专用 reader 维度：巡检结果 / 设备状态 / 告警分析（均走 pd.read_sql）
+# ============================================================
+
+def _insp_df(status_list):
+    n = len(status_list)
+    return _df(id=list(range(1, n + 1)), name=[f"task{i}" for i in range(1, n + 1)],
+               status=status_list, exceed_time=[0] * n, bad_num=[0] * n,
+               check_percent=[100.0] * n, plan_time=_hours(n), begin_time=_hours(n),
+               end_time=_hours(n), create_time=_hours(n))
+
+
+def INSP_POS_1():
+    """应报：100 任务 69 完成(69%<70%) → WARNING 完成率偏低"""
+    return {"business_check_task": _insp_df(["3"] * 69 + ["1"] * 31)}
+
+
+def INSP_NEG_1():
+    """不应报：70 完成(70%，恰阈值)"""
+    return {"business_check_task": _insp_df(["3"] * 70 + ["1"] * 30)}
+
+
+def _equip_df(status_list):
+    n = len(status_list)
+    return _df(id=list(range(1, n + 1)), name=[f"dev{i}" for i in range(1, n + 1)],
+               code=[f"C{i}" for i in range(1, n + 1)], status=status_list,
+               category=["闸门"] * n)
+
+
+def EQUIP_POS_1():
+    """应报：100 台 31 离线(31%>30%) → WARNING 离线率偏高（无 status=2 异常）"""
+    return {"eq_equip_base": _equip_df([0] * 31 + [1] * 69)}
+
+
+def EQUIP_NEG_1():
+    """不应报：30 离线(30%，恰阈值)"""
+    return {"eq_equip_base": _equip_df([0] * 30 + [1] * 70)}
+
+
+def _alert_df(level_list):
+    n = len(level_list)
+    return _df(id=list(range(1, n + 1)), ew_name=[f"告警{i}" for i in range(1, n + 1)],
+               ew_type=["1"] * n, level_r=level_list, value=[0.0] * n,
+               gather_time=_hours(n), message_confirm=[0] * n)
+
+
+def ALERT_POS_1():
+    """应报 CRITICAL：1 条 level_r='1' 未确认 → I级告警"""
+    return {"ew_info_message": _alert_df(["1"])}
+
+
+def ALERT_NEG_1():
+    """不应报：10 条 level_r='4'（无 I/II 级）"""
+    return {"ew_info_message": _alert_df(["4"] * 10)}
+
+
+# ============================================================
+# 质量闸（占位值）+ 空数据（查询失败）
+# ============================================================
+
+def QG_PLACEHOLDER_1():
+    """质量闸占位值：rz 混入 -99/999 各 3 个（占位 60%>20% → 红 + 占位值 issue），
+    另含合法 0.00 读数（0 ∉ _PLACEHOLDER_VALUES，不计占位）。"""
+    rz = [100.0, 0.0, -99.0, 999.0, -99.0, 999.0, -99.0, 999.0, 100.0, 0.0]
+    return {"st_rsvr_r": _rsvr_df(rz, st_id=9012)}
+
+
+def EMPTY_QF_1():
+    """空数据 QUERY_FAILED：mock read_sensor_data 抛异常 → QUERY_ERRORS 置位。
+    实际通过 eval_runner 的 QUERY_ERRORS_SET 预置实现，fixture 给空 DF 占位。"""
+    return {"st_percolation_r": pd.DataFrame(columns=["st_id", "percolation", "tm"])}
+
+
+# ============================================================
 # case_id → 工厂映射
 # ============================================================
 FIXTURES = {
@@ -236,12 +453,38 @@ FIXTURES = {
     "MAD-POS-1": MAD_POS_1,
     "MAD-NEG-1": MAD_NEG_1,
     "QG-RED-1": QG_RED_1,
+    "QG-PLACEHOLDER-1": QG_PLACEHOLDER_1,
     "EMPTY-NA-1": EMPTY_NA_1,
     "EMPTY-ND-1": EMPTY_ND_1,
+    "EMPTY-QF-1": EMPTY_QF_1,
     "CORR-POS-1": CORR_POS_1,
     "CORR-NEG-1": CORR_NEG_1,
     "CORR-POS-2": CORR_POS_2,
     "CORR-NEG-2": CORR_NEG_2,
+    "WL-POS-2": WL_POS_2,
+    "WL-NEG-2": WL_NEG_2,
+    "RAIN-POS-1": RAIN_POS_1,
+    "RAIN-NEG-1": RAIN_NEG_1,
+    "GNSS-POS-1": GNSS_POS_1,
+    "GNSS-NEG-1": GNSS_NEG_1,
+    "GATE-POS-2": GATE_POS_2,
+    "GATE-NEG-2": GATE_NEG_2,
+    "PUMP-POS-1": PUMP_POS_1,
+    "PUMP-NEG-1": PUMP_NEG_1,
+    "PUMP-POS-2": PUMP_POS_2,
+    "WQ-POS-1": WQ_POS_1,
+    "WQ-NEG-1": WQ_NEG_1,
+    "SOIL-POS-1": SOIL_POS_1,
+    "SOIL-NEG-1": SOIL_NEG_1,
+    "TERM-POS-1": TERM_POS_1,
+    "TERM-POS-2": TERM_POS_2,
+    "TERM-NEG-1": TERM_NEG_1,
+    "INSP-POS-1": INSP_POS_1,
+    "INSP-NEG-1": INSP_NEG_1,
+    "EQUIP-POS-1": EQUIP_POS_1,
+    "EQUIP-NEG-1": EQUIP_NEG_1,
+    "ALERT-POS-1": ALERT_POS_1,
+    "ALERT-NEG-1": ALERT_NEG_1,
 }
 
 
@@ -260,4 +503,9 @@ SEASONAL_OVERRIDE = {
 PROBE_LATEST_OVERRIDE = {
     "EMPTY-NA-1": None,       # 表历史为空 → NOT_APPLICABLE
     "EMPTY-ND-1": "2026-06-15 00:00:00",  # 有历史窗口内空 → NO_DATA(采集中断)
+}
+
+# QUERY_FAILED：预置 ia.QUERY_ERRORS[table]=code，使 no_data_result 走 QUERY_FAILED 分支
+QUERY_ERRORS_SET = {
+    "EMPTY-QF-1": ("st_percolation_r", "QUERY_TIMEOUT"),
 }

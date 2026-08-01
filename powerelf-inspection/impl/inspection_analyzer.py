@@ -1168,9 +1168,10 @@ def analyze_termite(engine, days=180):
     if df.empty:
         return no_data_result("白蚁监测", "st_termite_monitor_r", engine)
 
-    # 检查是否有白蚁发现
+    # 检查是否有白蚁发现（"未发现"含子串"发现"，须排除，否则漏检记录被误判为发现）
     if 'check_result' in df.columns:
-        found = df[df['check_result'].str.contains('发现', na=False)]
+        cr = df['check_result'].astype(str)
+        found = df[cr.str.contains('发现', na=False) & ~cr.str.contains('未发现', na=False)]
         if not found.empty:
             findings.append({
                 "level": "WARNING",

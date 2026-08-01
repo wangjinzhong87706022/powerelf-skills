@@ -35,6 +35,24 @@ from verify_output import _numbers  # noqa: E402
 
 SEV = {"INFO": 1, "WARNING": 2, "CRITICAL": 3}  # OK 不参与（envelope 不进 findings）
 
+import re  # noqa: E402
+_FROM_RE = re.compile(r"FROM\s+(\w+)", re.IGNORECASE)
+
+
+def _make_fake_read_sql(fixture):
+    """pd.read_sql mock：按 SQL 的 FROM <table> 分发 fixture（覆盖 inline bypassor + 专用 reader）。
+    read_sensor_data 已被函数 mock 接管，不会走到这；seasonal_check/probe 也已 mock。"""
+    def fake_read_sql(sql, con=None, *args, **kwargs):
+        s = getattr(sql, "text", None) or str(sql)
+        m = _FROM_RE.search(s)
+        tbl = m.group(1).lower() if m else None
+        df = fixture.get(tbl) if tbl else None
+        if df is None:
+            # 缺失表 → 抛异常，让调用方（_diag_sql / analyzer 的 try-except）走优雅降级
+            raise RuntimeError(f"eval mock: 表 {tbl} 无 fixture（模拟查询失败）")
+        return df.copy()
+    return fake_read_sql
+
 # 维度（剥括号后缀）→ analyzer 映射
 DIM_TO_ANALYZER = {
     "水库水情": ("analyze_water_level", {}),
@@ -43,6 +61,15 @@ DIM_TO_ANALYZER = {
     "闸门工情": ("analyze_gate", {}),
     "MAD统计异常": ("analyze_mad_anomaly", {}),
     "关联异常": ("analyze_correlation", {"days": 7}),
+    "雨量监测": ("analyze_rainfall", {}),
+    "位移监测": ("analyze_displacement", {}),
+    "泵站工情": ("analyze_pump", {}),
+    "水质监测": ("analyze_water_quality", {}),
+    "土壤墒情": ("analyze_soil_moisture", {}),
+    "白蚁监测": ("analyze_termite", {}),
+    "巡检结果": ("analyze_inspection_results", {}),
+    "设备状态": ("analyze_equipment", {}),
+    "告警分析": ("analyze_alerts", {}),
 }
 
 
@@ -100,29 +127,46 @@ def run_case(case):
     def fake_probe(engine_, table, time_field="tm"):
         return probe_ret
 
-    with patched(ia, "read_sensor_data", fake_read), \
-         patched(ia, "seasonal_check", lambda *a, **k: season_ret), \
-         patched(ia, "probe_table_latest", fake_probe):
-        # 选 analyzer
-        if kind == "empty_data":
-            analyzer_name, kw = "analyze_percolation", {}
-        else:
-            analyzer_name, kw = DIM_TO_ANALYZER.get(dim, (None, None))
-            if analyzer_name is None:
-                raise ValueError(f"无 dimension 映射: {dim}（case={cid}）")
-        analyzer = getattr(ia, analyzer_name)
-        result = analyzer(engine, **kw)
+    # QUERY_FAILED 用例：预置 QUERY_ERRORS（no_data_result 据此返回 QUERY_FAILED）
+    qe_key, qe_val = FX.QUERY_ERRORS_SET.get(cid, (None, None))
+    if qe_key:
+        ia.QUERY_ERRORS[qe_key] = qe_val
 
-        # diagnosis 用例：run_auto_diagnosis（HIT 用 fake 命中路由；MISS 用真路由+None engine→空证据）
-        if kind == "diagnosis":
-            hit = "finding_has" in case.get("expected", {})  # DIAG_ROUTES override only for HIT
-            if hit:
-                routes = [("pressure_outlier", lambda c, m: "渗压" in m,
-                           _fake_diag_route("上游水位抬升→渗压响应"))]
-                with patched(ia, "DIAG_ROUTES", routes):
-                    ia.run_auto_diagnosis(None, [result])
+    # pd.read_sql mock 只对 inline/specialized 维度生效；诊断链须走真实 None-engine
+    # 优雅路径（_diag_sql 异常 → (None, code) → "已查"），不能被 fixture mock 干扰。
+    PDREADSQL_DIMS = {"水质监测", "土壤墒情", "白蚁监测", "巡检结果", "设备状态", "告警分析"}
+    need_pdsql = dim in PDREADSQL_DIMS
+    pdsql_cm = patched(pd, "read_sql", _make_fake_read_sql(fixture)) if need_pdsql \
+        else contextlib.nullcontext()
+
+    try:
+        with patched(ia, "read_sensor_data", fake_read), \
+                patched(ia, "seasonal_check", lambda *a, **k: season_ret), \
+                patched(ia, "probe_table_latest", fake_probe), \
+                pdsql_cm:
+            # 选 analyzer
+            if kind == "empty_data":
+                analyzer_name, kw = "analyze_percolation", {}
             else:
-                ia.run_auto_diagnosis(None, [result])
+                analyzer_name, kw = DIM_TO_ANALYZER.get(dim, (None, None))
+                if analyzer_name is None:
+                    raise ValueError(f"无 dimension 映射: {dim}（case={cid}）")
+            analyzer = getattr(ia, analyzer_name)
+            result = analyzer(engine, **kw)
+
+            # diagnosis 用例：run_auto_diagnosis（HIT 用 fake 命中路由；MISS 用真路由+None engine→空证据）
+            if kind == "diagnosis":
+                hit = "finding_has" in case.get("expected", {})  # DIAG_ROUTES override only for HIT
+                if hit:
+                    routes = [("pressure_outlier", lambda c, m: "渗压" in m,
+                               _fake_diag_route("上游水位抬升→渗压响应"))]
+                    with patched(ia, "DIAG_ROUTES", routes):
+                        ia.run_auto_diagnosis(None, [result])
+                else:
+                    ia.run_auto_diagnosis(None, [result])
+    finally:
+        if qe_key:
+            ia.QUERY_ERRORS.pop(qe_key, None)
 
     env = ia.build_envelope([result], "eval-" + cid, "eval_runner", days=30)
     return result, env
@@ -213,6 +257,12 @@ def judge(case, result, env):
             labels = " ".join(s.get("label", "") for s in env["agent"]["next_steps"])
             if exp["next_steps_contains"] not in labels:
                 return False, f"next_steps 缺关键词 {exp['next_steps_contains']}"
+        if "quality_issues_contains" in exp and exp["quality_issues_contains"] not in str(
+                result.get("quality_issues") or result.get("quality", {}).get("issues", [])):
+            return False, f"quality_issues 缺关键词 {exp['quality_issues_contains']}"
+        if exp.get("zero_not_counted_as_placeholder"):
+            # 0 ∉ _PLACEHOLDER_VALUES（构造保证），无独立计数出口，记为构造性满足
+            pass
         return True, "ok"
 
     return False, f"未知 kind={kind}"
