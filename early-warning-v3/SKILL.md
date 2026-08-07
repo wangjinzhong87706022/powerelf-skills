@@ -88,6 +88,80 @@ python3 scripts/query_early_warning.py --type weather_warning
 - `analysis/correlation-analysis.md` — 跨域关联分析
 - `analysis/root-cause-analysis.md` — 根因分析
 - `analysis/predictive-warning.md` — 趋势预测
+- `lib/topology.py` — 知识图谱查询 + 告警聚合 + 根因排序 + 置信度闸
+- `analysis/topology-schema.sql` — 拓扑表 DDL（topo_node / topo_edge / topo_alarm_event）
+- `analysis/causal-rules.json` — 水利业务因果规则（12 条）
+- `scripts/build_topology.py` — 建图脚本（从 11 张现有表抽取节点 + 4 种边）
+
+## 知识图谱与根因排序（拓扑社团聚类 + 五维打分）
+
+> 完整方案见 `docs/water-conservancy-knowledge-graph-and-root-cause-ranking.md`。
+> 本模块把散落在 att_st_base / eq_equip_base / att_dam_base / att_dam_section 等
+> 十余张表里的隐式拓扑关系，抽取为统一的 topo_node + topo_edge 两张表，
+> 供告警聚合、爆炸半径计算、根因排序使用。对齐腾讯 TCOP 三级过滤 + 知识图谱经验。
+
+### 一次性建图
+
+```bash
+# 1. 建拓扑表（3 张）
+mysql -h 127.0.0.1 -P 3306 -u root -p123456aA. powerelf_srm_yml \
+  < analysis/topology-schema.sql
+
+# 2. 运行建图脚本（从现有 11 张表抽取 364 节点 + 832 边）
+python3 scripts/build_topology.py
+```
+
+### 图谱结构
+
+| 节点类型 | 数量 | 数据源 |
+|---------|------|--------|
+| `station` 测站 | 72 | `att_st_base` |
+| `device` 设备 | 128 | `eq_equip_base` |
+| `point` 测点 | 129 | `att_st_point` + `att_st_dot` |
+| `section` 断面 | 22 | `att_dam_section` |
+| `dam` 大坝 | 10 | `att_dam_base` |
+| `project` 工程 | 3 | `att_st_base.project_id` 聚合 |
+
+| 边类型 | 数量 | 含义 |
+|--------|------|------|
+| `belongs_to` | 385 | 归属关系（device→station→project, point→section→dam） |
+| `near` | 410 | 空间邻近（同 section 的 point, haversine < 1km 的 station） |
+| `upstream_of` | 33 | 水力上下游（雨量站→水库站, haversine < 10km） |
+| `causes` | 4 | 业务因果链（由 causal-rules.json 匹配生成） |
+
+### 根因排序五维打分
+
+| 维度 | 权重 | 含义 |
+|------|------|------|
+| `temporal_priority` 时序优先性 | 0.25 | 越早告警越可能是根因 |
+| `topology_centrality` 拓扑中心性 | 0.20 | 团内度数越高影响越广 |
+| `causal_evidence` 因果链证据 | 0.25 | 有 causes 边指向团内其他节点 |
+| `alarm_severity` 告警严重度 | 0.15 | 节点的最高告警级别 |
+| `historical_recurrence` 历史复发率 | 0.15 | 过去 30 天该节点作为根因的频率 |
+
+### 三道安全闸（对齐腾讯"绝不胡编"）
+
+| 闸 | 触发条件 | 动作 |
+|----|----------|------|
+| 第一道：置信度阈值 | root_cause_score < 0.5 | suppress（不列根因，输出"建议人工介入"） |
+| 第一道：置信度阈值 | 0.5 <= score < 0.7 | show_with_warning（⚠️ 低置信度） |
+| 第一道：置信度阈值 | score >= 0.7 | show（✅ 置信度充足） |
+| 第二道：人工审批 | 涉及不可逆物理操作 | 强制 HITL 二次确认 |
+| 第三道：结构化输出 | 所有根因输出 | 必须引用 ew_info_message.id + 拓扑路径 + 置信区间 |
+
+### 快速验证
+
+```bash
+# 端到端：取最近 90 天告警 → 聚合 → 根因排序 → 置信度闸
+python3 lib/topology.py --analyze --days 90 --top 3
+
+# 只做故障团聚类
+python3 lib/topology.py --cluster --days 30
+
+# 计算单个节点的爆炸半径
+python3 lib/topology.py --blast station:3
+```
+
 
 ## 直接SQL（复杂查询）
 

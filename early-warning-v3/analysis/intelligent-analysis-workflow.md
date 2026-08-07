@@ -107,136 +107,146 @@ LIMIT 100;
 
 ---
 
-### Step 2: 告警聚合与去噪
+### Step 2: 告警聚合与去噪（拓扑社团聚类）
 
-对采集的原始告警进行聚合、去噪、排序，生成告警摘要。
+对采集的原始告警执行**三级过滤收敛**：时间聚合 → 拓扑社团聚类 → 故障事件生成。
+本步骤调用 `lib/topology.py` 的 `aggregate_alarms_to_events()`，把 100 条零散
+告警聚成 3-5 个故障事件，对齐腾讯 TCOP "10 秒内告警收敛，聚合成故障事件"。
 
-#### 聚合规则
+> **拓扑图前置依赖**：本步骤依赖 `topo_node` / `topo_edge` 两张拓扑表。
+> 若表不存在或为空，先运行 `scripts/build_topology.py` 建图（一次性）。
+> 拓扑表 schema 见 `analysis/topology-schema.sql`，建图原理见
+> `docs/water-conservancy-knowledge-graph-and-root-cause-ranking.md` 第二章。
 
-1. **按 st_code + ew_type 分组**：同一测站的同类告警归为一组
-2. **30 分钟合并窗口**：同一分组内 30 分钟内的告警合并为一条，取最高级别
-3. **过滤已确认告警**：排除 message_confirm = 1 的告警
-4. **按级别排序**：level_r 升序（1=红色最高优先级）
-5. **截断上限**：最多保留 100 条告警
-
-#### 聚合伪代码
+#### 调用入口
 
 ```python
-def aggregate_alerts(raw_alerts):
-    # Step 1: 过滤已确认
-    active = [a for a in raw_alerts if a['message_confirm'] == 0 and a['deleted'] == 0]
+from lib.topology import aggregate_alarms_to_events
 
-    # Step 2: 按 st_code + ew_type 分组
-    groups = {}
-    for alert in active:
-        key = (alert['st_code'], alert['ew_type'])
-        groups.setdefault(key, []).append(alert)
-
-    # Step 3: 组内 30 分钟合并
-    merged = []
-    for key, alerts in groups.items():
-        alerts.sort(key=lambda x: x['create_time'])
-        window = [alerts[0]]
-        for a in alerts[1:]:
-            if time_diff(a['create_time'], window[-1]['create_time']) <= 30:
-                window.append(a)
-            else:
-                merged.append(merge_window(window))
-                window = [a]
-        merged.append(merge_window(window))
-
-    # Step 4: 按级别排序
-    merged.sort(key=lambda x: x['level_r'])
-
-    # Step 5: 截断
-    return merged[:100]
-
-def merge_window(alerts):
-    """合并窗口内的告警，取最高级别，保留最新值"""
-    return {
-        'st_code': alerts[0]['st_code'],
-        'ew_type': alerts[0]['ew_type'],
-        'level_r': min(a['level_r'] for a in alerts),
-        'value': alerts[-1]['value'],
-        'create_time': alerts[0]['create_time'],
-        'count': len(alerts),
-        'merged_ids': [a['id'] for a in alerts]
-    }
+# alarms = Step 1 采集的 ew_info_message 列表
+events = aggregate_alarms_to_events(
+    alarms,
+    time_window_min=30,   # 同一故障事件内告警的最大时间跨度
+    tenant_id=1,
+)
 ```
+
+#### 三级过滤收敛逻辑（由 aggregate_alarms_to_events 内部实现）
+
+| 级别 | 腾讯 TCOP 对应 | 本项目实现 |
+|------|----------------|------------|
+| 第 1 级 时间聚合 | 相似曲线聚类 | 同一节点 ±30 分钟窗口内的告警合并 |
+| 第 2 级 拓扑社团 | 业务访问关系视图 + 社团聚类 | 用 union-find 沿 `belongs_to`/`near`/`upstream_of` 边聚连通分量 |
+| 第 3 级 故障事件 | 聚合成 P0 故障事件 | 每个连通分量 + 时间窗口过滤 → 1 个故障事件 |
 
 #### 输出
 
 ```json
 {
-  "alert_summary": {
-    "total": 12,
-    "by_level": { "1": 2, "2": 3, "3": 4, "4": 3 },
-    "by_type": { "0": 5, "2": 3, "20": 2, "12": 2 },
-    "top_alerts": [
-      { "st_code": "606K2155", "ew_type": "0", "level_r": 1, "value": "463.2", "count": 3 }
-    ]
-  }
+  "events": [
+    {
+      "event_id": "EVT-20260805-001",
+      "start_time": "2026-08-05 10:00:00",
+      "end_time": "2026-08-05 10:30:00",
+      "max_level": "1",
+      "alarm_count": 23,
+      "affected_nodes": ["station:2151", "station:2155", "device:215502"],
+      "cluster_id": 1,
+      "centroid_node": "station:2155",
+      "severity_score": 0.85,
+      "alarms": [ /* 原 ew_info_message 引用 */ ]
+    }
+  ],
+  "total_alarms": 100,
+  "total_events": 3
 }
 ```
 
+> **向后兼容**：本步骤的输出 `events` 取代了旧版的 `alert_summary`。
+> 后续 Step 3/4 直接消费 `events`，不再消费 `alert_summary.top_alerts`。
+> 旧版"按 st_code+ew_type 分组 + 30 分钟合并"的逻辑已被
+> `aggregate_alarms_to_events` 完全覆盖且更准确（多了拓扑社团维度）。
+
 ---
 
-### Step 3: 跨域关联分析
+### Step 3: 跨域关联分析（拓扑爆炸半径）
 
 **超时控制：60 秒**
 
-调用 `correlation-analysis.md` 模块，分析告警之间的跨域关联关系。
+本步骤调用 `lib/topology.py` 的 `compute_blast_radius()`，沿知识图谱的
+`belongs_to` / `near` / `upstream_of` 边做 BFS 1-2 跳，算出每个故障事件的
+"爆炸半径"——即一个告警节点在拓扑图上能影响哪些下游节点。
 
-> **注意**：本步骤直接使用 Step 2 的聚合输出（`alert_summary`）作为输入，对聚合后的告警进行跨域关联判定，而不是重新查询数据库。下方 SQL 仅用于辅助补充或验证。
+> **与旧版的区别**：旧版 Step 3 用 SQL 查 `ew_type` 分布 + 人工定义
+> dam_risk/flood_risk/data_reliability 三种场景。新版改用拓扑图 BFS，
+> 关联判定从"按 ew_type 分组"升级为"沿拓扑边可达"，更准确且可扩展。
+> 旧版的三种场景仍保留作为业务规则补充，但主体逻辑改为拓扑 BFS。
 
-#### 关联场景
+#### 调用入口
 
-| 场景 | 关联域 | 触发条件 |
-|------|--------|---------|
-| dam_risk | 水位 + 降雨 + 渗流 | 同时存在 ew_type=0、2、20/40 的告警 |
-| flood_risk | 水位 + 气象 | 存在 ew_type=0 告警且有气象预警 |
-| data_reliability | 多设备离线 | ew_type=12 告警数 ≥ 3 |
+```python
+from lib.topology import compute_blast_radius
 
-#### 关联强度
-
-| 强度 | 判断标准 |
-|------|---------|
-| strong | 三域关联且时间窗口 ≤ 30 分钟 |
-| moderate | 双域关联或三域关联但时间窗口 > 30 分钟 |
-| weak | 单域关联或仅时间重叠 |
-
-#### 查询 SQL
-
-```sql
--- 告警类型分布
-SELECT ew_type, COUNT(*) as cnt, MIN(level_r) as highest_level
-FROM ew_info_message
-WHERE deleted = 0 AND message_confirm = 0
-  AND create_time >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-GROUP BY ew_type
-
--- 离线设备计数
-SELECT COUNT(*) as offline_count
-FROM ew_info_message
-WHERE ew_type = '12' AND deleted = 0
-  AND create_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+# 对每个故障事件的 centroid_node 计算爆炸半径
+for event in events:
+    blast = compute_blast_radius(
+        start_node=event["centroid_node"],
+        edge_types=["belongs_to", "near", "upstream_of"],
+        max_hops=2,
+    )
+    event["blast_radius"] = blast
 ```
+
+#### 爆炸半径返回结构
+
+```json
+{
+  "start_node": "station:2155",
+  "reachable_nodes": [
+    {"node_id": "station:2155", "node_type": "station", "hops": 0, "path": ["station:2155"]},
+    {"node_id": "device:215502", "node_type": "device", "hops": 1, "path": ["station:2155","device:215502"]},
+    {"node_id": "station:2151",   "node_type": "station", "hops": 2, "path": [...]}
+  ],
+  "affected_devices":   ["device:215502", "device:215503"],
+  "affected_stations":  ["station:2151"],
+  "affected_projects":  ["project:1"],
+  "affected_dams":      [],
+  "affected_sections":  [],
+  "affected_points":    [],
+  "total_affected": 4
+}
+```
+
+#### 旧版业务场景映射（保留作为辅助规则）
+
+| 旧版场景 | 旧版触发条件 | 新版拓扑映射 |
+|---------|-------------|-------------|
+| dam_risk | 水位+降雨+渗流同时告警 | 沿 `upstream_of`(雨量→水库) + `causes`(水位→渗压) 边可达 |
+| flood_risk | 水位告警 + 气象预警 | 沿 `upstream_of` 边找到上游雨量站，结合 weather_warn |
+| data_reliability | 多设备离线 | 沿 `belongs_to` 边聚合到同一 station/project |
 
 #### 输出
 
 ```json
 {
   "correlation_result": {
-    "compound_risks": [
+    "events_with_blast": [
       {
-        "scenario": "dam_risk",
-        "domains": ["water_level", "rainfall", "seepage"],
-        "strength": "strong",
-        "evidence": "606K2155 水位红色告警 + 606K2155 降雨橙色告警 + 606K2155 渗压黄色告警，时间窗口 15 分钟"
+        "event_id": "EVT-20260805-001",
+        "centroid_node": "station:2155",
+        "blast_radius": { /* 上面的爆炸半径结构 */ },
+        "compound_risks": [
+          {
+            "scenario": "dam_risk",
+            "domains": ["water_level", "rainfall", "seepage"],
+            "strength": "strong",
+            "evidence": "606K2155 水位红色告警 + 606K2155 降雨橙色告警 + 606K2155 渗压黄色告警，时间窗口 15 分钟"
+          }
+        ],
+        "domain_coverage": { "water_level": true, "rainfall": true, "seepage": true },
+        "cross_domain_score": 4
       }
-    ],
-    "domain_coverage": { "water_level": true, "rainfall": true, "seepage": true },
-    "cross_domain_score": 4
+    ]
   }
 }
 ```
@@ -245,37 +255,118 @@ WHERE ew_type = '12' AND deleted = 0
 
 ---
 
-### Step 4: 根因分析与风险评估
+### Step 4: 根因排序与风险评估（五维打分 + 置信度闸）
 
-调用 `root-cause-analysis.md` 和 `risk-scoring-matrix.md` 模块，执行根因诊断和风险量化评分。
+本步骤分两部分：
+1. **根因排序**：调用 `lib/topology.py` 的 `rank_root_causes()` + `apply_confidence_gate()`，在每个故障团内按五维打分排序出 TOPN 可疑根因，并过置信度降级闸。
+2. **风险评估**：保留旧版 `risk-scoring-matrix.md` 的 5 因素加权评分（与根因排序互补：根因排序回答"谁是根因"，风险评估回答"整体多严重"）。
 
-#### 调用模块
+> **与旧版的区别**：旧版 Step 4 只做单告警趋势分析 + 关联告警列表，"可能根因"靠 Agent 自由发挥，置信度字段无计算逻辑。新版用五维打分（时序优先性 0.25 + 拓扑中心性 0.20 + 因果链证据 0.25 + 告警严重度 0.15 + 历史复发率 0.15）量化根因判定，并通过三道安全闸（置信度阈值降级 + HITL 人工审批 + 结构化输出引用拓扑路径）杜绝"模型幻觉"。
 
-1. **根因分析**（`root-cause-analysis.md`）：对 top_alerts 中的高优先级告警执行 Step 1-6 的完整诊断流程
-2. **风险评分**（`risk-scoring-matrix.md`）：基于 5 因素加权评分
+#### 4.1 根因排序调用入口
+
+```python
+from lib.topology import rank_root_causes, apply_confidence_gate
+
+# 对每个故障事件做根因排序
+for event in events:
+    ranked = rank_root_causes(event, top_n=3)
+    gate = apply_confidence_gate(ranked)
+    event["ranked_causes"] = ranked
+    event["confidence_gate"] = gate
+    if ranked:
+        event["root_cause_node"] = ranked[0]["node_id"]
+        event["root_cause_conf"] = ranked[0]["confidence"]
+```
+
+#### 4.2 五维打分模型
+
+| 维度 | 权重 | 计算方法 | 含义 |
+|------|------|----------|------|
+| `temporal_priority` 时序优先性 | 0.25 | 节点首条告警时间早于团内其他告警 → 1.0，晚 1 小时 → 0.0 | 越早告警越可能是根因 |
+| `topology_centrality` 拓扑中心性 | 0.20 | 节点在团内的度数 / 团内最大度数 | 度数越高影响越广 |
+| `causal_evidence` 因果链证据 | 0.25 | 有 causes 边指向团内其他告警节点的数量 / (团内节点数 - 1) | 有传播路径 = 有根因证据 |
+| `alarm_severity` 告警严重度 | 0.15 | max(SEVERITY_MAP[level_r]) 该节点的最高告警级别 | 越严重越可能是根因 |
+| `historical_recurrence` 历史复发率 | 0.15 | 过去 30 天该节点作为根因的频率 | 历史根因节点复发概率高 |
+
+#### 4.3 置信度降级闸（三道安全闸）
+
+| 闸 | 触发条件 | 动作 |
+|----|----------|------|
+| 第一道：置信度阈值 | root_cause_score < 0.5 | suppress（不列根因，输出"建议人工介入"） |
+| 第一道：置信度阈值 | 0.5 <= score < 0.7 | show_with_warning（⚠️ 低置信度，仅供参考） |
+| 第一道：置信度阈值 | score >= 0.7 | show（✅ 置信度充足） |
+| 第二道：人工审批 | 涉及不可逆物理操作（开闸泄洪等） | 强制 HITL 二次确认 |
+| 第三道：结构化输出 | 所有根因输出 | 必须引用 `ew_info_message.id` + 拓扑路径 + 置信区间 |
+
+> 详见 `docs/water-conservancy-knowledge-graph-and-root-cause-ranking.md` 第五章。
+
+#### 4.4 根因排序输出示例
+
+```json
+{
+  "ranked_causes": [
+    {
+      "rank": 1,
+      "node_id": "station:2151",
+      "node_name": "雨量站 606K2151",
+      "node_type": "station",
+      "root_cause_score": 0.82,
+      "score_breakdown": {
+        "temporal_priority": 1.0,
+        "topology_centrality": 0.5,
+        "causal_evidence": 1.0,
+        "alarm_severity": 0.75,
+        "historical_recurrence": 0.6
+      },
+      "evidence": [
+        "首条告警时间 10:00:00, 早于团内其他告警",
+        "causes 边指向 1 个下游告警节点"
+      ],
+      "confidence": 0.92,
+      "display_action": "show",
+      "display_reason": "✅ 置信度充足"
+    }
+  ],
+  "confidence_gate": {
+    "overall_status": "normal",
+    "message": "所有候选根因置信度充足",
+    "ranked_causes": [/* 同上 */]
+  }
+}
+```
+
+#### 4.5 风险评估（保留旧版 5 因素加权评分）
+
+风险评估与根因排序互补：根因排序回答"谁是根因"，风险评估回答"整体多严重"。风险评估仍用旧版 `risk-scoring-matrix.md` 的 5 因素加权评分（告警级别 30% + 告警数量 20% + 跨域关联 25% + 持续时间 15% + 趋势 10%）。
 
 #### 参数说明
 
 | 参数 | 定义 |
 |------|------|
-| `alerts` | Step 2 聚合输出的活跃告警列表 |
-| `correlation_result` | Step 3 跨域关联分析输出 |
-| `duration_hours` | 最早活跃告警的 `create_time` 到当前时间的小时差（`time elapsed from the earliest active alert's create_time to now`） |
+| `events` | Step 2 聚合输出的故障事件列表（每个含 affected_nodes / alarms） |
+| `correlation_result` | Step 3 跨域关联分析输出（cross_domain_score） |
+| `duration_hours` | 最早活跃告警的 `create_time` 到当前时间的小时差 |
 
 #### 风险评分计算
 
 ```python
-def calculate_risk_score(alerts, correlation_result, duration_hours):
+def calculate_risk_score(events, correlation_result, duration_hours):
     """
     基于 risk-scoring-matrix.md 的 5 因素评分
 
     参数:
-        alerts: 聚合后的活跃告警列表（Step 2 输出）
+        events: Step 2 聚合输出的故障事件列表
         correlation_result: 跨域关联分析结果（Step 3 输出）
         duration_hours: 最早活跃告警的 create_time 到当前时间的小时差
     """
+    # 汇总所有事件的告警
+    all_alerts = []
+    for ev in events:
+        all_alerts.extend(ev.get("alarms", []))
+
     # ── 空列表守卫 ──
-    if not alerts:
+    if not all_alerts:
         return {
             'overall_score': 0,
             'risk_level': 'none',
@@ -285,7 +376,7 @@ def calculate_risk_score(alerts, correlation_result, duration_hours):
 
     # ── 直接判定规则（优先级 1：命中即跳过加权计算）──
     # 规则 1: 红色告警 + 三域关联 → 直接高风险
-    has_red = any(a['level_r'] == 1 for a in alerts)
+    has_red = any(a['level_r'] == 1 for a in all_alerts)
     three_domain = correlation_result.get('cross_domain_score', 0) == 4
     if has_red and three_domain:
         return {
@@ -296,20 +387,20 @@ def calculate_risk_score(alerts, correlation_result, duration_hours):
         }
 
     # 规则 2: 告警风暴（>50 条/小时） → 直接高风险
-    if len(alerts) > 50:
+    if len(all_alerts) > 50:
         return {
             'overall_score': 4.0,
             'risk_level': 'high',
             'factors': {},
-            'direct_rule': '告警风暴（{} 条），直接判定高风险'.format(len(alerts))
+            'direct_rule': '告警风暴（{} 条），直接判定高风险'.format(len(all_alerts))
         }
 
     # ── 因素 1: 告警级别 (权重 30%) ──
-    level_r_value = min(a['level_r'] for a in alerts)
+    level_r_value = min(a['level_r'] for a in all_alerts)
     level_factor_score = {1: 4, 2: 3, 3: 2, 4: 1}.get(level_r_value, 1)
 
     # ── 因素 2: 告警数量 (权重 20%) ──
-    count = len(alerts)
+    count = len(all_alerts)
     if count >= 5:
         count_factor = 4
     elif count >= 3:
@@ -320,7 +411,6 @@ def calculate_risk_score(alerts, correlation_result, duration_hours):
         count_factor = 1
 
     # ── 因素 3: 跨域关联 (权重 25%) ──
-    # 映射：三域关联=4, 双域关联=3, 单域=2（参见 risk-scoring-matrix.md）
     cross_score = correlation_result.get('cross_domain_score', 2)
     cross_factor = cross_score
 
@@ -335,7 +425,7 @@ def calculate_risk_score(alerts, correlation_result, duration_hours):
         duration_factor = 1
 
     # ── 因素 5: 趋势 (权重 10%) ──
-    trend_assessment = assess_trend(alerts)  # 返回 'worsening' | 'stable' | 'improving'
+    trend_assessment = assess_trend(all_alerts)  # 返回 'worsening' | 'stable' | 'improving'
     trend_factor = {'worsening': 4, 'stable': 3, 'improving': 2}.get(trend_assessment, 3)
 
     # ── 加权计算 ──
