@@ -187,15 +187,15 @@
 | **三阶段测评** | 合法性 → 离线回放 → 线上灰度 | inspection 已有 cases.json 评测 runner（≈ 离线回放）✅ | 缺①合法性 lint ③线上灰度 AB；根因/Skills 覆盖率指标值得引入 |
 | **子图召回 + 四段注入** | 混合检索 + 子图召回 + 精准注入 | 各 skill 平铺，靠 LLM 自己匹配 rules | **单点最高 ROI 借鉴** |
 | **大小模型融合定界** | 清晰→小模型；模糊→大模型 | 纯规则 + 单 LLM | 缺分流，规模上来后成本/延迟压力大 |
-| **Skill 自进化闭环** | 工单→Wiki→skill 生成→回放→灰度 | inspection 有 rule-evolution + feedback-log.md（雏形）✅ | 缺「自动从工单生成新 Skill」这一步 |
-| **领域 Agent 解耦**（文章一） | 六大领域 Agent 松耦合 | 5 个 skill 模块已松耦合 ✅，但无中央编排 | 已具备解耦基础，缺知识共享层；且六大职能中「标准/主数据/元数据/生命周期」Agent 在 powerelf 无对应模块，**路线图未覆盖——属有意范围裁剪，需显式声明** |
+| **Skill 自进化闭环** | 工单→Wiki→skill 生成→回放→灰度 | inspection 有 rule-evolution + feedback-log.md（**设计了完整 schema 但当前 0 条记录，飞轮未启动**）⚠️ | 缺「自动从工单生成新 Skill」这一步；且需先让 feedback-log 积累真实 TP/FP/FN/TN 数据 |
+| **领域 Agent 解耦**（文章一） | 六大领域 Agent 松耦合 | 5 个 skill 模块已松耦合 ✅，但无中央编排；且存在新旧目录并存（`chatbi/` ↔ `powerelf-chatbi`、`monitor/` ↔ `powerelf-monitor`、`early-warning/` ↔ `early-warning-v3/`；README 官方 Skills 表列 `powerelf-early-warning` 非 v3）⚠️ | 已具备解耦基础，缺知识共享层；Phase 2 抽共享层前需先定现行版；六大职能中「标准/主数据/元数据/生命周期」Agent 无对应模块，**属有意范围裁剪** |
 | **HITL 拦截** | 阿里在「未来展望」才提 | early-warning-v3 已落地不可逆操作拦截（4cb72e3）✅ | **powerelf 已领先** |
 | **六步闭环**（文章一） | 发现→诊断→建议→执行→验证→沉淀 | inspection 有发现→诊断→报告，但「沉淀回灌」弱 | feedback-log.md 需真正接入下一轮检测 |
 | **结构化根因报告五段式**（文章三） | MTTR / 根因链 / 影响范围 / 修复措施 / 沉淀知识 | inspection/early-warning 有报告，格式不统一 | **直接采用五段式模板**，作所有模块报告统一规范——⭐⭐⭐（与 P1-3 优先级一致，成本极低、价值立现，但非战略级） |
 | **告警时间窗聚类降噪**（文章三·踩坑3） | 5min 窗口把 200 条告警收敛成 3 条根因报告 | 无告警聚合；汛期告警可能成片 | 告警量大时必须；即文章二「降噪定界」层的战术落地 |
 | **变更/操作关联**（文章三） | 关联 Git 提交 + 时间线，70% 故障与发版有关 | 无；水利无「代码发版」 | **水利版「变更」＝设备调试/参数修改/闸门调度/人工操作**——接入操作日志可大幅提升根因定位率 |
 | **计划任务白名单**（文章三·踩坑1） | 计划内批量任务打标记让 AI 跳过 | inspection 有「季节/空闲护栏」雏形 ✅ | 汛期排涝/规律闸门启闭/灌溉放水 = 水利版「计划任务」，需白名单免误报 |
-| **HITL 不可逆拦截 / 置信度评级**（文章三） | 踩坑1 误判回滚幸被人工拦截；强调准确率 88-95% 需人工验证 | early-warning-v3 已落地（4cb72e3）✅；inspection 已有三级置信度 ✅ | **powerelf 已领先**——文章三是反面教材佐证其必要性 |
+| **HITL 不可逆拦截 / 置信度评级**（文章三） | 踩坑1 误判回滚幸被人工拦截；强调准确率 88-95% 需人工验证 | early-warning-v3 已落地（4cb72e3）✅；inspection 有 `Ready/With caveats/Needs revision`、early-warning-v3 另有 `show/show_with_warning/suppress`（**两套未对齐，且 SKILL.md 文档标签与 report.py 代码标签漂移**）⚠️ | HITL 拦截 powerelf 已领先；置信度机制有但需统一——P1-3 报告模板前先对齐两套 |
 
 **关键判断**：powerelf 与三篇文章面对的是**同构问题**——都是「海量时序指标/日志 → 异常 → 根因 → 处置」。
 差别只在场景（阿里=计算集群运维，powerelf=水利工程监测）。因此可移植性高，
@@ -212,9 +212,20 @@
 
 在 **inspection** 单模块内闭环验证「子图召回 + 四段注入」，不动其他模块。
 
+> 🛑 **前置盘点（Phase 1 启动前必做，2026-08-10 代码级核实）**
+> - **语料量**：`inspection_runs.jsonl` 当前仅 **1 条**（2026-08-01 跑的一次）；cases.json 是 47 条构造评测用例，**不可当检索语料**。
+>   → MVP 真实语料≈0。需先让 inspection 在真实库持续运行积累 runs（目标几十~上百条），否则实验结论不可信。
+> - **根因层缺失**：inspection 输出的是**检测维度**（「水位连续上升」这类异常），**无「根因」概念**；
+>   根因排序在 early-warning-v3（`topology.py` 的 causes 边）。子图召回四段中的 **CAUSE（候选根因）在 inspection 无对应物**。
+>   → 要么先在 inspection 新增「根因输出」层，要么 MVP 跨模块引用 early-warning 的 `causal-rules.json`（与「单模块内闭环」冲突，需权衡）。
+>   → 结论：Phase 1 的「单模块闭环」假设在 CAUSE 段上不成立，需在 MVP 设计阶段先决断根因来源。
+
 - [ ] 把 inspection 现有 rules/\*.md（Skill）、15 维度（检测维度）、impl/ 可执行函数（Tool）、
-      `state/inspection_runs.jsonl`（真实历史工单）显式建一张**引用关系表**（哪怕先是 JSON 手工维护）；
+      `state/inspection_runs.jsonl`（真实运行记录）显式建一张**引用关系表**（哪怕先是 JSON 手工维护）；
       cases.json 仅作评测集，不并入检索语料。
+      > ⚠️ **已知语料匮乏**（2026-08-10 核实）：`inspection_runs.jsonl` 当前**仅 1 条**记录（2026-08-01 跑的一次）；
+      > cases.json 是 47 条人工构造的成对评测用例。**子图召回 MVP 的真实历史语料目前≈0**——
+      > 若不先让 inspection 在真实库持续运行积累 runs，MVP 只能在构造数据上跑，实验结论不可信。
 - [ ] 实现一个 `retrieve_subgraph(symptom)`：BM25 + 向量相似度检索相似历史案例 →
       沿引用网络拉出关联根因/Skill/Tool。
 - [ ] 把召回子图序列化为 CASE/CAUSE/SKILL/TOOL 四段，注入巡检 Agent 的诊断 Prompt。
@@ -269,9 +280,17 @@ BFS / 故障团聚类 / 根因排序），**并非硬编码于单模块的 Pytho
 （工单→根因→Skill→Tool，用于子图召回）。因此 P0-1 必须拆成两个子问题：
 
 - **① 物理拓扑能否抽成共享层**：评估 `topo_node/topo_edge` + topology.py 能否迁到 `_shared/knowledge-graph/`
-  供多模块共用——大概率可行，**若可抽离 Phase 2 直接起飞**；
+  供多模块共用——大概率可行，**若可抽离 Phase 2 直接起飞**。
+  > ⚠️ 补注（2026-08-10 核实）：节点/边类型（4 种 belongs_to/upstream_of/causes/near）、
+  > 空间阈值（`UPSTREAM_MAX_DISTANCE_KM=10.0`、`NEAR_STATION_MAX_DISTANCE_KM=1.0`）、
+  > 根因排序 5 权重（temporal_priority 0.25 / topology_centrality 0.20 / causal_evidence 0.25 /
+  > alarm_severity 0.15 / historical_recurrence 0.15）**均为硬编码常量**，仅 causes 边规则可配置；
+  > 共享前需将水利特定常量参数化。
 - **② 语义引用网络需从零建**：inspection / early-warning / data-governance 的「工单→根因→Skill→Tool」
   引用网络当前不存在，与物理拓扑数据模型、用途都不同，**不能靠抽物理拓扑获得**，需单独设计节点/边 schema。
+  > ⚠️ 补充障碍（2026-08-10 核实）：语义网络的「根因」节点在 inspection 当前**无对应物**——inspection 只有
+  > 15 个**检测维度**（检什么异常），不输出「为什么异常」的根因；根因排序仅存于 early-warning-v3。
+  > 故 P0-2 子图召回的 CAUSE 段，要么跨模块借 early-warning 根因（破坏单模块闭环），要么 inspection 先补根因层。
 
 **结论**：若 ① 可抽离，Phase 2 直接起飞；若不可抽离，先在 Phase 1 单模块内自建引用表。
 ② 无论如何都要在 Phase 1 起步（P0-2 已覆盖），不能等 ① 的结果。
@@ -280,8 +299,12 @@ BFS / 故障团聚类 / 根因排序），**并非硬编码于单模块的 Pytho
 单点最高价值。**语料定位先分清**：cases.json 是**评测用例集**（人工构造的成对正反例，规模小），
 适合当效果对照的评测集，**不适合当检索知识库**；真实检索语料应来自
 **`state/inspection_runs.jsonl`（真实巡检运行记录）与 monitor 原始告警**。
-MVP 起步前先盘点真实历史案例量（几十条/几百条/上千条），决定检索方式（量小可用 BM25 + 规则打标，
-量大再上向量）。无需等共享层，一篇实验报告即可决策后续投入。
+> ⚠️ **已知答案（2026-08-10 核实）**：`inspection_runs.jsonl` 当前**仅 1 条**记录。
+> 「先盘点真实历史案例量」的盘点结果已出：**语料≈0**。MVP 的真实前提动作不是「决定检索方式」，
+> 而是**先积累语料**——让 inspection 在真实库持续运行，或确认 monitor 原始告警有可用历史存量。
+> 在此之前，BM25/向量的选型无意义（无可检索数据）。
+
+无需等共享层，一篇实验报告即可决策后续投入。
 
 ### 🟡 P1-1：规则 YAML 化 + 合法性 lint
 低成本、高收益。让规则从「给人看的文档」变成「可校验、可回放、可纳入覆盖率统计的结构」。
