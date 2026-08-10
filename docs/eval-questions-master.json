@@ -1,0 +1,2068 @@
+{
+  "master_version": "1.0",
+  "generated_at": "2026-08-10",
+  "base_format": "evals-database-v2.json 规范: {id, name, prompt, expected_output}",
+  "summary": {
+    "total_questions": 293,
+    "per_set": {
+      "early-warning-v3-matrix": 103,
+      "data-governance-routing-list": 53,
+      "data-governance-realdata-tests": 26,
+      "routing-evals-v1": 6,
+      "routing-evals-v2": 45,
+      "inspection-eval-criteria": 10,
+      "inspection-eval-cases": 47,
+      "darwin-test-prompts": 3
+    },
+    "known_gaps": {
+      "early-warning-v3-matrix": [
+        "Q36",
+        "Q37",
+        "Q38",
+        "Q39",
+        "Q40",
+        "Q41",
+        "Q42",
+        "Q43",
+        "Q44",
+        "Q45",
+        "Q46",
+        "Q47",
+        "Q48",
+        "Q49",
+        "Q50",
+        "Q51",
+        "Q52",
+        "Q53",
+        "Q54",
+        "Q55",
+        "Q56",
+        "Q57",
+        "Q58",
+        "Q59",
+        "Q60",
+        "Q61",
+        "Q99",
+        "Q100",
+        "Q101"
+      ]
+    }
+  },
+  "sets": [
+    {
+      "set_id": "early-warning-v3-matrix",
+      "phase": "阶段1 预警分析 early-warning-v3",
+      "source_files": [
+        "early-warning-v3/tests/test-data-scenarios.md",
+        "early-warning-v3/tests/test-data-complete.sql",
+        "early-warning-v3/tests/test-data-high-risk.sql",
+        "early-warning-v3/tests/test-data-missing-data.sql"
+      ],
+      "description": "Q1~Q103 场景覆盖矩阵（15 个测试场景）。⚠️ 矩阵跳号：Q36–Q61、Q99–Q101 原文无题面，已按相邻分类补写 29 个占位题面（prompt_source=placeholder-reconstructed，非原文）。",
+      "gap_note": "Q36–Q61（26 题，位于『预测预警 Q29–Q35』与『智能综合分析 Q62–Q69』之间）、Q99–Q101（3 题，位于『边界场景 Q94–Q98』与『气象预警 Q102–Q103』之间）在仓库与 git 历史中均无原文题面；本次按 SKILL.md lifecycle/scenarios 真实能力（告警处置/合并去重/升级/恢复与状态机/审计/组合边界）补写占位题面，如需复原原文需回溯原始 hermes 测试会话。",
+      "placeholder_count": 29,
+      "placeholder_ids": [
+        "Q036",
+        "Q037",
+        "Q038",
+        "Q039",
+        "Q040",
+        "Q041",
+        "Q042",
+        "Q043",
+        "Q044",
+        "Q045",
+        "Q046",
+        "Q047",
+        "Q048",
+        "Q049",
+        "Q050",
+        "Q051",
+        "Q052",
+        "Q053",
+        "Q054",
+        "Q055",
+        "Q056",
+        "Q057",
+        "Q058",
+        "Q059",
+        "Q060",
+        "Q061",
+        "Q099",
+        "Q100",
+        "Q101"
+      ],
+      "gaps": [
+        "Q36",
+        "Q37",
+        "Q38",
+        "Q39",
+        "Q40",
+        "Q41",
+        "Q42",
+        "Q43",
+        "Q44",
+        "Q45",
+        "Q46",
+        "Q47",
+        "Q48",
+        "Q49",
+        "Q50",
+        "Q51",
+        "Q52",
+        "Q53",
+        "Q54",
+        "Q55",
+        "Q56",
+        "Q57",
+        "Q58",
+        "Q59",
+        "Q60",
+        "Q61",
+        "Q99",
+        "Q100",
+        "Q101"
+      ],
+      "evals": [
+        {
+          "id": "Q001",
+          "name": "Q1: 未确认告警数量",
+          "prompt": "未确认告警数量",
+          "expected_output": "场景：场景1；数据要求：4条未确认告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q002",
+          "name": "Q2: 各级别告警分布",
+          "prompt": "各级别告警分布",
+          "expected_output": "场景：场景1；数据要求：4条不同级别告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q003",
+          "name": "Q3: 最近3天告警",
+          "prompt": "最近3天告警",
+          "expected_output": "场景：场景1；数据要求：3条最近告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q004",
+          "name": "Q4: 特定测站告警",
+          "prompt": "特定测站告警",
+          "expected_output": "场景：场景1；数据要求：使用TEST_ST001",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q005",
+          "name": "Q5: 红色告警查询",
+          "prompt": "红色告警查询",
+          "expected_output": "场景：场景1；数据要求：1条红色告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q006",
+          "name": "Q6: 告警趋势",
+          "prompt": "告警趋势",
+          "expected_output": "场景：场景1；数据要求：分布在不同日期",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q007",
+          "name": "Q7: 告警规则",
+          "prompt": "告警规则",
+          "expected_output": "场景：-；数据要求：使用现有规则",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q008",
+          "name": "Q8: 规则详情",
+          "prompt": "规则详情",
+          "expected_output": "场景：-；数据要求：使用现有规则",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q009",
+          "name": "Q9: 测站排名",
+          "prompt": "测站排名",
+          "expected_output": "场景：场景1；数据要求：多个测站",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q010",
+          "name": "Q10: 小时分布",
+          "prompt": "小时分布",
+          "expected_output": "场景：场景1；数据要求：分布在不同时段",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q011",
+          "name": "Q11: 设备离线",
+          "prompt": "设备离线",
+          "expected_output": "场景：场景6；数据要求：3条离线告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q012",
+          "name": "Q12: 确认率",
+          "prompt": "确认率",
+          "expected_output": "场景：场景1；数据要求：已确认+未确认",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q013",
+          "name": "Q13: 告警原因分析",
+          "prompt": "告警原因分析",
+          "expected_output": "场景：场景1,8；数据要求：告警+水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q014",
+          "name": "Q14: 水位变化趋势",
+          "prompt": "水位变化趋势",
+          "expected_output": "场景：场景8；数据要求：24小时水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q015",
+          "name": "Q15: 降雨关联",
+          "prompt": "降雨关联",
+          "expected_output": "场景：场景9；数据要求：降雨数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q016",
+          "name": "Q16: 渗流异常",
+          "prompt": "渗流异常",
+          "expected_output": "场景：场景10,11；数据要求：渗压+渗流数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q017",
+          "name": "Q17: 设备故障",
+          "prompt": "设备故障",
+          "expected_output": "场景：场景6；数据要求：设备离线告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q018",
+          "name": "Q18: 规则触发",
+          "prompt": "规则触发",
+          "expected_output": "场景：-；数据要求：使用现有规则",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q019",
+          "name": "Q19: 历史对比",
+          "prompt": "历史对比",
+          "expected_output": "场景：场景1；数据要求：历史告警数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q020",
+          "name": "Q20: 综合诊断",
+          "prompt": "综合诊断",
+          "expected_output": "场景：场景1,8,9；数据要求：多源数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q021",
+          "name": "Q21: 处理建议",
+          "prompt": "处理建议",
+          "expected_output": "场景：场景1；数据要求：告警数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q022",
+          "name": "Q22: 水位降雨关联",
+          "prompt": "水位降雨关联",
+          "expected_output": "场景：场景8,9；数据要求：水位+降雨",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q023",
+          "name": "Q23: 多测站关联",
+          "prompt": "多测站关联",
+          "expected_output": "场景：场景1；数据要求：多测站告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q024",
+          "name": "Q24: 水位渗流关联",
+          "prompt": "水位渗流关联",
+          "expected_output": "场景：场景8,10,11；数据要求：水位+渗压+渗流",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q025",
+          "name": "Q25: 设备数据关联",
+          "prompt": "设备数据关联",
+          "expected_output": "场景：场景6；数据要求：设备离线",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q026",
+          "name": "Q26: 时间规律",
+          "prompt": "时间规律",
+          "expected_output": "场景：场景1；数据要求：时间序列",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q027",
+          "name": "Q27: 测站关联",
+          "prompt": "测站关联",
+          "expected_output": "场景：场景1；数据要求：多测站",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q028",
+          "name": "Q28: 三域关联",
+          "prompt": "三域关联",
+          "expected_output": "场景：场景2；数据要求：水位+降雨+渗流",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q029",
+          "name": "Q29: 水位预测",
+          "prompt": "水位预测",
+          "expected_output": "场景：场景8；数据要求：水位趋势",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q030",
+          "name": "Q30: 预警升级",
+          "prompt": "预警升级",
+          "expected_output": "场景：场景5；数据要求：升级告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q031",
+          "name": "Q31: 未来告警",
+          "prompt": "未来告警",
+          "expected_output": "场景：场景8,9；数据要求：水位+降雨",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q032",
+          "name": "Q32: 告警解除",
+          "prompt": "告警解除",
+          "expected_output": "场景：场景4；数据要求：持续告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q033",
+          "name": "Q33: 告警升级",
+          "prompt": "告警升级",
+          "expected_output": "场景：场景5；数据要求：升级告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q034",
+          "name": "Q34: 趋势预测",
+          "prompt": "趋势预测",
+          "expected_output": "场景：场景8；数据要求：水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q035",
+          "name": "Q35: 水位正常性",
+          "prompt": "水位正常性",
+          "expected_output": "场景：场景8；数据要求：水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q036",
+          "name": "Q36: 告警处置建议",
+          "prompt": "当前最紧急的未确认告警是哪些？给出优先处置建议。",
+          "expected_output": "按级别/时效排序，输出处置动作建议（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q037",
+          "name": "Q37: 处置优先级排序",
+          "prompt": "结合告警级别、持续时间和影响范围，对当前告警做处置优先级排序。",
+          "expected_output": "多因子排序并说明依据（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q038",
+          "name": "Q38: 值班关注清单",
+          "prompt": "今天值班需要重点关注的告警有哪些？",
+          "expected_output": "输出今日关注清单（按测站/类型聚合）（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q039",
+          "name": "Q39: 处置动作建议",
+          "prompt": "对 I 级红色告警给出初步处置动作建议（人工核实/转派/忽略）。",
+          "expected_output": "给出动作 + 依据（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q040",
+          "name": "Q40: 处置验证",
+          "prompt": "告警处置后如何验证已解除？",
+          "expected_output": "验证标准：状态流转 + 无新增同类告警（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q041",
+          "name": "Q41: 重复告警检测",
+          "prompt": "最近 7 天有哪些重复告警（同测站/同类型/短时间窗）？",
+          "expected_output": "输出重复告警清单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q042",
+          "name": "Q42: 告警合并建议",
+          "prompt": "这些相似告警是否可以合并？给出合并建议。",
+          "expected_output": "合并窗口/规则 + 合并后条目（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q043",
+          "name": "Q43: 高频告警分析",
+          "prompt": "哪个告警触发最频繁？TOP 10 高频告警是哪些？",
+          "expected_output": "按触发次数排序输出 TOP10（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q044",
+          "name": "Q44: 告警风暴检测",
+          "prompt": "当前是否处于告警风暴状态？",
+          "expected_output": "判定：短时告警数超阈值（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q045",
+          "name": "Q45: 合并策略建议",
+          "prompt": "针对当前告警模式，建议怎样的合并/去重策略？",
+          "expected_output": "窗口大小 + 阈值 + 白名单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q046",
+          "name": "Q46: 升级决策建议",
+          "prompt": "这条告警是否满足升级条件？是否需要升级？",
+          "expected_output": "升级判定 + 依据（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q047",
+          "name": "Q47: 升级通知生成",
+          "prompt": "为这条升级告警生成升级通知模板。",
+          "expected_output": "模板：测站/级别/处置时限/责任人（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q048",
+          "name": "Q48: 升级策略分析",
+          "prompt": "当前升级规则是否合理？给出优化建议。",
+          "expected_output": "规则命中率分析 + 建议（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q049",
+          "name": "Q49: 升级历史查询",
+          "prompt": "最近 30 天有哪些告警被升级过？",
+          "expected_output": "输出升级历史清单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q050",
+          "name": "Q50: 升级级别建议",
+          "prompt": "该告警应升级到哪一级、通知哪些人？",
+          "expected_output": "级别 + 通知对象（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q051",
+          "name": "Q51: 告警恢复判定",
+          "prompt": "这条告警当前是否已恢复？",
+          "expected_output": "判定：触发条件消失/手动恢复（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q052",
+          "name": "Q52: 恢复处置建议",
+          "prompt": "告警恢复后还需要做什么？",
+          "expected_output": "后续动作：复核/归档/复盘（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q053",
+          "name": "Q53: 状态机查询",
+          "prompt": "该告警当前处于状态机的哪个状态？",
+          "expected_output": "输出当前状态（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q054",
+          "name": "Q54: 状态流转建议",
+          "prompt": "该告警下一步应流转到哪个状态？",
+          "expected_output": "目标状态 + 触发条件（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q055",
+          "name": "Q55: 恢复率统计",
+          "prompt": "最近一个月告警恢复成功率是多少？",
+          "expected_output": "恢复数/总数 + 趋势（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q056",
+          "name": "Q56: 生命周期分析",
+          "prompt": "这条告警从产生到恢复的完整轨迹是怎样的？",
+          "expected_output": "时间线：产生→确认→处置→恢复（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q057",
+          "name": "Q57: 操作历史查询",
+          "prompt": "最近一周谁处理了哪些告警？",
+          "expected_output": "输出操作历史清单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q058",
+          "name": "Q58: 处理效率分析",
+          "prompt": "告警平均处理时长是多少？有没有超时未处理的？",
+          "expected_output": "平均时长 + 超时清单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q059",
+          "name": "Q59: 操作人员绩效",
+          "prompt": "哪个操作人员处理告警最多/最快？",
+          "expected_output": "按人员聚合统计（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q060",
+          "name": "Q60: 异常操作检测",
+          "prompt": "最近有没有异常操作记录（越权/非工作时间操作）？",
+          "expected_output": "异常操作清单（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q061",
+          "name": "Q61: 审计汇总",
+          "prompt": "汇总本周告警处理情况（处理量/时效/升级/恢复）。",
+          "expected_output": "周报式汇总（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q062",
+          "name": "Q62: 整体风险",
+          "prompt": "整体风险",
+          "expected_output": "场景：场景1,2；数据要求：所有告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q063",
+          "name": "Q63: 安全状态",
+          "prompt": "安全状态",
+          "expected_output": "场景：场景1,2,6；数据要求：所有告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q064",
+          "name": "Q64: 大坝安全",
+          "prompt": "大坝安全",
+          "expected_output": "场景：场景2,8,9,10,11；数据要求：三域数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q065",
+          "name": "Q65: 告警原因",
+          "prompt": "告警原因",
+          "expected_output": "场景：场景4；数据要求：持续告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q066",
+          "name": "Q66: 水位预测",
+          "prompt": "水位预测",
+          "expected_output": "场景：场景8；数据要求：水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q067",
+          "name": "Q67: 预案触发",
+          "prompt": "预案触发",
+          "expected_output": "场景：场景2；数据要求：高风险数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q068",
+          "name": "Q68: 测站排名",
+          "prompt": "测站排名",
+          "expected_output": "场景：场景1；数据要求：多测站",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q069",
+          "name": "Q69: 值班关注",
+          "prompt": "值班关注",
+          "expected_output": "场景：场景1,2；数据要求：所有告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q070",
+          "name": "Q70: 测站分布",
+          "prompt": "测站分布",
+          "expected_output": "场景：场景1；数据要求：多测站",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q071",
+          "name": "Q71: 类型分布",
+          "prompt": "类型分布",
+          "expected_output": "场景：场景1；数据要求：多类型",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q072",
+          "name": "Q72: 最近告警",
+          "prompt": "最近告警",
+          "expected_output": "场景：场景1；数据要求：最近告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q073",
+          "name": "Q73: 告警风暴",
+          "prompt": "告警风暴",
+          "expected_output": "场景：场景3；数据要求：60条告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q074",
+          "name": "Q74: 水位降雨关联",
+          "prompt": "水位降雨关联",
+          "expected_output": "场景：场景8,9；数据要求：水位+降雨",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q075",
+          "name": "Q75: 大坝综合风险",
+          "prompt": "大坝综合风险",
+          "expected_output": "场景：场景2,8,9,10,11；数据要求：三域数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q076",
+          "name": "Q76: 设备可靠性",
+          "prompt": "设备可靠性",
+          "expected_output": "场景：场景6；数据要求：设备离线",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q077",
+          "name": "Q77: 气象洪水",
+          "prompt": "气象洪水",
+          "expected_output": "场景：场景12；数据要求：气象预警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q078",
+          "name": "Q78: 整体风险",
+          "prompt": "整体风险",
+          "expected_output": "场景：场景1,2；数据要求：所有告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q079",
+          "name": "Q79: 评估依据",
+          "prompt": "评估依据",
+          "expected_output": "场景：场景1,2；数据要求：风险因素",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q080",
+          "name": "Q80: 风险升级",
+          "prompt": "风险升级",
+          "expected_output": "场景：场景5；数据要求：升级告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q081",
+          "name": "Q81: 降低风险",
+          "prompt": "降低风险",
+          "expected_output": "场景：场景1,2；数据要求：风险建议",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q082",
+          "name": "Q82: 水位预测",
+          "prompt": "水位预测",
+          "expected_output": "场景：场景8；数据要求：水位数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q083",
+          "name": "Q83: 告警解除",
+          "prompt": "告警解除",
+          "expected_output": "场景：场景4；数据要求：持续告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q084",
+          "name": "Q84: 未来24小时",
+          "prompt": "未来24小时",
+          "expected_output": "场景：场景8,9；数据要求：水位+降雨",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q085",
+          "name": "Q85: 启动预案",
+          "prompt": "启动预案",
+          "expected_output": "场景：场景2；数据要求：高风险数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q086",
+          "name": "Q86: 预案选择",
+          "prompt": "预案选择",
+          "expected_output": "场景：场景2；数据要求：高风险数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q087",
+          "name": "Q87: 执行步骤",
+          "prompt": "执行步骤",
+          "expected_output": "场景：场景2；数据要求：高风险数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q088",
+          "name": "Q88: 无告警",
+          "prompt": "无告警",
+          "expected_output": "场景：-；数据要求：清理后测试",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q089",
+          "name": "Q89: 不存在测站",
+          "prompt": "不存在测站",
+          "expected_output": "场景：场景13；数据要求：无数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q090",
+          "name": "Q90: 数据缺失",
+          "prompt": "数据缺失",
+          "expected_output": "场景：场景14；数据要求：告警无水位",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q091",
+          "name": "Q91: 告警过多",
+          "prompt": "告警过多",
+          "expected_output": "场景：场景3；数据要求：60条告警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q092",
+          "name": "Q92: 查询超时",
+          "prompt": "查询超时",
+          "expected_output": "场景：场景3；数据要求：大量数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q093",
+          "name": "Q93: 气象不可用",
+          "prompt": "气象不可用",
+          "expected_output": "场景：-；数据要求：跳过测试",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q094",
+          "name": "Q94: 蓝色告警",
+          "prompt": "蓝色告警",
+          "expected_output": "场景：场景7；数据要求：3条蓝色",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q095",
+          "name": "Q95: 单条红色",
+          "prompt": "单条红色",
+          "expected_output": "场景：场景7；数据要求：1条红色",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q096",
+          "name": "Q96: 边界值",
+          "prompt": "边界值",
+          "expected_output": "场景：场景7；数据要求：边界评分",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q097",
+          "name": "Q97: 已确认告警",
+          "prompt": "已确认告警",
+          "expected_output": "场景：场景7；数据要求：3条已确认",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q098",
+          "name": "Q98: 跨日告警",
+          "prompt": "跨日告警",
+          "expected_output": "场景：场景15；数据要求：跨日数据",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q099",
+          "name": "Q99: 组合边界判定",
+          "prompt": "多条边界条件同时满足（如水位恰好到警戒线且雨量临界）时如何判定？",
+          "expected_output": "边界组合下的综合判定（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q100",
+          "name": "Q100: 跨域边界叠加",
+          "prompt": "水位边界 + 降雨边界叠加时，级别如何计算？",
+          "expected_output": "取高原则 + 依据（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q101",
+          "name": "Q101: 气象关联边界",
+          "prompt": "气象预警与本地告警在边界状态下如何联动？",
+          "expected_output": "气象+本地综合处置建议（占位：非原文，按相邻分类补写）",
+          "prompt_source": "placeholder-reconstructed"
+        },
+        {
+          "id": "Q102",
+          "name": "Q102: 暴雨预警",
+          "prompt": "暴雨预警",
+          "expected_output": "场景：场景12；数据要求：气象预警",
+          "prompt_source": "title-only"
+        },
+        {
+          "id": "Q103",
+          "name": "Q103: 天气影响",
+          "prompt": "天气影响",
+          "expected_output": "场景：场景12；数据要求：气象+水位",
+          "prompt_source": "title-only"
+        }
+      ]
+    },
+    {
+      "set_id": "data-governance-routing-list",
+      "phase": "阶段2 数据治理 powerelf-data-governance",
+      "source_files": [
+        "powerelf-data-governance/docs/questions.md"
+      ],
+      "description": "可问/不可问路由清单：11 个能力模块正例 + 7 条负例（应路由到其他 skill）。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "DG-P01",
+          "name": "可问-MAD 异常检测",
+          "prompt": "XX 水库最近 7 天的水位数据有没有异常？",
+          "expected_output": "MAD 异常检测"
+        },
+        {
+          "id": "DG-P02",
+          "name": "可问-分指标阈值检测",
+          "prompt": "帮我检测一下渗压数据的异常值",
+          "expected_output": "分指标阈值检测"
+        },
+        {
+          "id": "DG-P03",
+          "name": "可问-MAD + 变化率综合判定",
+          "prompt": "这些水位数据里有异常值吗？用 MAD 算法跑一下",
+          "expected_output": "MAD + 变化率综合判定"
+        },
+        {
+          "id": "DG-P04",
+          "name": "可问-指定时间窗口检测",
+          "prompt": "检查一下 2026-06-01 到 2026-06-07 的雨量数据是否有异常",
+          "expected_output": "指定时间窗口检测"
+        },
+        {
+          "id": "DG-P05",
+          "name": "可问-变化率检测 + 综合判定",
+          "prompt": "这个异常值是传感器故障还是真实的数据波动？",
+          "expected_output": "变化率检测 + 综合判定"
+        },
+        {
+          "id": "DG-P06",
+          "name": "可问-期望周期数比较",
+          "prompt": "XX 设备昨天的数据有没有缺失？",
+          "expected_output": "期望周期数比较"
+        },
+        {
+          "id": "DG-P07",
+          "name": "可问-指定表和测站",
+          "prompt": "检查一下 st_rsvr_r 表 128 号测站最近一天的数据完整性",
+          "expected_output": "指定表和测站"
+        },
+        {
+          "id": "DG-P08",
+          "name": "可问-缺失模式识别",
+          "prompt": "分析这段时间的缺失模式，是周期性的还是随机的？",
+          "expected_output": "缺失模式识别"
+        },
+        {
+          "id": "DG-P09",
+          "name": "可问-INFO/WARNING/ERROR/CRITICAL 分级",
+          "prompt": "连续缺失达到哪个级别了？",
+          "expected_output": "INFO/WARNING/ERROR/CRITICAL 分级"
+        },
+        {
+          "id": "DG-P10",
+          "name": "可问-环比趋势分析",
+          "prompt": "最近一周缺失率趋势怎么样？",
+          "expected_output": "环比趋势分析"
+        },
+        {
+          "id": "DG-P11",
+          "name": "可问-四策略自适应插值",
+          "prompt": "帮我填补一下这段缺失的水位数据",
+          "expected_output": "四策略自适应插值"
+        },
+        {
+          "id": "DG-P12",
+          "name": "可问-指定插值策略",
+          "prompt": "用线性插值把昨天缺失的 3 个点补上",
+          "expected_output": "指定插值策略"
+        },
+        {
+          "id": "DG-P13",
+          "name": "可问-置信度评估（高/中/低）",
+          "prompt": "插值结果的置信度有多高？",
+          "expected_output": "置信度评估（高/中/低）"
+        },
+        {
+          "id": "DG-P14",
+          "name": "可问-置信度 >= 0.8 可直接使用",
+          "prompt": "这个插值结果可以直接用吗？",
+          "expected_output": "置信度 >= 0.8 可直接使用"
+        },
+        {
+          "id": "DG-P15",
+          "name": "可问-样条插值推荐",
+          "prompt": "这种周期性的水位数据适合用什么插值方法？",
+          "expected_output": "样条插值推荐"
+        },
+        {
+          "id": "DG-P16",
+          "name": "可问-三态判定（ONLINE/OFFLINE/ERROR）",
+          "prompt": "XX 设备当前是否在线？",
+          "expected_output": "三态判定（ONLINE/OFFLINE/ERROR）"
+        },
+        {
+          "id": "DG-P17",
+          "name": "可问-离线时长分级",
+          "prompt": "哪些设备离线超过 24 小时了？",
+          "expected_output": "离线时长分级"
+        },
+        {
+          "id": "DG-P18",
+          "name": "可问-MTTR 计算",
+          "prompt": "最近一个月设备的平均修复时间（MTTR）是多少？",
+          "expected_output": "MTTR 计算"
+        },
+        {
+          "id": "DG-P19",
+          "name": "可问-批量检测",
+          "prompt": "检查一下各设备的在线状态",
+          "expected_output": "批量检测"
+        },
+        {
+          "id": "DG-P20",
+          "name": "可问-时长计算 + 分级告警",
+          "prompt": "这个设备离线多久了？",
+          "expected_output": "时长计算 + 分级告警"
+        },
+        {
+          "id": "DG-P21",
+          "name": "可问-四维度加权评分",
+          "prompt": "XX 设备的数据质量评分是多少？",
+          "expected_output": "四维度加权评分"
+        },
+        {
+          "id": "DG-P22",
+          "name": "可问-厂商排名",
+          "prompt": "本周数据质量排名怎么样？哪些厂商表现好？",
+          "expected_output": "厂商排名"
+        },
+        {
+          "id": "DG-P23",
+          "name": "可问-趋势分析（改善/恶化/稳定）",
+          "prompt": "和上周比，数据质量是变好了还是变差了？",
+          "expected_output": "趋势分析（改善/恶化/稳定）"
+        },
+        {
+          "id": "DG-P24",
+          "name": "可问-较差等级设备筛选",
+          "prompt": "哪些设备评分低于 60 分需要重点关注？",
+          "expected_output": "较差等级设备筛选"
+        },
+        {
+          "id": "DG-P25",
+          "name": "可问-日报生成",
+          "prompt": "数据质量日报是什么情况？",
+          "expected_output": "日报生成"
+        },
+        {
+          "id": "DG-P26",
+          "name": "可问-连续相同值检测",
+          "prompt": "这个传感器的数值连续好几天没变了，是不是卡住了？",
+          "expected_output": "连续相同值检测"
+        },
+        {
+          "id": "DG-P27",
+          "name": "可问-批量检测",
+          "prompt": "检测一下所有传感器有没有卡滞异常",
+          "expected_output": "批量检测"
+        },
+        {
+          "id": "DG-P28",
+          "name": "可问-INFO/WARNING/ERROR/CRITICAL 分级",
+          "prompt": "卡滞级别严重吗？",
+          "expected_output": "INFO/WARNING/ERROR/CRITICAL 分级"
+        },
+        {
+          "id": "DG-P29",
+          "name": "可问-极端事件 vs 异常区分",
+          "prompt": "这个高水位是汛期的正常现象还是数据异常？",
+          "expected_output": "极端事件 vs 异常区分"
+        },
+        {
+          "id": "DG-P30",
+          "name": "可问-多维度判断",
+          "prompt": "现在是汛期，这个水位骤升合理吗？有没有降雨数据支撑？",
+          "expected_output": "多维度判断"
+        },
+        {
+          "id": "DG-P31",
+          "name": "可问-维护窗口识别",
+          "prompt": "凌晨 2-4 点的异常值是不是维护窗口导致的？",
+          "expected_output": "维护窗口识别"
+        },
+        {
+          "id": "DG-P32",
+          "name": "可问-物理矛盾检测",
+          "prompt": "渗压上升了但渗流下降了，这合理吗？",
+          "expected_output": "物理矛盾检测"
+        },
+        {
+          "id": "DG-P33",
+          "name": "可问-水位-渗流矛盾规则",
+          "prompt": "水位涨了 1 米但渗流反而减少了，是不是传感器有问题？",
+          "expected_output": "水位-渗流矛盾规则"
+        },
+        {
+          "id": "DG-P34",
+          "name": "可问-降雨-水位矛盾规则",
+          "prompt": "降雨 50mm 但水位没涨反降，数据有问题吗？",
+          "expected_output": "降雨-水位矛盾规则"
+        },
+        {
+          "id": "DG-P35",
+          "name": "可问-历史缺陷查询",
+          "prompt": "这个设备之前有没有类似的故障记录？",
+          "expected_output": "历史缺陷查询"
+        },
+        {
+          "id": "DG-P36",
+          "name": "可问-维保周期检查",
+          "prompt": "设备上次维护是什么时候？是不是该保养了？",
+          "expected_output": "维保周期检查"
+        },
+        {
+          "id": "DG-P37",
+          "name": "可问-P0/P1/P2/P3 优先级建议",
+          "prompt": "这个异常需要什么级别的响应？",
+          "expected_output": "P0/P1/P2/P3 优先级建议"
+        },
+        {
+          "id": "DG-P38",
+          "name": "可问-智能运维建议生成",
+          "prompt": "结合设备信息和知识库，这个异常该怎么处理？",
+          "expected_output": "智能运维建议生成"
+        },
+        {
+          "id": "DG-P39",
+          "name": "可问-`generate_daily_report()`",
+          "prompt": "生成昨天的数据质量日报",
+          "expected_output": "`generate_daily_report()`"
+        },
+        {
+          "id": "DG-P40",
+          "name": "可问-`generate_anomaly_report()`",
+          "prompt": "出一份本月的异常分析报告",
+          "expected_output": "`generate_anomaly_report()`"
+        },
+        {
+          "id": "DG-P41",
+          "name": "可问-`to_pdf()`",
+          "prompt": "导出为 PDF 格式存档",
+          "expected_output": "`to_pdf()`"
+        },
+        {
+          "id": "DG-P42",
+          "name": "可问-`generate_score_report()`",
+          "prompt": "生成一份所有设备的评分报告",
+          "expected_output": "`generate_score_report()`"
+        },
+        {
+          "id": "DG-P43",
+          "name": "可问-`fix_anomaly()` / `fill_missing()`",
+          "prompt": "把插值修复的结果写回数据库",
+          "expected_output": "`fix_anomaly()` / `fill_missing()`"
+        },
+        {
+          "id": "DG-P44",
+          "name": "可问-`update_device_status(0)`",
+          "prompt": "标记这个设备为离线状态",
+          "expected_output": "`update_device_status(0)`"
+        },
+        {
+          "id": "DG-P45",
+          "name": "可问-`create_offline_record()`",
+          "prompt": "自动创建一条离线记录",
+          "expected_output": "`create_offline_record()`"
+        },
+        {
+          "id": "DG-P46",
+          "name": "可问-`batch_fix_anomalies()`",
+          "prompt": "批量修复多个异常点",
+          "expected_output": "`batch_fix_anomalies()`"
+        },
+        {
+          "id": "DG-N47",
+          "name": "不可问-XX 水库当前水位是多少？",
+          "prompt": "XX 水库当前水位是多少？",
+          "expected_output": "应路由到 `water-situation`；原因：查水位不是查数据质量"
+        },
+        {
+          "id": "DG-N48",
+          "name": "不可问-展示一下最近一周的水位变化曲线",
+          "prompt": "展示一下最近一周的水位变化曲线",
+          "expected_output": "应路由到 `water-situation`；原因：趋势可视化，非检测"
+        },
+        {
+          "id": "DG-N49",
+          "name": "不可问-这个水位超过警戒线了吗？",
+          "prompt": "这个水位超过警戒线了吗？",
+          "expected_output": "应路由到 `water-warning` / `powerelf-early-warning`；原因：预警规则判断"
+        },
+        {
+          "id": "DG-N50",
+          "name": "不可问-今天雨量站降雨量多少？",
+          "prompt": "今天雨量站降雨量多少？",
+          "expected_output": "应路由到 `water-situation` / `powerelf-chatbi`；原因：实时数据查询"
+        },
+        {
+          "id": "DG-N51",
+          "name": "不可问-闸门当前开度是多少？泵站是否在运行？",
+          "prompt": "闸门当前开度是多少？泵站是否在运行？",
+          "expected_output": "应路由到 `gate-pump-operation` / `powerelf-monitor`；原因：设备运行状态查询"
+        },
+        {
+          "id": "DG-N52",
+          "name": "不可问-查一下 XX 表的数据",
+          "prompt": "查一下 XX 表的数据",
+          "expected_output": "应路由到 `powerelf-chatbi`；原因：纯数据查询，不涉及质量分析"
+        },
+        {
+          "id": "DG-N53",
+          "name": "不可问-帮我发一个预警通知",
+          "prompt": "帮我发一个预警通知",
+          "expected_output": "应路由到 `powerelf-early-warning`；原因：预警分发，非质量检测"
+        }
+      ]
+    },
+    {
+      "set_id": "data-governance-realdata-tests",
+      "phase": "阶段2 数据治理 powerelf-data-governance",
+      "source_files": [
+        "powerelf-data-governance/docs/test-questions.md"
+      ],
+      "description": "基于真实库数据（基准日 2026-07-08）的验证题集 T1.1~T11.1，含预期与验证命令。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "T1.1",
+          "name": "T1.1 128号测站水位异常检测",
+          "prompt": "请检测128号测站(st_rsvr_r)最近1周的水位(rz)数据是否有异常。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T1.2",
+          "name": "T1.2 416号测站渗压异常检测",
+          "prompt": "检测416号测站(st_pressure_r)渗压数据最近7天的异常值。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T1.3",
+          "name": "T1.3 全量水位MAD检测",
+          "prompt": "对st_rsvr_r表的rz字段做全量MAD异常检测（5月份）。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T1.4",
+          "name": "T1.4 雨量异常检测",
+          "prompt": "检测雨量数据(st_pptn_r)最近7天是否有异常。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T2.1",
+          "name": "T2.1 128号测站缺失检测",
+          "prompt": "检查128号测站2026年5月的st_rsvr_r数据是否有缺失。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T2.2",
+          "name": "T2.2 渗压表缺失模式分析",
+          "prompt": "分析st_pressure_r表416号测站2026年5月的缺失模式。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T2.3",
+          "name": "T2.3 缺失率趋势",
+          "prompt": "分析最近一周(stats_data_missing_daily)的缺失率趋势。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T3.1",
+          "name": "T3.1 单设备离线判定",
+          "prompt": "检查设备104(西坝咀雨量计)当前是否离线。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T3.2",
+          "name": "T3.2 批量离线检测",
+          "prompt": "哪些设备离线超过24小时了？",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T3.3",
+          "name": "T3.3 MTTR 计算",
+          "prompt": "计算最近30天的平均修复时间(MTTR)。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T3.4",
+          "name": "T3.4 离线时长分级",
+          "prompt": "对当前离线的设备按离线时长分级。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T4.1",
+          "name": "T4.1 单设备评分",
+          "prompt": "对设备139(振弦渗压计E01)做2026年5月的质量评分。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T4.2",
+          "name": "T4.2 设备评分对比",
+          "prompt": "对比设备140(振弦渗压计E02, status=2异常)和139(同批次, status=0正常)的评分。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T4.3",
+          "name": "T4.3 厂商质量排名",
+          "prompt": "生成2026年5月的厂商质量排名。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T5.1",
+          "name": "T5.1 自适应插值",
+          "prompt": "2026年5月st_pressure_r表416号测站在water_pressure字段上有缺失值，\n请用自适应策略填补。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T5.2",
+          "name": "T5.2 水位突变判定与修复建议",
+          "prompt": "对128号测站5月15日水位突变点(500→440)，\n判断是需要修复的异常还是真实事件。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T6.1",
+          "name": "T6.1 传感器卡滞检测",
+          "prompt": "检测5月下旬是否有传感器卡滞——多台渗压计连续输出相同值。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T7.1",
+          "name": "T7.1 渗压-渗流矛盾检测",
+          "prompt": "检查416号测站5月29日渗压数据是否存在物理矛盾。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T8.1",
+          "name": "T8.1 汛期 vs 异常区分",
+          "prompt": "416号测站5/29渗压450 vs 5/28的430.5，区分是极端事件还是传感器异常。",
+          "expected_output": "见文档预期"
+        },
+        {
+          "id": "T9.1",
+          "name": "T9.1 数据质量日报",
+          "prompt": "生成2026年5月15日的数据质量日报。",
+          "expected_output": ""
+        },
+        {
+          "id": "T9.2",
+          "name": "T9.2 异常分析报告",
+          "prompt": "生成5月份的异常分析报告。",
+          "expected_output": ""
+        },
+        {
+          "id": "T9.3",
+          "name": "T9.3 设备评分报告（PDF）",
+          "prompt": "输出所有设备的评分报告PDF版本。",
+          "expected_output": ""
+        },
+        {
+          "id": "T10.1",
+          "name": "T10.1 异常修复回写",
+          "prompt": "对T1.1检出的水位异常，用插值修复后写回eq_data_anomaly_record。",
+          "expected_output": ""
+        },
+        {
+          "id": "T10.2",
+          "name": "T10.2 缺失填补回写",
+          "prompt": "对T2.1检出的缺失，用插值填补后写回eq_data_missing_record。",
+          "expected_output": ""
+        },
+        {
+          "id": "T10.3",
+          "name": "T10.3 设备状态更新",
+          "prompt": "将离线设备104(西坝咀雨量计)的状态标记为离线。",
+          "expected_output": ""
+        },
+        {
+          "id": "T11.1",
+          "name": "T11.1 智能运维建议",
+          "prompt": "设备140(振弦渗压计E02, status=2)出现异常，查询设备上下文并给出运维建议。",
+          "expected_output": "见文档预期"
+        }
+      ]
+    },
+    {
+      "set_id": "routing-evals-v1",
+      "phase": "阶段3 路由 skill 评测 v1",
+      "source_files": [
+        "skill-creator-workspace/data-governance-routing/evals.json"
+      ],
+      "description": "路由意图测试 v1（6 题），断言应路由到 powerelf-data-governance。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "0",
+          "name": "data-anomaly-detection",
+          "prompt": "帮我检查一下最近24小时水库水位数据有没有异常值，用MAD算法检测一下",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for MAD anomaly detection"
+        },
+        {
+          "id": "1",
+          "name": "missing-data-check",
+          "prompt": "最近一周河道水位监测数据有没有缺失？哪些站点有数据缺失的情况？",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for missing data detection"
+        },
+        {
+          "id": "2",
+          "name": "data-quality-overview",
+          "prompt": "帮我评估一下最近一个月所有监测站点的数据质量，给出质量评分和问题汇总",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data quality scoring"
+        },
+        {
+          "id": "3",
+          "name": "offline-stagnation",
+          "prompt": "检查哪些传感器最近有离线或者数据卡滞的问题",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for offline/stagnation detection"
+        },
+        {
+          "id": "4",
+          "name": "data-interpolation",
+          "prompt": "水位数据有缺失，帮我用插值方法补全缺失的部分",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data interpolation"
+        },
+        {
+          "id": "5",
+          "name": "general-data-problem",
+          "prompt": "监测数据是不是有问题？帮我看看数据质量怎么样",
+          "expected_output": "The hermes agent should route this to powerelf-data-governance skill for data quality overview"
+        }
+      ]
+    },
+    {
+      "set_id": "routing-evals-v2",
+      "phase": "阶段3 路由 skill 评测 v2（45 题）",
+      "source_files": [
+        "skill-creator-workspace/data-governance-routing/evals-database-v2.json"
+      ],
+      "description": "基于真实数据模式的路由测试 v2：MAD/缺失/离线/卡滞/评分/插值/回写/报告/相关性/极端事件/上下文等 45 题，配套 iteration-1/eval-0..44 元数据。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "0",
+          "name": "mad-rsvr-all-may",
+          "prompt": "帮我用MAD算法检测st_rsvr_r表2026年5月的水位数据，看看有没有异常值",
+          "expected_output": "Provider calls powerelf-data-governance skill to run MAD anomaly detection on st_rsvr_r.rz for May 2026"
+        },
+        {
+          "id": "1",
+          "name": "mad-rsvr-rz-0p029",
+          "prompt": "st_rsvr_r表1月份的水位数据怎么会出现0.029米的数值？正常水位不是应该在455米左右吗？帮我检测一下异常",
+          "expected_output": "Provider calls powerelf-data-governance to analyze the rz=0.029 anomaly in Jan 2026 (eq_code=606K215303)"
+        },
+        {
+          "id": "2",
+          "name": "mad-rsvr-rz-500-spike",
+          "prompt": "st_rsvr_r表5月15日水位突然跳到500米了，帮我看看这个是不是异常值",
+          "expected_output": "Provider calls powerelf-data-governance to analyze rz=500 spike on 2026-05-15 (stcd=606K2155)"
+        },
+        {
+          "id": "3",
+          "name": "pressure-800-anomaly",
+          "prompt": "st_pressure_r表5月20日water_pressure达到800，比平均值443高出一大截，这是数据异常吗？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze water_pressure=800 anomaly vs avg 443"
+        },
+        {
+          "id": "4",
+          "name": "rainfall-120mm-extreme",
+          "prompt": "st_pptn_r表5月18日下了120mm的雨，这个雨量数据正常吗？帮我检测一下",
+          "expected_output": "Provider calls powerelf-data-governance to analyze extreme rainfall 120mm on 2026-05-18"
+        },
+        {
+          "id": "5",
+          "name": "inq-300-anomaly",
+          "prompt": "st_rsvr_r表6月30日入库流量(inq)达到300，平均值才1.22，这个数据有没有问题？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze inq=300 anomaly vs avg 1.22"
+        },
+        {
+          "id": "6",
+          "name": "missing-pressure-table",
+          "prompt": "st_pressure_r表5月份的数据有没有缺失？我怀疑有些时段没采到数据",
+          "expected_output": "Provider calls powerelf-data-governance to check missing data pattern in st_pressure_r (1835 records vs expected 2976)"
+        },
+        {
+          "id": "7",
+          "name": "missing-rsvr-station-128",
+          "prompt": "检查一下st_rsvr_r表的606K2153号站在5月份有没有数据缺失",
+          "expected_output": "Provider calls powerelf-data-governance to check missing data for station 606K2153 in May (197 records)"
+        },
+        {
+          "id": "8",
+          "name": "missing-pptn-june-drop",
+          "prompt": "st_pptn_r表6月份的数据量从5月的4万7千条骤降到880条，是不是有大量缺失？",
+          "expected_output": "Provider calls powerelf-data-governance to investigate massive data volume drop in st_pptn_r June 2026"
+        },
+        {
+          "id": "9",
+          "name": "river-table-empty",
+          "prompt": "st_river_r表怎么一条记录都没有？河道水位监测是不是出问题了？",
+          "expected_output": "Provider calls powerelf-data-governance to flag st_river_r empty table as data collection issue"
+        },
+        {
+          "id": "10",
+          "name": "offline-max-907h",
+          "prompt": "有哪些设备离线超过30天了？帮我查一下离线最严重的设备",
+          "expected_output": "Provider calls powerelf-data-governance to find devices offline >720h (equipment 239, 134, 236 >900h each)"
+        },
+        {
+          "id": "11",
+          "name": "offline-equipment-104",
+          "prompt": "西坝咀雨量计(设备104)当前是否在线？离线多久了？",
+          "expected_output": "Provider calls powerelf-data-governance to check online status of equipment 104 (西坝咀雨量计, type_flag=8)"
+        },
+        {
+          "id": "12",
+          "name": "offline-equipment-239",
+          "prompt": "设备239已经离线900多个小时了，这正常吗？什么级别的告警？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze equipment 239 offline 907h → CRITICAL level"
+        },
+        {
+          "id": "13",
+          "name": "offline-mttr-calculation",
+          "prompt": "计算最近30天所有设备的平均修复时间MTTR",
+          "expected_output": "Provider calls powerelf-data-governance to calculate MTTR from eq_equip_offline_record"
+        },
+        {
+          "id": "14",
+          "name": "offline-duration-grading",
+          "prompt": "对当前离线的设备按离线时长做分级，哪些是CRITICAL级别的？",
+          "expected_output": "Provider calls powerelf-data-governance to classify offline devices by duration (CRITICAL >24h)"
+        },
+        {
+          "id": "15",
+          "name": "quality-score-equipment-139",
+          "prompt": "给振弦渗压计E01(设备139)做一下5月份的数据质量评分",
+          "expected_output": "Provider calls powerelf-data-governance to score equipment 139 (振弦渗压计E01) for May 2026"
+        },
+        {
+          "id": "16",
+          "name": "quality-compare-139-140",
+          "prompt": "对比设备139(状态正常)和设备140(状态异常)的5月份数据质量评分",
+          "expected_output": "Provider calls powerelf-data-governance to compare quality scores between equipment 139 and 140"
+        },
+        {
+          "id": "17",
+          "name": "quality-ranking-low-scores",
+          "prompt": "哪些设备的5月份质量评分低于60分？列出需要重点关注的设备",
+          "expected_output": "Provider calls powerelf-data-governance to filter devices with quality score <60"
+        },
+        {
+          "id": "18",
+          "name": "quality-trend-weekly",
+          "prompt": "本周的数据质量趋势怎么样？和上周比是变好了还是变差了？",
+          "expected_output": "Provider calls powerelf-data-governance to compare weekly quality trends"
+        },
+        {
+          "id": "19",
+          "name": "stagnation-pressure-e01",
+          "prompt": "振弦渗压计E01(设备139)最近几天的数值一直没变过，是不是卡滞了？",
+          "expected_output": "Provider calls powerelf-data-governance to detect stagnation on equipment 139"
+        },
+        {
+          "id": "20",
+          "name": "stagnation-all-may",
+          "prompt": "检测5月份所有传感器有没有数据卡滞的异常",
+          "expected_output": "Provider calls powerelf-data-governance to batch detect stagnation across all sensors in May 2026"
+        },
+        {
+          "id": "21",
+          "name": "rsvr-june-data-stoppage",
+          "prompt": "st_rsvr_r表6月份只有351条记录，7月份才9条，之前每个月都是2-5万条，数据采集是不是停了？",
+          "expected_output": "Provider calls powerelf-data-governance to investigate catastrophic data volume drop in st_rsvr_r June-July 2026"
+        },
+        {
+          "id": "22",
+          "name": "gnss-june-drop",
+          "prompt": "dsm_dfr_srvrds_srhrds表6月份数据从3001条骤降到272条，这个采集异常是什么原因？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze GNSS data collection drop in June 2026"
+        },
+        {
+          "id": "23",
+          "name": "interpolation-rsvr-missing",
+          "prompt": "st_rsvr_r表中606K2153站水位数据有缺失，帮我用插值补全",
+          "expected_output": "Provider calls powerelf-data-governance to interpolate missing water level data for station 606K2153"
+        },
+        {
+          "id": "24",
+          "name": "interpolation-pressure-linear",
+          "prompt": "st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
+          "expected_output": "Provider calls powerelf-data-governance to linearly interpolate 240 missing pressure records (equipment 134)"
+        },
+        {
+          "id": "25",
+          "name": "correlation-pressure-percolation",
+          "prompt": "st_pressure_r的water_pressure上升了但st_percolation_r的渗流却下降了，这个物理矛盾怎么解释？",
+          "expected_output": "Provider calls powerelf-data-governance to detect pressure-percolation correlation anomaly"
+        },
+        {
+          "id": "26",
+          "name": "correlation-rainfall-waterlevel",
+          "prompt": "5月18日下了120mm的暴雨，但水位没怎么涨，数据是不是有问题？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze rainfall-waterlevel correlation (120mm rain vs flat water level)"
+        },
+        {
+          "id": "27",
+          "name": "extreme-event-vs-anomaly-may15",
+          "prompt": "5月15日水位从440突然跳到500，是真实事件还是传感器故障？",
+          "expected_output": "Provider calls powerelf-data-governance to distinguish extreme event vs sensor anomaly for 440→500 jump"
+        },
+        {
+          "id": "28",
+          "name": "extreme-event-jan-0p029",
+          "prompt": "1月份水位出现0.029米的极端低值，是传感器坏了还是真实的水位下降？",
+          "expected_output": "Provider calls powerelf-data-governance to classify rz=0.029 as equipment anomaly vs real event"
+        },
+        {
+          "id": "29",
+          "name": "flood-data-stale",
+          "prompt": "st_flood_r表的最新数据还是2025年11月的，已经过期7个多月了，这个数据时效性问题严重吗？",
+          "expected_output": "Provider calls powerelf-data-governance to flag st_flood_r data staleness (last data Nov 2025, now Jul 2026)"
+        },
+        {
+          "id": "30",
+          "name": "report-daily-quality",
+          "prompt": "生成昨天的数据质量日报",
+          "expected_output": "Provider calls powerelf-data-governance to generate daily data quality report"
+        },
+        {
+          "id": "31",
+          "name": "report-monthly-anomaly",
+          "prompt": "出一份5月份的异常分析报告，汇总所有表的数据质量问题",
+          "expected_output": "Provider calls powerelf-data-governance to generate monthly anomaly report for May 2026"
+        },
+        {
+          "id": "32",
+          "name": "report-score-all-devices",
+          "prompt": "生成所有设备的5月份评分报告",
+          "expected_output": "Provider calls powerelf-data-governance to generate score report for all devices in May 2026"
+        },
+        {
+          "id": "33",
+          "name": "writeback-fix-anomaly",
+          "prompt": "把st_rsvr_r表中检测到的水位异常值修复后写回数据库",
+          "expected_output": "Provider calls powerelf-data-governance to write back fixed anomaly data to eq_data_anomaly_record"
+        },
+        {
+          "id": "34",
+          "name": "writeback-fill-missing",
+          "prompt": "把st_pressure_r表缺失的数据插值补全后写回eq_data_missing_record",
+          "expected_output": "Provider calls powerelf-data-governance to write back filled missing data"
+        },
+        {
+          "id": "35",
+          "name": "writeback-offline-status",
+          "prompt": "设备104(西坝咀雨量计)确认已离线，更新设备状态并创建离线记录",
+          "expected_output": "Provider calls powerelf-data-governance to mark equipment 104 offline and create record"
+        },
+        {
+          "id": "36",
+          "name": "device-context-equipment-140",
+          "prompt": "设备140(振弦渗压计E02)状态异常，查一下它的历史记录和运维建议",
+          "expected_output": "Provider calls powerelf-data-governance to retrieve context for equipment 140 and provide O&M suggestions"
+        },
+        {
+          "id": "37",
+          "name": "device-context-offline-239",
+          "prompt": "设备239已经离线900多小时了，查一下这个设备的详细信息，给出处理建议",
+          "expected_output": "Provider calls powerelf-data-governance to analyze equipment 239 (907h offline) and suggest actions"
+        },
+        {
+          "id": "38",
+          "name": "missing-pressure-134-10days",
+          "prompt": "设备134(st_pressure_r)从5月1日到10日连续10天没有数据，共缺失240条，这是怎么回事？",
+          "expected_output": "Provider calls powerelf-data-governance to investigate continuous 10-day data gap for equipment 134"
+        },
+        {
+          "id": "39",
+          "name": "anomaly-stats-overview",
+          "prompt": "帮我看看stats_data_anomaly_daily表，哪个表的异常最多？整体趋势怎么样？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze anomaly stats across tables from stats_data_anomaly_daily"
+        },
+        {
+          "id": "40",
+          "name": "quality-scoring-by-manufacturer",
+          "prompt": "按设备厂商分组，生成5月份的厂商数据质量排名",
+          "expected_output": "Provider calls powerelf-data-governance to rank manufacturers by data quality score for May 2026"
+        },
+        {
+          "id": "41",
+          "name": "stagnation-critical-level",
+          "prompt": "检测到渗压计连续24小时输出相同值，这个卡滞级别严重吗？",
+          "expected_output": "Provider calls powerelf-data-governance to assess stagnation severity (continuous identical values >24h)"
+        },
+        {
+          "id": "42",
+          "name": "missing-pattern-recognition",
+          "prompt": "分析st_pressure_r表的数据缺失模式，是周期性的还是随机的？",
+          "expected_output": "Provider calls powerelf-data-governance to identify missing data pattern (periodic vs random) in st_pressure_r"
+        },
+        {
+          "id": "43",
+          "name": "interpolation-confidence",
+          "prompt": "插值补全后的数据置信度怎么样？能直接用吗？",
+          "expected_output": "Provider calls powerelf-data-governance to assess interpolation confidence level"
+        },
+        {
+          "id": "44",
+          "name": "percolation-extreme-31",
+          "prompt": "st_percolation_r表的渗流值最大达到31.67，但平均值才0.57，这个极端值怎么判断？",
+          "expected_output": "Provider calls powerelf-data-governance to analyze percolation=31.67 extreme value vs avg 0.57"
+        }
+      ]
+    },
+    {
+      "set_id": "inspection-eval-criteria",
+      "phase": "阶段4 智能巡检 powerelf-inspection",
+      "source_files": [
+        "powerelf-inspection/autoresearch/eval_criteria.md"
+      ],
+      "description": "10 条二元 EVAL（v2 升级版）：8 检出 + 1 无误报 + 1 边界规则完整性。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "EVAL1",
+          "name": "EVAL1: 渗压突变检出",
+          "prompt": "渗压计416在5月20日有10kPa突变，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"渗压突变\"和\"kPa\" | Fail: 输出不包含\"突变\"关键词"
+        },
+        {
+          "id": "EVAL2",
+          "name": "EVAL2: 闸门异常检出",
+          "prompt": "闸门站131在5月8日开度突变2.5m，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"闸门\"和\"突变\" | Fail: 输出不包含闸门异常"
+        },
+        {
+          "id": "EVAL3",
+          "name": "EVAL3: 泵站三相不平衡检出",
+          "prompt": "泵站217在5月20日三相电流不平衡29%，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"不平衡\"和百分比 | Fail: 输出不包含三相不平衡"
+        },
+        {
+          "id": "EVAL4",
+          "name": "EVAL4: 水质超标检出",
+          "prompt": "水质数据中氨氮2.0超标(标准<1.5)，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"氨氮\"和\"偏高\"或\"超标\" | Fail: 输出不包含水质异常"
+        },
+        {
+          "id": "EVAL5",
+          "name": "EVAL5: 白蚁重度危害检出",
+          "prompt": "白蚁监测中有重度危害记录，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"重度\"和CRITICAL级别 | Fail: 输出不包含重度危害"
+        },
+        {
+          "id": "EVAL6",
+          "name": "EVAL6: 告警分析检出",
+          "prompt": "I级告警167条，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"I级\"和\"167\" | Fail: 输出不包含告警统计"
+        },
+        {
+          "id": "EVAL7",
+          "name": "EVAL7: 漏检率检出",
+          "prompt": "巡检完成率仅7.7%，漏检率超过20%，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"完成率\"和\"漏检\" | Fail: 输出不包含巡检质量异常"
+        },
+        {
+          "id": "EVAL8",
+          "name": "EVAL8: 设备离线率检出",
+          "prompt": "设备离线率43%(55/128)，工具是否检出？",
+          "expected_output": "Pass: 输出包含\"离线率\"和百分比 | Fail: 输出不包含设备状态异常"
+        },
+        {
+          "id": "EVAL9",
+          "name": "EVAL9: 无误报",
+          "prompt": "水库水情、位移监测、MAD统计、关联异常这4个维度是否正确报告OK？",
+          "expected_output": "Pass: 这4个维度输出OK，无WARNING | Fail: 任一维度误报为WARNING"
+        },
+        {
+          "id": "EVAL10",
+          "name": "EVAL10: 边界规则完整性",
+          "prompt": "SKILL.md是否列出至少5条\"必须人工确认\"的场景和至少3条反例？",
+          "expected_output": "Pass: 边界规则章节有5+场景和3+反例 | Fail: 不足5个场景或3个反例"
+        }
+      ]
+    },
+    {
+      "set_id": "inspection-eval-cases",
+      "phase": "阶段4 智能巡检 powerelf-inspection",
+      "source_files": [
+        "powerelf-inspection/autoresearch/eval_cases/cases.json"
+      ],
+      "description": "47 个成对用例：15 维度正/反例（差 1 翻转）+ 质量闸/季节护栏/诊断链/空数据三态。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "WL-POS-1",
+          "name": "水库水情-should_report",
+          "prompt": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.5（6点5次连续上升）",
+          "expected_output": "min_level=WARNING; message_contains=连续上升 | 理由: 6 点窗口 5 次连续上升，达 consecutive_monotonic(rise,5) 阈值"
+        },
+        {
+          "id": "WL-NEG-1",
+          "name": "水库水情-should_not_report",
+          "prompt": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.4（末点持平）",
+          "expected_output": "no_finding_contains=连续上升 | 理由: 仅 4 次连续上升，阈值 5 次，差 1 不应触发"
+        },
+        {
+          "id": "WL-POS-2",
+          "name": "水库水情-should_report",
+          "prompt": "st_id=9001, 末条 inq=21.0, otq=10.0（比值 2.1）",
+          "expected_output": "min_level=WARNING; message_contains=入库流量 | 理由: 入库/出库比 2.1 > 2，蓄水过快"
+        },
+        {
+          "id": "WL-NEG-2",
+          "name": "水库水情-should_not_report",
+          "prompt": "st_id=9001, 末条 inq=20.0, otq=10.0（比值恰 2.0）",
+          "expected_output": "no_finding_contains=入库流量 | 理由: 比值恰等于阈值 2，判定为严格大于，不应触发"
+        },
+        {
+          "id": "RAIN-POS-1",
+          "name": "雨量监测-should_report",
+          "prompt": "st_id=9002, 单时段 p=100.1mm",
+          "expected_output": "min_level=CRITICAL; message_contains=红色预警 | 理由: 100.1mm > 红色阈值 100mm（ew_info_rules 缺省兜底）"
+        },
+        {
+          "id": "RAIN-NEG-1",
+          "name": "雨量监测-should_not_report",
+          "prompt": "st_id=9002, 单时段 p=29.9mm",
+          "expected_output": "no_finding_contains=预警 | 理由: 29.9mm，蓝色阈值 30mm，差 0.1 不应触发任何预警级"
+        },
+        {
+          "id": "PRES-POS-1",
+          "name": "渗压监测-should_report",
+          "prompt": "st_id=9003, water_pressure 序列 [50.0×9, 55.1]（末对上跳5.1kPa未回落→非spike）",
+          "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 5.1kPa > 突变阈值5kPa；末点未回落→非spike(不降级)保持WARNING（analyze_pressure变化检测只看末对，真step不可达，pattern为none）"
+        },
+        {
+          "id": "PRES-NEG-1",
+          "name": "渗压监测-should_not_report",
+          "prompt": "st_id=9003, water_pressure 相邻两点 50.0→54.9（变化 4.9kPa）",
+          "expected_output": "no_finding_contains=突变 | 理由: 变化 4.9kPa，阈值 5kPa，差 0.1 不应触发"
+        },
+        {
+          "id": "PRES-SPIKE-1",
+          "name": "渗压监测-should_report",
+          "prompt": "st_id=9003, water_pressure 序列 [50.0×5, 85.0, 50.0×4]（中间单点85尖峰，末点50已回落=spike；35kPa远超5阈值）",
+          "expected_output": "max_level=INFO; message_contains=突变; pattern=spike; no_diagnosis=True | 理由: 单点尖峰latest已回落→spike通道；Phase4.9降级INFO且不触发诊断(防毛刺撞巧合降雨生伪根因)。真实渗漏会同时触发drift趋势层+MAD层WARNING，故降级spike不漏报"
+        },
+        {
+          "id": "PERC-POS-1",
+          "name": "渗流监测-should_report",
+          "prompt": "st_id=9004, percolation 相邻 1.000→1.201（+20.1%）",
+          "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 20.1% > 突变阈值 20%"
+        },
+        {
+          "id": "PERC-NEG-1",
+          "name": "渗流监测-should_not_report",
+          "prompt": "st_id=9004, percolation 相邻 1.000→1.199（+19.9%）",
+          "expected_output": "no_finding_contains=突变 | 理由: 19.9%，阈值 20%，差 0.1pct 不应触发"
+        },
+        {
+          "id": "GNSS-POS-1",
+          "name": "位移监测-should_report",
+          "prompt": "st_id=9005, speed_gh 5 点 4 次连续加速",
+          "expected_output": "min_level=WARNING; message_contains=加速 | 理由: GNSS 5 点窗口 4 次连续加速，达趋势阈值"
+        },
+        {
+          "id": "GNSS-NEG-1",
+          "name": "位移监测-should_not_report",
+          "prompt": "st_id=9005, speed_gh 5 点仅 3 次连续加速",
+          "expected_output": "no_finding_contains=加速 | 理由: 仅 3 次连续加速，阈值 4 次，差 1 不应触发"
+        },
+        {
+          "id": "GATE-POS-1",
+          "name": "闸门工情-should_report",
+          "prompt": "st_id=9006, gtophgt 相邻两点 1.00→2.01（突变 1.01m）",
+          "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 1.01m > 单步开度突变阈值 1.0m（gate_opening_jump_m）；Phase4.9 _change_finding 统一消息为 dim_label前缀+突变，不再含'开度'名词"
+        },
+        {
+          "id": "GATE-NEG-1",
+          "name": "闸门工情-should_not_report",
+          "prompt": "st_id=9006, gtophgt 相邻两点 1.00→2.00（突变恰 1.00m）",
+          "expected_output": "no_finding_contains=突变 | 理由: 变化恰等于阈值 1.0m，判定为严格大于，不应触发"
+        },
+        {
+          "id": "GATE-POS-2",
+          "name": "闸门工情-should_report",
+          "prompt": "st_id=9006, 单条 gtophgt=2.5, gtq=0",
+          "expected_output": "min_level=WARNING; message_contains=流量为0 | 理由: 开度 2.5m>0 且流量为 0，疑似卡阻或流量计故障"
+        },
+        {
+          "id": "GATE-NEG-2",
+          "name": "闸门工情-should_not_report",
+          "prompt": "st_id=9006, 全窗口 gtophgt=0, gtq=0（闸门全关）",
+          "expected_output": "no_finding_contains=流量为0; not_no_data=True | 理由: 输出纪律 #5：开度 0/流量 0 是合法观测（闸门关闭），不报卡阻也不归 no_data"
+        },
+        {
+          "id": "PUMP-POS-1",
+          "name": "泵站工情-should_report",
+          "prompt": "st_id=9007, 单条 freq=44.9",
+          "expected_output": "min_level=WARNING; message_contains=频率 | 理由: 44.9Hz < 下界 45Hz（工频 50Hz -10%）"
+        },
+        {
+          "id": "PUMP-NEG-1",
+          "name": "泵站工情-should_not_report",
+          "prompt": "st_id=9007, 单条 freq=45.0",
+          "expected_output": "no_finding_contains=频率 | 理由: 恰等于下界 45Hz，判定为严格小于，不应触发"
+        },
+        {
+          "id": "PUMP-POS-2",
+          "name": "泵站工情-should_report",
+          "prompt": "st_id=9007, 单条 uab=400, ubc=400, uca=464（不平衡 10.1%）",
+          "expected_output": "min_level=WARNING; message_contains=三相不平衡 | 理由: max_dev/avg = 42.67/421.33 ≈ 10.1% > 阈值 10%（GB/T 15543）"
+        },
+        {
+          "id": "WQ-POS-1",
+          "name": "水质监测-should_report",
+          "prompt": "stcd=9008, 最新一条 ph=5.99",
+          "expected_output": "min_level=WARNING; message_contains=pH偏低 | 理由: 5.99 < 标准下限 6（注意：检测只取最新一条读数）"
+        },
+        {
+          "id": "WQ-NEG-1",
+          "name": "水质监测-should_not_report",
+          "prompt": "stcd=9008, 最新一条 ph=6.00",
+          "expected_output": "no_finding_contains=pH | 理由: 恰等于下限 6，判定为严格小于，不应触发"
+        },
+        {
+          "id": "SOIL-POS-1",
+          "name": "土壤墒情-should_report",
+          "prompt": "st_id=9009, soil_moist_evaluation='重度干旱'",
+          "expected_output": "min_level=WARNING; message_contains=墒情评价 | 理由: 评价文本命中关键词（干旱/不足/重度）"
+        },
+        {
+          "id": "SOIL-NEG-1",
+          "name": "土壤墒情-should_not_report",
+          "prompt": "st_id=9009, soil_moist_evaluation='适宜', soil_water100cm=25.0",
+          "expected_output": "no_finding_contains=墒情评价 | 理由: 评价不含干旱/不足/重度关键词，且 100cm 含水量 25% ≥ 10% 下限"
+        },
+        {
+          "id": "TERM-POS-1",
+          "name": "白蚁监测-should_report",
+          "prompt": "st_id=9010, damage_level='重度' 1 条",
+          "expected_output": "min_level=CRITICAL; message_contains=危害等级 | 理由: 重度危害 → CRITICAL（中度仅 WARNING）"
+        },
+        {
+          "id": "TERM-POS-2",
+          "name": "白蚁监测-should_report",
+          "prompt": "st_id=9010, pest_density=3, check_result='未发现', damage_level=NULL",
+          "expected_output": "min_level=WARNING; message_contains=虫口密度 | 理由: 密度恰达阈值 3（判定 ≥3 含边界，与多数严格比较不同）"
+        },
+        {
+          "id": "TERM-NEG-1",
+          "name": "白蚁监测-should_not_report",
+          "prompt": "st_id=9010, pest_density=2, check_result='未发现', damage_level=NULL",
+          "expected_output": "no_finding_contains=白蚁 | 理由: 密度 2 < 3，未发现白蚁，无危害等级，差 1 级不应触发"
+        },
+        {
+          "id": "INSP-POS-1",
+          "name": "巡检结果-should_report",
+          "prompt": "100 条任务，69 条 status='3'（完成率 69%），无超时",
+          "expected_output": "min_level=WARNING; message_contains=完成率偏低 | 理由: 69% < 考核线 70%（completion_rate_min）"
+        },
+        {
+          "id": "INSP-NEG-1",
+          "name": "巡检结果-should_not_report",
+          "prompt": "100 条任务，70 条 status='3'（完成率恰 70%），无超时",
+          "expected_output": "no_finding_contains=完成率 | 理由: 恰等于考核线 70%，判定为严格小于，不应触发"
+        },
+        {
+          "id": "EQUIP-POS-1",
+          "name": "设备状态-should_report",
+          "prompt": "100 台设备，31 台 status=0（离线率 31%），0 台 status=2",
+          "expected_output": "min_level=WARNING; message_contains=离线率偏高 | 理由: 31% > 阈值 30%（equip_offline_rate_max）"
+        },
+        {
+          "id": "EQUIP-NEG-1",
+          "name": "设备状态-should_not_report",
+          "prompt": "100 台设备，30 台 status=0（离线率恰 30%），0 台 status=2（异常必须为 0，否则另一分支触发）",
+          "expected_output": "no_finding_contains=离线率 | 理由: 恰等于阈值 30%，判定为严格大于，不应触发"
+        },
+        {
+          "id": "ALERT-POS-1",
+          "name": "告警分析-should_report",
+          "prompt": "1 条 level_r='1' 未确认告警",
+          "expected_output": "min_level=CRITICAL; message_contains=I级告警 | 理由: I 级告警 ≥1 条即 CRITICAL"
+        },
+        {
+          "id": "ALERT-NEG-1",
+          "name": "告警分析-should_not_report",
+          "prompt": "10 条 level_r='4' 未确认告警（无 I/II 级）",
+          "expected_output": "no_finding_contains=告警 | 理由: 无 I/II 级；未确认恰 10 条，积压阈值为严格 >10，不应触发"
+        },
+        {
+          "id": "MAD-POS-1",
+          "name": "MAD统计异常-should_report",
+          "prompt": "st_id=9011, water_pressure 30 点稳定 50.00±0.05，末点 60.0",
+          "expected_output": "min_level=WARNING; message_contains=MAD统计异常 | 理由: 末点偏离中位数，z 远超渗压 MAD 阈值 4.0，样本 30 ≥ 下限 20"
+        },
+        {
+          "id": "MAD-NEG-1",
+          "name": "MAD统计异常-should_not_report",
+          "prompt": "st_id=9011, 同形态离群序列但总共仅 19 点",
+          "expected_output": "no_finding_contains=MAD统计异常 | 理由: 样本 19 < min_samples 20，统计不可靠不应触发（样本量下限护栏）"
+        },
+        {
+          "id": "CORR-POS-1",
+          "name": "关联异常-should_report",
+          "prompt": "累计雨量 60mm，同期 rz 变化 0.04m（正常波动非平线）",
+          "expected_output": "min_level=INFO; message_contains=累计 | 理由: 雨量 >50mm 且水位变化 <0.05m，且水位序列 CV≥idle_cv_min（真实矛盾）"
+        },
+        {
+          "id": "CORR-NEG-1",
+          "name": "关联异常-should_not_report",
+          "prompt": "累计雨量 60mm，同期 rz 全程恒等 100.000（死值平线）",
+          "expected_output": "no_finding_contains=累计 | 理由: 水位序列为死值平线（CV<0.001），idle 护栏应抑制伪相关——该报的是数据质量问题不是关联异常"
+        },
+        {
+          "id": "CORR-POS-2",
+          "name": "关联异常-should_report",
+          "prompt": "渗压计9003 wp 6点严格递增 50→52→54→56→58→60；同期水位 rz 在 100.0~100.05 波动（变化<0.1m 且 CV≥idle_cv_min 非平线）",
+          "expected_output": "min_level=WARNING; message_contains=渗压 | 理由: 渗压持续上升 + 水位稳定(非死值平线) → 关联2 应报（防渗体损坏或渗压计故障）"
+        },
+        {
+          "id": "CORR-NEG-2",
+          "name": "关联异常-should_not_report",
+          "prompt": "渗压计9003 wp 6点严格递增；同期水位 rz 全程恒等 100.000（死值平线）",
+          "expected_output": "no_finding_contains=水位稳定 | 理由: 水位死值平线（CV<0.001）→ idle 护栏抑制关联2（'稳定'可能是水位计卡滞而非真稳定），不应报"
+        },
+        {
+          "id": "QG-RED-1",
+          "name": "水库水情（质量闸）-quality_gate",
+          "prompt": "st_id=9012, 30 天窗口仅注入 3 天数据（完整性 <80% 红档）",
+          "expected_output": "dimension_status=INCONCLUSIVE; envelope_status=inconclusive; exit_code=4; next_steps_contains=先修数据 | 理由: 完整性红档（<80%）不硬跑：维度 INCONCLUSIVE → envelope inconclusive → 退出码 4，转 governance"
+        },
+        {
+          "id": "QG-PLACEHOLDER-1",
+          "name": "水库水情（质量闸）-quality_gate",
+          "prompt": "st_id=9012, rz 序列混入 -99 与 999 各若干，另含合法 0.00 读数",
+          "expected_output": "quality_issues_contains=占位; zero_not_counted_as_placeholder=True | 理由: -99/999 属占位值集合应计入质量 issues；0 是合法观测值（纪律 #5）不得计入占位"
+        },
+        {
+          "id": "SEASON-GUARD-1",
+          "name": "水库水情（季节护栏）-guardrail",
+          "prompt": "st_id=9013, 7 月汛期注入 MAD 离群高水位（历史同期水位普涨）",
+          "expected_output": "max_level=INFO; message_contains=MAD统计异常 | 理由: 汛期 in_season 命中 → 水位普涨降级 INFO 而非 WARNING，防季节性误报"
+        },
+        {
+          "id": "DIAG-HIT-1",
+          "name": "渗压监测（诊断链）-diagnosis",
+          "prompt": "st_id=9014 渗压突变 5.5kPa（WARNING 命中 R1 路由）；同期 -2h 窗口内 rz 上升 0.25m（≥0.2m）",
+          "expected_output": "finding_has=diagnosis_root_cause; detail_contains=证据链; envelope_category=root_cause | 理由: R1 第一层（水位Δ≥0.2m，先验 ~50%）命中即停 → root_cause 回填，category 升级 stop-ready"
+        },
+        {
+          "id": "DIAG-MISS-1",
+          "name": "渗压监测（诊断链）-diagnosis",
+          "prompt": "st_id=9014 渗压突变 5.5kPa；同期水位平稳（Δ<0.2m）、无降雨、闸门无动作",
+          "expected_output": "finding_not_has=diagnosis_root_cause; detail_contains=已查 | 理由: 三层候选与横向 fallback 均无证据 → 不编造根因，detail 记录已查窗口（已检为空 ≠ 忘了检）"
+        },
+        {
+          "id": "EMPTY-NA-1",
+          "name": "河道水情（借 st_river_r 天然空表）-empty_data",
+          "prompt": "不注入任何数据（表历史即空）",
+          "expected_output": "status_code=NOT_APPLICABLE; no_fabricated_values=True | 理由: MAX(tm) 探针为 NULL → 本工程无此类监测，不算异常，勿重试"
+        },
+        {
+          "id": "EMPTY-ND-1",
+          "name": "渗流监测-empty_data",
+          "prompt": "仅注入 30 天前的历史行，窗口 7 天内为空",
+          "expected_output": "status_code=NO_DATA; note_contains=采集; no_fabricated_values=True | 理由: 有历史 MAX(tm) 但窗口空 → NO_DATA（子类型采集中断），转 governance 排查"
+        },
+        {
+          "id": "EMPTY-QF-1",
+          "name": "任一维度-empty_data",
+          "prompt": "查询抛异常",
+          "expected_output": "status_code=QUERY_FAILED; no_fabricated_values=True | 理由: 查询失败 ≠ 无数据，严禁以 0 或空充数"
+        }
+      ]
+    },
+    {
+      "set_id": "darwin-test-prompts",
+      "phase": "阶段5 skill 优化器 darwin-skill",
+      "source_files": [
+        "darwin-skill/test-prompts.json"
+      ],
+      "description": "3 条优化流程引导测试（典型/全量/歧义失败场景）。",
+      "gaps": [],
+      "evals": [
+        {
+          "id": "1",
+          "name": "典型场景：单 skill 优化",
+          "prompt": "用 darwin-skill 优化 huashu-xxx 这个 skill",
+          "expected_output": "skill 应引导：Phase 0 检查 git/分支 → Phase 0.5 设计 2-3 个 test-prompts → Phase 1 spawn 独立 judge 评 9 维 rubric → 找最低维度（注意 dim2/3/4 相关簇）→ Phase 2 hill climbing（每轮 1 个维度，git ratchet）→ 检测触顶（连续 2 轮 Δ<2 自动 break）→ Phase 3 汇总 + 结果卡片"
+        },
+        {
+          "id": "2",
+          "name": "典型场景：全量评估",
+          "prompt": "评估所有 skills 的质量",
+          "expected_output": "skill 应执行 Phase 0.5-1：扫描所有 SKILL.md → 跑 runtime 中立性 gate → 用 9 维 rubric 打基线分 → 输出评分卡片（按分数排序，标注短板维度），不进入 Phase 2 优化循环"
+        },
+        {
+          "id": "3",
+          "name": "歧义/失败场景",
+          "prompt": "我想让你帮我把这个 skill 改得更好一点",
+          "expected_output": "skill 应识别为优化任务 → 询问优化范围（全量 / 单个）→ 检查异常（不在 git 仓库 / results.tsv 缺失等）按异常表 fallback → 设计测试 prompt 前展示给用户确认（检查点）"
+        }
+      ]
+    }
+  ]
+}
