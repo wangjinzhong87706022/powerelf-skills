@@ -1,0 +1,157 @@
+{
+  "eval_run_id": "hermes-eval-20260811-120335",
+  "evaluated_at": "2026-08-11T12:08:07.054766",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 3,
+  "skipped": {
+    "placeholder_reconstructed": 0,
+    "readiness_filter": 0,
+    "empty_prompt_or_expected": 0,
+    "max_questions_limit": 42
+  },
+  "overall_score": 0.625,
+  "overall_verdict": "PARTIAL",
+  "per_set_summary": {
+    "routing-evals-v2": {
+      "count": 3,
+      "avg_score": 0.625,
+      "pass": 2,
+      "partial": 1,
+      "fail": 0
+    }
+  },
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0.5,
+      "fail_count": 0
+    },
+    "D2_routing": {
+      "avg": 0.5,
+      "fail_count": 0
+    },
+    "D3_tool_eff": {
+      "avg": 0.667,
+      "fail_count": 1
+    },
+    "D4_token_eff": {
+      "avg": 0.333,
+      "fail_count": 1
+    },
+    "D5_latency": {
+      "avg": 0.667,
+      "fail_count": 1
+    },
+    "D6_halluc": {
+      "avg": 1.0,
+      "fail_count": 0
+    },
+    "D7_completeness": {
+      "avg": 1.0,
+      "fail_count": 0
+    }
+  },
+  "results": [
+    {
+      "id": "0",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-all-may",
+      "score": 0.425,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260811_120336_fb0d32",
+        "duration_sec": 233.96,
+        "tool_call_count": 12,
+        "message_count": 24,
+        "input_tokens": 28022,
+        "output_tokens": 6790,
+        "cache_read_tokens": 372493,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "skill_view",
+          "skill_view",
+          "read_file",
+          "search_files",
+          "read_file",
+          "terminal",
+          "write_file",
+          "terminal",
+          "patch",
+          "terminal",
+          "write_file",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-0p029",
+      "score": 0.725,
+      "verdict": "PASS",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 1.0,
+        "D4_token_eff": 0.5,
+        "D5_latency": 1.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260811_120733_8749f9",
+        "duration_sec": 15.95,
+        "tool_call_count": 1,
+        "message_count": 2,
+        "input_tokens": 47,
+        "output_tokens": 385,
+        "cache_read_tokens": 17784,
+        "reasoning_tokens": 0,
+        "tool_chain": []
+      }
+    },
+    {
+      "id": "2",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-500-spike",
+      "score": 0.725,
+      "verdict": "PASS",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 1.0,
+        "D4_token_eff": 0.5,
+        "D5_latency": 1.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260811_120753_3eb374",
+        "duration_sec": 11.44,
+        "tool_call_count": 1,
+        "message_count": 2,
+        "input_tokens": 38,
+        "output_tokens": 268,
+        "cache_read_tokens": 17784,
+        "reasoning_tokens": 0,
+        "tool_chain": []
+      }
+    }
+  ]
+}

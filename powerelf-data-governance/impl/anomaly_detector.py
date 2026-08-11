@@ -92,16 +92,36 @@ ALLOWED_FIELDS = frozenset({
 ALLOWED_TIME_FIELDS = frozenset({"tm", "time", "timestamp", "collect_time"})
 
 
-def load_data(engine, table, field, st_id=None, days=30, time_field="tm"):
-    """从数据库加载传感器数据"""
+def load_data(engine, table, field, st_id=None, days=30, time_field="tm",
+              start=None, end=None):
+    """从数据库加载传感器数据。
+
+    时间窗口三种模式（优先级：start/end > days）：
+      1. start+end：指定日期范围（含端点）， days 被忽略
+      2. 仅 days：相对"今天"往前 N 天（历史行为，默认 30）
+      3. start+days 或 end+days：start 起 days 天 / end 往前 days 天（混合）
+    """
     if table not in ALLOWED_TABLES:
         raise ValueError(f"非法表名: {table} (不在允许列表中)")
     if field not in ALLOWED_FIELDS:
         raise ValueError(f"非法字段名: {field} (不在允许列表中)")
     if time_field not in ALLOWED_TIME_FIELDS:
         raise ValueError(f"非法时间字段: {time_field}")
-    where_parts = [f"{time_field} >= NOW()-INTERVAL :days DAY"]
-    params = {"days": days}
+
+    where_parts = []
+    params = {}
+
+    if start is not None:
+        where_parts.append(f"{time_field} >= :start")
+        params["start"] = start
+    if end is not None:
+        where_parts.append(f"{time_field} <= :end")
+        params["end"] = end
+    if start is None and end is None:
+        # 兜底：相对"今天"往前 days 天（历史行为）
+        where_parts.append(f"{time_field} >= NOW()-INTERVAL :days DAY")
+        params["days"] = days
+
     if st_id:
         where_parts.append("st_id = :st_id")
         params["st_id"] = st_id
@@ -269,9 +289,12 @@ def detect_by_method(method, values, threshold):
     raise ValueError(f"未知检测方法: {method}（可选: mad / iqr / percentile）")
 
 
-def run_detection(engine, table, field, threshold=None, st_id=None, days=30, method="mad"):
+def run_detection(engine, table, field, threshold=None, st_id=None, days=30, method="mad",
+                  start=None, end=None, detail="compact"):
     """执行离群检测流程（MAD / IQR / 百分位）。
 
+    时间窗口：start/end（指定日期范围，优先级高于 days）或 days（相对今天往前 N 天）。
+    detail：compact=最多 10 条明细（历史行为）；full=全部异常点明细。
     method="mad" 时与历史版本完全兼容（仅输出多一个 method 字段）。
     """
 
@@ -285,7 +308,7 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
         print(f"[WARN] percentile 尾部 p={threshold} 越界(需 0<p<50)，回退到 1", file=sys.stderr)
 
     # 加载数据
-    df = load_data(engine, table, field, st_id, days)
+    df = load_data(engine, table, field, st_id, days, start=start, end=end)
     if df.empty:
         return {
             "status": "NO_DATA",
@@ -353,12 +376,17 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
             f"综合判定: {judgment['message']} (置信度{judgment['confidence']})"
         )
 
+    # 按天聚合（daily_summary）：按 tm 列的日期部分聚合记录数/零值数/最大值/累计值
+    daily_summary = _build_daily_summary(df, field, tm_col)
+
     return {
         "status": "OK",
         "table": table,
         "field": field,
         "st_id": st_id,
         "days": days,
+        "start": start,
+        "end": end,
         "threshold": resolved_threshold,
         "data_points": anom_result["total_points"],
         analysis_key: analysis,
@@ -367,11 +395,75 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
             "threshold": CHANGE_RATE_THRESHOLDS.get(field, 0.10),
             "exceed_details": change_rate_result[:5],  # 最多5条
         },
+        "daily_summary": daily_summary,
         "judgment": judgment,
-        "anomaly_details": anomaly_details[:10],  # 最多10条
+        "anomaly_details": anomaly_details if detail == "full" else anomaly_details[:10],  # compact=最多10条；full=全部
         "explanation": explanation,
         "method": method,
     }
+
+
+def _build_daily_summary(df, field, tm_col):
+    """按天聚合：按 tm 列的日期部分聚合记录数/零值数/最大值/累计值。
+
+    返回 list[dict]，每条：{date, records, zeros, max_value, sum_value}。
+    无 tm_col 或 df 空 → 返回 []。
+    """
+    if tm_col is None or df.empty:
+        return []
+    # 取 tm 列 + field 列，按日期部分聚合
+    tmp = df[[tm_col, field]].copy()
+    # 日期部分：tm 可能是 datetime 或字符串，取前 10 字符即 YYYY-MM-DD
+    tmp["day"] = tmp[tm_col].astype(str).str[:10]
+    # 数值化（排除 Decimal/字符串混合）
+    tmp["val"] = pd.to_numeric(tmp[field], errors="coerce")
+    grouped = tmp.groupby("day")
+    summary = []
+    for day, g in grouped:
+        vals = g["val"].dropna()
+        summary.append({
+            "date": day,
+            "records": int(len(g)),
+            "zeros": int((g["val"] == 0).sum()),
+            "max_value": round(float(vals.max()), 4) if not vals.empty else None,
+            "sum_value": round(float(vals.sum()), 4) if not vals.empty else None,
+        })
+    return summary
+
+
+def export_csv(result, out_path):
+    """把 run_detection 的结果导出为 CSV（含 anomaly_details 全部明细）。
+
+    列：index, time, value, modified_z/iqr_dev/percentile, judgment, method, table, field。
+    UTF-8 BOM 编码（Excel 友好），含空白的"复核结论"列供人工填写。
+    """
+    import csv
+    details = result.get("anomaly_details", [])
+    # 列头：固定列 + 动态评分列（ModifiedZ / iqr_dev / percentile）
+    base_cols = ["index", "time", "value", "judgment", "method", "table", "field", "复核结论"]
+    score_cols = []
+    if details:
+        for k in details[0].keys():
+            if k not in ("index", "time", "value"):
+                score_cols.append(k)
+    header = base_cols[:3] + score_cols + base_cols[3:]
+
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    with open(out_path, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(header)
+        for d in details:
+            row = [d.get("index", ""), d.get("time", ""), d.get("value", "")]
+            for k in score_cols:
+                row.append(d.get(k, ""))
+            row.extend([
+                result.get("judgment", {}).get("message", ""),
+                result.get("method", ""),
+                result.get("table", ""),
+                result.get("field", ""),
+                "",  # 复核结论空列
+            ])
+            w.writerow(row)
 
 
 def main():
@@ -384,13 +476,31 @@ def main():
     parser.add_argument("--threshold", type=float, default=None,
                         help="阈值，语义随 --method: mad=修正Z(默认按字段) / iqr=IQR倍数k(默认1.5) / percentile=尾部百分位p(默认1→p1/p99)")
     parser.add_argument("--st-id", type=int, default=None, help="测站ID")
-    parser.add_argument("--days", type=int, default=30, help="检测天数")
+    parser.add_argument("--days", type=int, default=30, help="检测天数（相对今天往前 N 天，与 --start/--end 互斥）")
+    parser.add_argument("--start", type=str, default=None,
+                        help="起始日期（YYYY-MM-DD），指定日期范围模式，优先级高于 --days")
+    parser.add_argument("--end", type=str, default=None,
+                        help="结束日期（YYYY-MM-DD），指定日期范围模式，优先级高于 --days")
+    parser.add_argument("--detail", choices=["compact", "full"], default="compact",
+                        help="明细输出模式: compact=最多10条(默认) / full=全部异常点")
+    parser.add_argument("--format", choices=["json", "csv"], default="json",
+                        help="输出格式: json(默认,stdout) / csv(导出明细到 --output 文件)")
+    parser.add_argument("--output", type=str, default=None,
+                        help="CSV 导出路径（仅 --format csv 时生效，默认 /tmp/anomaly_<table>_<field>.csv）")
     args = parser.parse_args()
 
     engine = create_engine(args.db)
     result = run_detection(engine, args.table, args.field, args.threshold,
-                           args.st_id, args.days, args.method)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+                           args.st_id, args.days, args.method,
+                           start=args.start, end=args.end, detail=args.detail)
+
+    # 输出格式分派
+    if args.format == "csv":
+        out_path = args.output or f"/tmp/anomaly_{args.table}_{args.field}.csv"
+        export_csv(result, out_path)
+        print(f"CSV 已导出：{out_path}")
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

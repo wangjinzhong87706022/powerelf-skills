@@ -1,0 +1,48 @@
+{
+  "eval_run_id": "hermes-eval-20260811-113748",
+  "evaluated_at": "2026-08-11T11:37:48.120653",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 0,
+  "skipped": {
+    "placeholder_reconstructed": 29,
+    "readiness_filter": 94,
+    "empty_prompt_or_expected": 6,
+    "max_questions_limit": 0
+  },
+  "overall_score": 0.0,
+  "overall_verdict": "FAIL",
+  "per_set_summary": {},
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D2_routing": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D3_tool_eff": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D4_token_eff": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D5_latency": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D6_halluc": {
+      "avg": 0,
+      "fail_count": 0
+    },
+    "D7_completeness": {
+      "avg": 0,
+      "fail_count": 0
+    }
+  },
+  "results": []
+}

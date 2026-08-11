@@ -1,0 +1,123 @@
+{
+  "eval_run_id": "hermes-eval-20260811-121021",
+  "evaluated_at": "2026-08-11T12:10:21.691963",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 3,
+  "skipped": {
+    "placeholder_reconstructed": 0,
+    "readiness_filter": 0,
+    "empty_prompt_or_expected": 0,
+    "max_questions_limit": 42
+  },
+  "overall_score": 0.0,
+  "overall_verdict": "FAIL",
+  "per_set_summary": {
+    "routing-evals-v2": {
+      "count": 3,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 3
+    }
+  },
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D2_routing": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D3_tool_eff": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D4_token_eff": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D5_latency": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D6_halluc": {
+      "avg": 0.0,
+      "fail_count": 3
+    },
+    "D7_completeness": {
+      "avg": 0.0,
+      "fail_count": 3
+    }
+  },
+  "results": [
+    {
+      "id": "0",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-all-may",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-121021-0"
+      }
+    },
+    {
+      "id": "1",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-0p029",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-121021-1"
+      }
+    },
+    {
+      "id": "2",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-500-spike",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-121021-2"
+      }
+    }
+  ]
+}

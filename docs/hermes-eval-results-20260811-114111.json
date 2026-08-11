@@ -1,0 +1,3700 @@
+{
+  "eval_run_id": "hermes-eval-20260811-114111",
+  "evaluated_at": "2026-08-11T11:41:11.586746",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 164,
+  "skipped": {
+    "placeholder_reconstructed": 29,
+    "readiness_filter": 94,
+    "empty_prompt_or_expected": 6,
+    "max_questions_limit": 0
+  },
+  "overall_score": 0.0,
+  "overall_verdict": "FAIL",
+  "per_set_summary": {
+    "data-governance-routing-list": {
+      "count": 53,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 53
+    },
+    "routing-evals-v1": {
+      "count": 6,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 6
+    },
+    "routing-evals-v2": {
+      "count": 45,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 45
+    },
+    "inspection-eval-criteria": {
+      "count": 10,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 10
+    },
+    "inspection-eval-cases": {
+      "count": 47,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 47
+    },
+    "darwin-test-prompts": {
+      "count": 3,
+      "avg_score": 0.0,
+      "pass": 0,
+      "partial": 0,
+      "fail": 3
+    }
+  },
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D2_routing": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D3_tool_eff": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D4_token_eff": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D5_latency": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D6_halluc": {
+      "avg": 0.0,
+      "fail_count": 164
+    },
+    "D7_completeness": {
+      "avg": 0.0,
+      "fail_count": 164
+    }
+  },
+  "results": [
+    {
+      "id": "DG-P01",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD 异常检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P01"
+      }
+    },
+    {
+      "id": "DG-P02",
+      "set": "data-governance-routing-list",
+      "name": "可问-分指标阈值检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P02"
+      }
+    },
+    {
+      "id": "DG-P03",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD + 变化率综合判定",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P03"
+      }
+    },
+    {
+      "id": "DG-P04",
+      "set": "data-governance-routing-list",
+      "name": "可问-指定时间窗口检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P04"
+      }
+    },
+    {
+      "id": "DG-P05",
+      "set": "data-governance-routing-list",
+      "name": "可问-变化率检测 + 综合判定",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P05"
+      }
+    },
+    {
+      "id": "DG-P06",
+      "set": "data-governance-routing-list",
+      "name": "可问-期望周期数比较",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P06"
+      }
+    },
+    {
+      "id": "DG-P07",
+      "set": "data-governance-routing-list",
+      "name": "可问-指定表和测站",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P07"
+      }
+    },
+    {
+      "id": "DG-P08",
+      "set": "data-governance-routing-list",
+      "name": "可问-缺失模式识别",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P08"
+      }
+    },
+    {
+      "id": "DG-P09",
+      "set": "data-governance-routing-list",
+      "name": "可问-INFO/WARNING/ERROR/CRITICAL 分级",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P09"
+      }
+    },
+    {
+      "id": "DG-P10",
+      "set": "data-governance-routing-list",
+      "name": "可问-环比趋势分析",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P10"
+      }
+    },
+    {
+      "id": "DG-P11",
+      "set": "data-governance-routing-list",
+      "name": "可问-四策略自适应插值",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P11"
+      }
+    },
+    {
+      "id": "DG-P12",
+      "set": "data-governance-routing-list",
+      "name": "可问-指定插值策略",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P12"
+      }
+    },
+    {
+      "id": "DG-P13",
+      "set": "data-governance-routing-list",
+      "name": "可问-置信度评估（高/中/低）",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P13"
+      }
+    },
+    {
+      "id": "DG-P14",
+      "set": "data-governance-routing-list",
+      "name": "可问-置信度 >= 0.8 可直接使用",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P14"
+      }
+    },
+    {
+      "id": "DG-P15",
+      "set": "data-governance-routing-list",
+      "name": "可问-样条插值推荐",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P15"
+      }
+    },
+    {
+      "id": "DG-P16",
+      "set": "data-governance-routing-list",
+      "name": "可问-三态判定（ONLINE/OFFLINE/ERROR）",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P16"
+      }
+    },
+    {
+      "id": "DG-P17",
+      "set": "data-governance-routing-list",
+      "name": "可问-离线时长分级",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P17"
+      }
+    },
+    {
+      "id": "DG-P18",
+      "set": "data-governance-routing-list",
+      "name": "可问-MTTR 计算",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P18"
+      }
+    },
+    {
+      "id": "DG-P19",
+      "set": "data-governance-routing-list",
+      "name": "可问-批量检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P19"
+      }
+    },
+    {
+      "id": "DG-P20",
+      "set": "data-governance-routing-list",
+      "name": "可问-时长计算 + 分级告警",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P20"
+      }
+    },
+    {
+      "id": "DG-P21",
+      "set": "data-governance-routing-list",
+      "name": "可问-四维度加权评分",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P21"
+      }
+    },
+    {
+      "id": "DG-P22",
+      "set": "data-governance-routing-list",
+      "name": "可问-厂商排名",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P22"
+      }
+    },
+    {
+      "id": "DG-P23",
+      "set": "data-governance-routing-list",
+      "name": "可问-趋势分析（改善/恶化/稳定）",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P23"
+      }
+    },
+    {
+      "id": "DG-P24",
+      "set": "data-governance-routing-list",
+      "name": "可问-较差等级设备筛选",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P24"
+      }
+    },
+    {
+      "id": "DG-P25",
+      "set": "data-governance-routing-list",
+      "name": "可问-日报生成",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P25"
+      }
+    },
+    {
+      "id": "DG-P26",
+      "set": "data-governance-routing-list",
+      "name": "可问-连续相同值检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P26"
+      }
+    },
+    {
+      "id": "DG-P27",
+      "set": "data-governance-routing-list",
+      "name": "可问-批量检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P27"
+      }
+    },
+    {
+      "id": "DG-P28",
+      "set": "data-governance-routing-list",
+      "name": "可问-INFO/WARNING/ERROR/CRITICAL 分级",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P28"
+      }
+    },
+    {
+      "id": "DG-P29",
+      "set": "data-governance-routing-list",
+      "name": "可问-极端事件 vs 异常区分",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P29"
+      }
+    },
+    {
+      "id": "DG-P30",
+      "set": "data-governance-routing-list",
+      "name": "可问-多维度判断",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P30"
+      }
+    },
+    {
+      "id": "DG-P31",
+      "set": "data-governance-routing-list",
+      "name": "可问-维护窗口识别",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P31"
+      }
+    },
+    {
+      "id": "DG-P32",
+      "set": "data-governance-routing-list",
+      "name": "可问-物理矛盾检测",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P32"
+      }
+    },
+    {
+      "id": "DG-P33",
+      "set": "data-governance-routing-list",
+      "name": "可问-水位-渗流矛盾规则",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P33"
+      }
+    },
+    {
+      "id": "DG-P34",
+      "set": "data-governance-routing-list",
+      "name": "可问-降雨-水位矛盾规则",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P34"
+      }
+    },
+    {
+      "id": "DG-P35",
+      "set": "data-governance-routing-list",
+      "name": "可问-历史缺陷查询",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P35"
+      }
+    },
+    {
+      "id": "DG-P36",
+      "set": "data-governance-routing-list",
+      "name": "可问-维保周期检查",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P36"
+      }
+    },
+    {
+      "id": "DG-P37",
+      "set": "data-governance-routing-list",
+      "name": "可问-P0/P1/P2/P3 优先级建议",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P37"
+      }
+    },
+    {
+      "id": "DG-P38",
+      "set": "data-governance-routing-list",
+      "name": "可问-智能运维建议生成",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P38"
+      }
+    },
+    {
+      "id": "DG-P39",
+      "set": "data-governance-routing-list",
+      "name": "可问-`generate_daily_report()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P39"
+      }
+    },
+    {
+      "id": "DG-P40",
+      "set": "data-governance-routing-list",
+      "name": "可问-`generate_anomaly_report()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P40"
+      }
+    },
+    {
+      "id": "DG-P41",
+      "set": "data-governance-routing-list",
+      "name": "可问-`to_pdf()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P41"
+      }
+    },
+    {
+      "id": "DG-P42",
+      "set": "data-governance-routing-list",
+      "name": "可问-`generate_score_report()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P42"
+      }
+    },
+    {
+      "id": "DG-P43",
+      "set": "data-governance-routing-list",
+      "name": "可问-`fix_anomaly()` / `fill_missing()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P43"
+      }
+    },
+    {
+      "id": "DG-P44",
+      "set": "data-governance-routing-list",
+      "name": "可问-`update_device_status(0)`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P44"
+      }
+    },
+    {
+      "id": "DG-P45",
+      "set": "data-governance-routing-list",
+      "name": "可问-`create_offline_record()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P45"
+      }
+    },
+    {
+      "id": "DG-P46",
+      "set": "data-governance-routing-list",
+      "name": "可问-`batch_fix_anomalies()`",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-P46"
+      }
+    },
+    {
+      "id": "DG-N01",
+      "set": "data-governance-routing-list",
+      "name": "不可问-XX 水库当前水位是多少？",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N01"
+      }
+    },
+    {
+      "id": "DG-N02",
+      "set": "data-governance-routing-list",
+      "name": "不可问-展示一下最近一周的水位变化曲线",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N02"
+      }
+    },
+    {
+      "id": "DG-N03",
+      "set": "data-governance-routing-list",
+      "name": "不可问-这个水位超过警戒线了吗？",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N03"
+      }
+    },
+    {
+      "id": "DG-N04",
+      "set": "data-governance-routing-list",
+      "name": "不可问-今天雨量站降雨量多少？",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N04"
+      }
+    },
+    {
+      "id": "DG-N05",
+      "set": "data-governance-routing-list",
+      "name": "不可问-闸门当前开度是多少？泵站是否在运行？",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N05"
+      }
+    },
+    {
+      "id": "DG-N06",
+      "set": "data-governance-routing-list",
+      "name": "不可问-查一下 XX 表的数据",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N06"
+      }
+    },
+    {
+      "id": "DG-N07",
+      "set": "data-governance-routing-list",
+      "name": "不可问-帮我发一个预警通知",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DG-N07"
+      }
+    },
+    {
+      "id": "0",
+      "set": "routing-evals-v1",
+      "name": "data-anomaly-detection",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-0"
+      }
+    },
+    {
+      "id": "1",
+      "set": "routing-evals-v1",
+      "name": "missing-data-check",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-1"
+      }
+    },
+    {
+      "id": "2",
+      "set": "routing-evals-v1",
+      "name": "data-quality-overview",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-2"
+      }
+    },
+    {
+      "id": "3",
+      "set": "routing-evals-v1",
+      "name": "offline-stagnation",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-3"
+      }
+    },
+    {
+      "id": "4",
+      "set": "routing-evals-v1",
+      "name": "data-interpolation",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-4"
+      }
+    },
+    {
+      "id": "5",
+      "set": "routing-evals-v1",
+      "name": "general-data-problem",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-5"
+      }
+    },
+    {
+      "id": "0",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-all-may",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-0"
+      }
+    },
+    {
+      "id": "1",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-0p029",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-1"
+      }
+    },
+    {
+      "id": "2",
+      "set": "routing-evals-v2",
+      "name": "mad-rsvr-rz-500-spike",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-2"
+      }
+    },
+    {
+      "id": "3",
+      "set": "routing-evals-v2",
+      "name": "pressure-800-anomaly",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-3"
+      }
+    },
+    {
+      "id": "4",
+      "set": "routing-evals-v2",
+      "name": "rainfall-120mm-extreme",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-4"
+      }
+    },
+    {
+      "id": "5",
+      "set": "routing-evals-v2",
+      "name": "inq-300-anomaly",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-5"
+      }
+    },
+    {
+      "id": "6",
+      "set": "routing-evals-v2",
+      "name": "missing-pressure-table",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-6"
+      }
+    },
+    {
+      "id": "7",
+      "set": "routing-evals-v2",
+      "name": "missing-rsvr-station-128",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-7"
+      }
+    },
+    {
+      "id": "8",
+      "set": "routing-evals-v2",
+      "name": "missing-pptn-june-drop",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-8"
+      }
+    },
+    {
+      "id": "9",
+      "set": "routing-evals-v2",
+      "name": "river-table-empty",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-9"
+      }
+    },
+    {
+      "id": "10",
+      "set": "routing-evals-v2",
+      "name": "offline-max-907h",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-10"
+      }
+    },
+    {
+      "id": "11",
+      "set": "routing-evals-v2",
+      "name": "offline-equipment-104",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-11"
+      }
+    },
+    {
+      "id": "12",
+      "set": "routing-evals-v2",
+      "name": "offline-equipment-239",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-12"
+      }
+    },
+    {
+      "id": "13",
+      "set": "routing-evals-v2",
+      "name": "offline-mttr-calculation",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-13"
+      }
+    },
+    {
+      "id": "14",
+      "set": "routing-evals-v2",
+      "name": "offline-duration-grading",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-14"
+      }
+    },
+    {
+      "id": "15",
+      "set": "routing-evals-v2",
+      "name": "quality-score-equipment-139",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-15"
+      }
+    },
+    {
+      "id": "16",
+      "set": "routing-evals-v2",
+      "name": "quality-compare-139-140",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-16"
+      }
+    },
+    {
+      "id": "17",
+      "set": "routing-evals-v2",
+      "name": "quality-ranking-low-scores",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-17"
+      }
+    },
+    {
+      "id": "18",
+      "set": "routing-evals-v2",
+      "name": "quality-trend-weekly",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-18"
+      }
+    },
+    {
+      "id": "19",
+      "set": "routing-evals-v2",
+      "name": "stagnation-pressure-e01",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-19"
+      }
+    },
+    {
+      "id": "20",
+      "set": "routing-evals-v2",
+      "name": "stagnation-all-may",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-20"
+      }
+    },
+    {
+      "id": "21",
+      "set": "routing-evals-v2",
+      "name": "rsvr-june-data-stoppage",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-21"
+      }
+    },
+    {
+      "id": "22",
+      "set": "routing-evals-v2",
+      "name": "gnss-june-drop",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-22"
+      }
+    },
+    {
+      "id": "23",
+      "set": "routing-evals-v2",
+      "name": "interpolation-rsvr-missing",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-23"
+      }
+    },
+    {
+      "id": "24",
+      "set": "routing-evals-v2",
+      "name": "interpolation-pressure-linear",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-24"
+      }
+    },
+    {
+      "id": "25",
+      "set": "routing-evals-v2",
+      "name": "correlation-pressure-percolation",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-25"
+      }
+    },
+    {
+      "id": "26",
+      "set": "routing-evals-v2",
+      "name": "correlation-rainfall-waterlevel",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-26"
+      }
+    },
+    {
+      "id": "27",
+      "set": "routing-evals-v2",
+      "name": "extreme-event-vs-anomaly-may15",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-27"
+      }
+    },
+    {
+      "id": "28",
+      "set": "routing-evals-v2",
+      "name": "extreme-event-jan-0p029",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-28"
+      }
+    },
+    {
+      "id": "29",
+      "set": "routing-evals-v2",
+      "name": "flood-data-stale",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-29"
+      }
+    },
+    {
+      "id": "30",
+      "set": "routing-evals-v2",
+      "name": "report-daily-quality",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-30"
+      }
+    },
+    {
+      "id": "31",
+      "set": "routing-evals-v2",
+      "name": "report-monthly-anomaly",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-31"
+      }
+    },
+    {
+      "id": "32",
+      "set": "routing-evals-v2",
+      "name": "report-score-all-devices",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-32"
+      }
+    },
+    {
+      "id": "33",
+      "set": "routing-evals-v2",
+      "name": "writeback-fix-anomaly",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-33"
+      }
+    },
+    {
+      "id": "34",
+      "set": "routing-evals-v2",
+      "name": "writeback-fill-missing",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-34"
+      }
+    },
+    {
+      "id": "35",
+      "set": "routing-evals-v2",
+      "name": "writeback-offline-status",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-35"
+      }
+    },
+    {
+      "id": "36",
+      "set": "routing-evals-v2",
+      "name": "device-context-equipment-140",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-36"
+      }
+    },
+    {
+      "id": "37",
+      "set": "routing-evals-v2",
+      "name": "device-context-offline-239",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-37"
+      }
+    },
+    {
+      "id": "38",
+      "set": "routing-evals-v2",
+      "name": "missing-pressure-134-10days",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-38"
+      }
+    },
+    {
+      "id": "39",
+      "set": "routing-evals-v2",
+      "name": "anomaly-stats-overview",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-39"
+      }
+    },
+    {
+      "id": "40",
+      "set": "routing-evals-v2",
+      "name": "quality-scoring-by-manufacturer",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-40"
+      }
+    },
+    {
+      "id": "41",
+      "set": "routing-evals-v2",
+      "name": "stagnation-critical-level",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-41"
+      }
+    },
+    {
+      "id": "42",
+      "set": "routing-evals-v2",
+      "name": "missing-pattern-recognition",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-42"
+      }
+    },
+    {
+      "id": "43",
+      "set": "routing-evals-v2",
+      "name": "interpolation-confidence",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-43"
+      }
+    },
+    {
+      "id": "44",
+      "set": "routing-evals-v2",
+      "name": "percolation-extreme-31",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-44"
+      }
+    },
+    {
+      "id": "EVAL1",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL1: 渗压突变检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL1"
+      }
+    },
+    {
+      "id": "EVAL2",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL2: 闸门异常检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL2"
+      }
+    },
+    {
+      "id": "EVAL3",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL3: 泵站三相不平衡检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL3"
+      }
+    },
+    {
+      "id": "EVAL4",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL4: 水质超标检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL4"
+      }
+    },
+    {
+      "id": "EVAL5",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL5: 白蚁重度危害检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL5"
+      }
+    },
+    {
+      "id": "EVAL6",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL6: 告警分析检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL6"
+      }
+    },
+    {
+      "id": "EVAL7",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL7: 漏检率检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL7"
+      }
+    },
+    {
+      "id": "EVAL8",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL8: 设备离线率检出",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL8"
+      }
+    },
+    {
+      "id": "EVAL9",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL9: 无误报",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL9"
+      }
+    },
+    {
+      "id": "EVAL10",
+      "set": "inspection-eval-criteria",
+      "name": "EVAL10: 边界规则完整性",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EVAL10"
+      }
+    },
+    {
+      "id": "WL-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "水库水情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WL-POS-1"
+      }
+    },
+    {
+      "id": "WL-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "水库水情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WL-NEG-1"
+      }
+    },
+    {
+      "id": "WL-POS-2",
+      "set": "inspection-eval-cases",
+      "name": "水库水情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WL-POS-2"
+      }
+    },
+    {
+      "id": "WL-NEG-2",
+      "set": "inspection-eval-cases",
+      "name": "水库水情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WL-NEG-2"
+      }
+    },
+    {
+      "id": "RAIN-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "雨量监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-RAIN-POS-1"
+      }
+    },
+    {
+      "id": "RAIN-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "雨量监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-RAIN-NEG-1"
+      }
+    },
+    {
+      "id": "PRES-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "渗压监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PRES-POS-1"
+      }
+    },
+    {
+      "id": "PRES-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "渗压监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PRES-NEG-1"
+      }
+    },
+    {
+      "id": "PRES-SPIKE-1",
+      "set": "inspection-eval-cases",
+      "name": "渗压监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PRES-SPIKE-1"
+      }
+    },
+    {
+      "id": "PERC-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "渗流监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PERC-POS-1"
+      }
+    },
+    {
+      "id": "PERC-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "渗流监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PERC-NEG-1"
+      }
+    },
+    {
+      "id": "GNSS-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "位移监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GNSS-POS-1"
+      }
+    },
+    {
+      "id": "GNSS-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "位移监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GNSS-NEG-1"
+      }
+    },
+    {
+      "id": "GATE-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "闸门工情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GATE-POS-1"
+      }
+    },
+    {
+      "id": "GATE-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "闸门工情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GATE-NEG-1"
+      }
+    },
+    {
+      "id": "GATE-POS-2",
+      "set": "inspection-eval-cases",
+      "name": "闸门工情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GATE-POS-2"
+      }
+    },
+    {
+      "id": "GATE-NEG-2",
+      "set": "inspection-eval-cases",
+      "name": "闸门工情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-GATE-NEG-2"
+      }
+    },
+    {
+      "id": "PUMP-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "泵站工情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PUMP-POS-1"
+      }
+    },
+    {
+      "id": "PUMP-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "泵站工情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PUMP-NEG-1"
+      }
+    },
+    {
+      "id": "PUMP-POS-2",
+      "set": "inspection-eval-cases",
+      "name": "泵站工情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-PUMP-POS-2"
+      }
+    },
+    {
+      "id": "WQ-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "水质监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WQ-POS-1"
+      }
+    },
+    {
+      "id": "WQ-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "水质监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-WQ-NEG-1"
+      }
+    },
+    {
+      "id": "SOIL-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "土壤墒情-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-SOIL-POS-1"
+      }
+    },
+    {
+      "id": "SOIL-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "土壤墒情-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-SOIL-NEG-1"
+      }
+    },
+    {
+      "id": "TERM-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "白蚁监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-TERM-POS-1"
+      }
+    },
+    {
+      "id": "TERM-POS-2",
+      "set": "inspection-eval-cases",
+      "name": "白蚁监测-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-TERM-POS-2"
+      }
+    },
+    {
+      "id": "TERM-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "白蚁监测-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-TERM-NEG-1"
+      }
+    },
+    {
+      "id": "INSP-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "巡检结果-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-INSP-POS-1"
+      }
+    },
+    {
+      "id": "INSP-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "巡检结果-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-INSP-NEG-1"
+      }
+    },
+    {
+      "id": "EQUIP-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "设备状态-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EQUIP-POS-1"
+      }
+    },
+    {
+      "id": "EQUIP-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "设备状态-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EQUIP-NEG-1"
+      }
+    },
+    {
+      "id": "ALERT-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "告警分析-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-ALERT-POS-1"
+      }
+    },
+    {
+      "id": "ALERT-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "告警分析-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-ALERT-NEG-1"
+      }
+    },
+    {
+      "id": "MAD-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "MAD统计异常-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-MAD-POS-1"
+      }
+    },
+    {
+      "id": "MAD-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "MAD统计异常-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-MAD-NEG-1"
+      }
+    },
+    {
+      "id": "CORR-POS-1",
+      "set": "inspection-eval-cases",
+      "name": "关联异常-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-CORR-POS-1"
+      }
+    },
+    {
+      "id": "CORR-NEG-1",
+      "set": "inspection-eval-cases",
+      "name": "关联异常-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-CORR-NEG-1"
+      }
+    },
+    {
+      "id": "CORR-POS-2",
+      "set": "inspection-eval-cases",
+      "name": "关联异常-should_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-CORR-POS-2"
+      }
+    },
+    {
+      "id": "CORR-NEG-2",
+      "set": "inspection-eval-cases",
+      "name": "关联异常-should_not_report",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-CORR-NEG-2"
+      }
+    },
+    {
+      "id": "QG-RED-1",
+      "set": "inspection-eval-cases",
+      "name": "水库水情（质量闸）-quality_gate",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-QG-RED-1"
+      }
+    },
+    {
+      "id": "QG-PLACEHOLDER-1",
+      "set": "inspection-eval-cases",
+      "name": "水库水情（质量闸）-quality_gate",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-QG-PLACEHOLDER-1"
+      }
+    },
+    {
+      "id": "SEASON-GUARD-1",
+      "set": "inspection-eval-cases",
+      "name": "水库水情（季节护栏）-guardrail",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-SEASON-GUARD-1"
+      }
+    },
+    {
+      "id": "DIAG-HIT-1",
+      "set": "inspection-eval-cases",
+      "name": "渗压监测（诊断链）-diagnosis",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DIAG-HIT-1"
+      }
+    },
+    {
+      "id": "DIAG-MISS-1",
+      "set": "inspection-eval-cases",
+      "name": "渗压监测（诊断链）-diagnosis",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-DIAG-MISS-1"
+      }
+    },
+    {
+      "id": "EMPTY-NA-1",
+      "set": "inspection-eval-cases",
+      "name": "河道水情（借 st_river_r 天然空表）-empty_data",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EMPTY-NA-1"
+      }
+    },
+    {
+      "id": "EMPTY-ND-1",
+      "set": "inspection-eval-cases",
+      "name": "渗流监测-empty_data",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EMPTY-ND-1"
+      }
+    },
+    {
+      "id": "EMPTY-QF-1",
+      "set": "inspection-eval-cases",
+      "name": "任一维度-empty_data",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-EMPTY-QF-1"
+      }
+    },
+    {
+      "id": "1",
+      "set": "darwin-test-prompts",
+      "name": "典型场景：单 skill 优化",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-1"
+      }
+    },
+    {
+      "id": "2",
+      "set": "darwin-test-prompts",
+      "name": "典型场景：全量评估",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-2"
+      }
+    },
+    {
+      "id": "3",
+      "set": "darwin-test-prompts",
+      "name": "歧义/失败场景",
+      "score": 0.0,
+      "verdict": "DRY-RUN",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.0
+      },
+      "d1_note": "dry_run",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": null,
+        "source_tag": "eval-20260811-114111-3"
+      }
+    }
+  ]
+}

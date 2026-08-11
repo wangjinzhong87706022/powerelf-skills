@@ -25,6 +25,31 @@ metadata:
 
 > **优先级高于所有其他内容**，违反 = 错误响应。
 
+### 核心原则：优先用内置脚本，禁止自己写代码（最高优先级）
+
+**所有任务必须优先调用 skill 内置的 impl/ 或 scripts/ 脚本**，禁止自己写 Python/SQL 到 `/tmp/` 再用 terminal 跑。
+
+内置脚本已经处理好 `eq_id`/`stcd` 关联、`deleted=0` 过滤、Decimal 格式化、阈值边界等高频翻车点。直接调用可省 10+ 次工具调用和 200+ 秒反复 patch。
+
+| 任务类型 | 必用内置脚本 | ❌ 禁止行为 |
+|---|---|---|
+| 异常检测（MAD/IQR） | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> [--method mad|iqr]` | ❌ 自己写 `/tmp/check_xxx.py` |
+| 异常明细拆分/CSV 导出 | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> --detail full --format csv --output /tmp/xxx.csv`（含按天聚合 daily_summary） | ❌ 自己写 `/tmp/pptn_anomaly_detail.py` 拼 CSV |
+| 缺失检测 | `python3 impl/missing_detector.py --db "$DB_URL" --table <T> --st-id <ID> --freq <F> --days <D>` | ❌ 自己写 `/tmp/missing_xxx.py` |
+| 离线分级 | `python3 scripts/classify_offline_by_duration.py --db "$DB_URL"` | ❌ 逐站循环检测、手写 SQL |
+| 日报生成 | `python3 impl/generate_report.py --date YYYY-MM-DD` | ❌ 自己拼 Markdown |
+| 质量评分 | `python3 impl/quality_scorer.py --db "$DB_URL"`（详见 `references/analysis-guide.md`） | ❌ 自己实现评分逻辑 |
+
+**判定流程**（每次对话第一步必须执行）：
+
+1. **识别任务类型**：异常检测 / 缺失检测 / 离线分级 / 日报 / 评分 / 概览
+2. **查上表**：命中 → 直接调内置脚本（跳到"工具命令"段复制命令行参数）
+3. **未命中**：才允许参考 `references/` 自己写代码，但必须遵守下方"写代码前必读"
+
+**自检闸**（交付前必问自己）：
+- ❓ 我是不是又自己在 `/tmp/` 写脚本了？→ 删掉，改调内置脚本
+- ❓ 内置脚本参数够不够？→ 不够先看 `--help`，再看 `references/analysis-guide.md`，最后才考虑 wrap
+
 ### 离线分级任务（最高优先级）
 
 当用户询问任何与**离线设备分级**相关的问题时（关键词：离线/offline/批量分级/所有离线设备），**必须**：
