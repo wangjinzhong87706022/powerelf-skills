@@ -121,13 +121,13 @@ CREATE TABLE sem_node (
   name          VARCHAR(255) NOT NULL               COMMENT '节点显示名',
   content       TEXT                    DEFAULT NULL COMMENT '正文（规则全文/案例摘要/条款原文），子图召回时序列化注入',
   properties    JSON                  DEFAULT NULL COMMENT '扩展属性: 来源/分类/版本/标签/向量化的文本字段',
-  embedding     BLOB                    DEFAULT NULL COMMENT 'content 的向量（维度对齐所选 embedding 模型）, 用于语义召回',
+  embedding     BLOB                    DEFAULT NULL COMMENT 'content 的向量（维度对齐所选 embedding 模型）, 用于语义召回。⚠️ BLOB 无 ANN 索引，仅作 Phase 1 过渡；Phase 2 切 MySQL 9.0+ VECTOR 类型或 pgvector 以支持近邻检索',
   tenant_id     BIGINT       NOT NULL DEFAULT 1,
   deleted       BIT(1)       NOT NULL DEFAULT b'0',
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (node_id),
-  UNIQUE KEY uk_type_ref (node_type, ref_id),
+  UNIQUE KEY uk_type_ref (node_type, ref_id, deleted),  -- 含 deleted：软删后重建同来源节点不会被唯一键拒绝（经典软删+唯一键冲突规避）
   KEY idx_type (node_type),
   KEY idx_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='语义知识节点表 — 文档/条款/参数/案例/根因/技能/工具/处置';
@@ -147,7 +147,7 @@ CREATE TABLE sem_edge (
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_edge (from_node, to_node, edge_type),
+  UNIQUE KEY uk_edge (from_node, to_node, edge_type, deleted),  -- 含 deleted：避免「软删→重建同三元组」被唯一键拒绝；边可由 build 脚本重导，亦可直接硬删
   KEY idx_from (from_node, edge_type),
   KEY idx_to (to_node, edge_type),
   KEY idx_tenant (tenant_id)
@@ -230,7 +230,7 @@ Phase 1 阶段（1~2 周）可先手工维护一份 JSON 引用表（对齐路�
 
 ```
 新告警/新症状 → 提取症状特征文本
-             → 混合检索（BM25 关键词 + sem_node.embedding 向量，合并去重打分）
+             → 混合检索（关键词 LIKE+词频 + sem_node.embedding 向量，合并去重打分；关键词层非标准 BM25，见 §6.2）
              → 命中候选：sem_case（相似历史案例）/ sem_root_cause（候选根因）
              → 沿引用网络 BFS 拉小子图（references / implements / mitigated_by / constrains / relates_to）
              → 按相关性截断（每类 TOP3）
@@ -243,8 +243,8 @@ Phase 1 阶段（1~2 周）可先手工维护一份 JSON 引用表（对齐路�
 
 ### 6.2 实现要点
 
-- **检索层**：BM25 可用 SQL `LIKE` + 词频打分起步（MySQL 无内置 BM25），向量可用现有 LLM embedding；
-  量小（<1k 节点）时 BM25 + 关键词已够，向量作为 Phase 2 增强；
+- **检索层**：关键词检索可用 SQL `LIKE` + 词频打分起步（⚠️ 这**不是标准 BM25**——无 IDF、无文档长度归一；MySQL 无内置 BM25，<1k 节点够用，量大需引入全文索引或外挂真正的 BM25），向量可用现有 LLM embedding；
+  量小（<1k 节点）时关键词检索已够，向量作为 Phase 2 增强；
 - **子图 BFS**：复用 `lib/topology.py` 的 BFS 思路，但查询对象是 `sem_edge`——写一个
   `retrieve_subgraph(symptom_text, max_nodes=12)`，先检索命中的 sem_case/sem_root_cause，
   再沿引用网络取一跳关联（skill → tool → action）；
@@ -275,21 +275,21 @@ Phase 1 阶段（1~2 周）可先手工维护一份 JSON 引用表（对齐路�
 | P1-2 覆盖率指标 | sem_root_cause ↔ cases.json 维度对照：量化「知识盲区」（哪些根因无案例覆盖、哪些规则无工具支撑） |
 | P1-3 战术速赢 | 五段式报告模板承接 CASE/CAUSE/SKILL/TOOL 注入结果；告警时间窗聚类复用物理层 topo_alarm_event |
 | Phase 2 共享层 | `_shared/knowledge-graph/` 放 sem_node/sem_edge 建图脚本 + retrieve_subgraph + 检索工具，三模块共用 |
-| Phase 3 编排/分流 | 四段注入作为多步诊断 Agent 的上下文输入；大小模型分流：清晰症状走规则直判（BM25 命中高置信案例即直判） |
+| Phase 3 编排/分流 | 四段注入作为多步诊断 Agent 的上下文输入；大小模型分流：清晰症状走规则直判（关键词命中高置信案例即直判） |
 
 ---
 
 ## 八、落地清单（建议执行顺序）
 
 1. **本周**：建 `sem_node/sem_edge` 表（DDL 见 §4）；手工 JSON 引用表（§5.4）覆盖 inspection 13 规则 + 5 案例起步；
-2. **本周**：写 `retrieve_subgraph()`（先用 BM25，不引向量）并接进 inspection 诊断 Prompt；
+2. **本周**：写 `retrieve_subgraph()`（先用关键词 LIKE+词频，不引向量）并接进 inspection 诊断 Prompt；
 3. **第 2 周**：跑 cases.json 注入前/后对照，出 Phase 1 实验报告；PDF 源 A 人工抽取调度规程参数/条款入库；
 4. **第 3~4 周**：源 B/C 脚本化入库（rules→skill、impl→tool、inspection_runs→case），根因聚类人工确认 ≥20 个；
 5. **Phase 2**：抽 `_shared/knowledge-graph/` 共享层，YAML 化 + lint + 覆盖率指标，三模块接入。
 
 **风险与对策**：
 - PDF 条款结构化依赖人工确认 → 先只抽「参数表 + 明确条款」，其余留 `properties` 原文待后续；
-- 向量召回依赖 embedding 服务 → Phase 1 用 BM25，不阻塞 MVP；
+- 向量召回依赖 embedding 服务 → Phase 1 用关键词 LIKE+词频检索，不阻塞 MVP；
 - 物理层 364 节点与语义层节点 id 前缀不同 → `node_id` 统一 `{type}:{ref_id}` 格式，前缀天然隔离，查询按前缀过滤。
 
 
