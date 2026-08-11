@@ -121,4 +121,8 @@ python3 docs/build_eval_questions_master.py
 - `early-warning-v3-matrix` 中 74 条原文题目仅有标题（矩阵只存标题+场景+数据要求），
   prompt 字段为标题而非完整提问语句；
 - 29 条占位题面为补写内容，非原始测试问题；
-- 其余 6 个集合均为原文完整（prompt/expected_output 可直接使用）。
+- `data-governance-realdata-tests`（26 题）prompt 为真实题面，但 **20/26 题的 `expected_output` 为占位符「见文档预期」**，
+  不可用于自动判分，仅适合做 prompt 喂入或人工核对；
+- 其余 6 个集合（routing-list / routing-v1 / routing-v2 / inspection-eval-criteria / inspection-eval-cases / darwin）的 prompt/expected_output 可直接使用。
+
+> ⚠️ 因此「可直接喂给 runner 自动跑评测」仅对上述 6 个集合成立；early-warning 标题题与 realdata-tests 占位 expected 需人工补全后再用于自动评分。

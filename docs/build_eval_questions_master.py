@@ -51,8 +51,8 @@ def parse_early_warning_matrix():
             "expected_output": f"场景：{m.group(3).strip()}；数据要求：{m.group(4).strip()}",
             "prompt_source": "title-only",  # 题面全文未入库，仅标题
         })
-    # 全量 Q1~Q103 缺口（矩阵跳号）
-    gaps = [f"Q{q}" for q in range(1, 104) if q not in seen]
+    # 全量 Q1~Q103 缺口（矩阵跳号）；补零与 placeholder_ids 的 Q0xx 格式统一
+    gaps = [f"Q{q:03d}" for q in range(1, 104) if q not in seen]
     return evals, gaps
 
 
@@ -102,7 +102,8 @@ PLACEHOLDER_EARLY_WARNING = {
 # ---------- 2. data-governance docs/questions.md（可问/不可问清单） ----------
 def parse_questions_md():
     md = read("powerelf-data-governance/docs/questions.md")
-    evals, idx = [], 0
+    evals = []
+    idx_p = idx_n = 0  # 正例/负例各自独立计数，避免负例继承正例计数（曾导致 DG-N47..N53）
     mode = None  # pos / neg
     for line in md.splitlines():
         s = line.strip()
@@ -120,9 +121,9 @@ def parse_questions_md():
         if mode == "pos":
             if not m2 or m2.group(1).startswith("问题示例"):
                 continue
-            idx += 1
+            idx_p += 1
             evals.append({
-                "id": f"DG-P{idx:02d}",
+                "id": f"DG-P{idx_p:02d}",
                 "name": f"可问-{m2.group(2).strip()}",
                 "prompt": m2.group(1).strip(),
                 "expected_output": m2.group(2).strip(),
@@ -130,9 +131,9 @@ def parse_questions_md():
         else:
             if not m3 or m3.group(1).startswith("问题"):
                 continue
-            idx += 1
+            idx_n += 1
             evals.append({
-                "id": f"DG-N{idx:02d}",
+                "id": f"DG-N{idx_n:02d}",
                 "name": f"不可问-{m3.group(1).strip()[:24]}",
                 "prompt": m3.group(1).strip(),
                 "expected_output": f"应路由到 {m3.group(2).strip()}；原因：{m3.group(3).strip()}",
@@ -277,7 +278,7 @@ def build():
             "set_id": "data-governance-routing-list",
             "phase": "阶段2 数据治理 powerelf-data-governance",
             "source_files": ["powerelf-data-governance/docs/questions.md"],
-            "description": "可问/不可问路由清单：11 个能力模块正例 + 7 条负例（应路由到其他 skill）。",
+            "description": "可问/不可问路由清单：46 个正例（覆盖 11 个能力模块）+ 7 条负例（应路由到其他 skill）。",
             "gaps": [],
             "evals": dg_route,
         },
