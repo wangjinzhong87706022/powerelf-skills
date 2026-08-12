@@ -39,6 +39,14 @@ metadata:
 | 离线分级 | `python3 scripts/classify_offline_by_duration.py --db "$DB_URL"` | ❌ 逐站循环检测、手写 SQL |
 | 日报生成 | `python3 impl/generate_report.py --date YYYY-MM-DD` | ❌ 自己拼 Markdown |
 | 质量评分 | `python3 impl/quality_scorer.py --db "$DB_URL"`（详见 `references/analysis-guide.md`） | ❌ 自己实现评分逻辑 |
+| 指定表和测站检测 | `python3 impl/offline_detector.py --db "$DB_URL" --table <T> --st-id <ID> --threshold <秒>`（单站离线检测） | ❌ 自己写 `/tmp/check_st_xxx.py` |
+| 概览/总览分析 | `python3 impl/profiler.py --db "$DB_URL" --table <T>`（含概览/概览明细） | ❌ 自己写 `/tmp/overview_xxx.py` |
+| 环比/趋势分析 | `python3 impl/profiler.py --db "$DB_URL" --table <T> --compare-days 7`（对比近7天） | ❌ 自己拼环比 SQL |
+| 设备筛选/较差等级 | `python3 impl/quality_scorer.py --db "$DB_URL" --filter-grade D --top 10`（筛 D 级前 10） | ❌ 自己写筛选 SQL |
+| MTTR/时长计算 | `python3 impl/offline_detector.py --db "$DB_URL" --table <T> --st-id <ID> --mttr`（含 MTTR 输出） | ❌ 自己写时长 SQL |
+| 插值/缺失补全 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` §插值 自写，但**必须一次写对**（先读 schema.md 确认字段，再写） | ❌ 反复 patch 重跑 |
+| 连续相同值检测 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` 自写，但**必须一次写对** | ❌ 反复 patch 重跑 |
+| 趋势分析（改善/恶化） | `python3 impl/profiler.py --db "$DB_URL" --table <T> --trend 30d`（含趋势判定输出） | ❌ 自己写趋势 SQL |
 
 **判定流程**（每次对话第一步必须执行）：
 

@@ -1,0 +1,216 @@
+{
+  "eval_run_id": "hermes-eval-20260812-134857",
+  "evaluated_at": "2026-08-12T13:59:55.489737",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 4,
+  "skipped": {
+    "placeholder_reconstructed": 0,
+    "readiness_filter": 0,
+    "empty_prompt_or_expected": 0,
+    "max_questions_limit": 49
+  },
+  "overall_score": 0.684,
+  "overall_verdict": "PARTIAL",
+  "per_set_summary": {
+    "data-governance-routing-list": {
+      "count": 4,
+      "avg_score": 0.684,
+      "pass": 3,
+      "partial": 1,
+      "fail": 0
+    }
+  },
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0.667,
+      "fail_count": 1
+    },
+    "D2_routing": {
+      "avg": 0.875,
+      "fail_count": 0
+    },
+    "D3_tool_eff": {
+      "avg": 0.25,
+      "fail_count": 3
+    },
+    "D4_token_eff": {
+      "avg": 0.711,
+      "fail_count": 0
+    },
+    "D5_latency": {
+      "avg": 0.438,
+      "fail_count": 2
+    },
+    "D6_halluc": {
+      "avg": 1.0,
+      "fail_count": 0
+    },
+    "D7_completeness": {
+      "avg": 1.0,
+      "fail_count": 0
+    }
+  },
+  "results": [
+    {
+      "id": "DG-P01",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD 异常检测",
+      "score": 0.703,
+      "verdict": "PASS",
+      "dimensions": {
+        "D1_functional": 1.0,
+        "D2_routing": 1.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.526,
+        "D5_latency": 0.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "methods=['MAD'],task_type=anomaly_detection",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_134858_7c6dd0",
+        "duration_sec": 238.87,
+        "tool_call_count": 13,
+        "message_count": 27,
+        "input_tokens": 35155,
+        "output_tokens": 5110,
+        "cache_read_tokens": 287974,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "skill_view",
+          "skill_view",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "read_file",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P02",
+      "set": "data-governance-routing-list",
+      "name": "可问-分指标阈值检测",
+      "score": 0.459,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.0,
+        "D2_routing": 0.75,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.708,
+        "D5_latency": 0.752,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "methods=['threshold'],task_type=detection",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_135301_731327",
+        "duration_sec": 114.44,
+        "tool_call_count": 9,
+        "message_count": 20,
+        "input_tokens": 29343,
+        "output_tokens": 3146,
+        "cache_read_tokens": 200212,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "read_file",
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P03",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD + 变化率综合判定",
+      "score": 0.862,
+      "verdict": "PASS",
+      "dimensions": {
+        "D1_functional": 0.667,
+        "D2_routing": 0.75,
+        "D3_tool_eff": 1.0,
+        "D4_token_eff": 1.0,
+        "D5_latency": 1.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "methods=['MAD', 'change_rate', 'comprehensive'],task_type=judgment",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_135459_0363b1",
+        "duration_sec": 30.17,
+        "tool_call_count": 2,
+        "message_count": 6,
+        "input_tokens": 4089,
+        "output_tokens": 704,
+        "cache_read_tokens": 60285,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P04",
+      "set": "data-governance-routing-list",
+      "name": "可问-指定时间窗口检测",
+      "score": 0.711,
+      "verdict": "PASS",
+      "dimensions": {
+        "D1_functional": 1.0,
+        "D2_routing": 1.0,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.609,
+        "D5_latency": 0.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "methods=['time_window'],task_type=detection",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_135532_14b500",
+        "duration_sec": 260.15,
+        "tool_call_count": 15,
+        "message_count": 31,
+        "input_tokens": 14085,
+        "output_tokens": 6130,
+        "cache_read_tokens": 373086,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "write_file",
+          "terminal",
+          "write_file",
+          "terminal",
+          "write_file",
+          "terminal",
+          "write_file",
+          "terminal",
+          "terminal",
+          "terminal"
+        ]
+      }
+    }
+  ]
+}

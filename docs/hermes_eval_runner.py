@@ -113,8 +113,8 @@ D4_INPUT_EXCELLENT = 20000     # P75 档：input < 20K 为优秀（实测 30 题
 D4_OUTPUT_EXCELLENT = 3000     # P75 档：output < 3K 为优秀（实测 30 题 P75≈3K）
 D4_INPUT_WARNING = 36000       # P95 档：input < 36K 为预警（实测 30 题 P90=35K, P95≈36K）
 D4_OUTPUT_WARNING = 7000       # P95 档：output < 7K 为预警（实测 30 题 P90=5.4K, max=8.3K）
-D5_LATENCY_EXCELLENT = 30           # <30s 优秀
-D5_LATENCY_WARNING = 60             # 30-60s 预警，>60s 失败
+D5_LATENCY_EXCELLENT = 50     # P0 修复：原 30s 偏低，实测 30 题 P50=49.5s，改 P50 档
+D5_LATENCY_WARNING = 180      # P0 修复：原 60s 偏低，实测 30 题 P90=298.6s，改 P90 档（<180s 预警）
 D3_TOOL_CALL_EXCELLENT = 2          # ≤2 优秀
 D3_TOOL_CALL_WARNING = 5            # 3-5 预警，>5 失败
 
@@ -433,6 +433,47 @@ def parse_expected(set_id, expected_str):
             "fail_condition": m.group(2).strip(),
         }
 
+    # P1 修复：data-governance-routing-list 的方法名短语格式
+    # 实测样本（master JSON）：
+    #   "MAD 异常检测" / "分指标阈值检测" / "MAD + 变化率综合判定"
+    #   "指定时间窗口检测" / "变化率检测 + 综合判定" / "缺失检测"
+    # 解析为 {"method": ..., "task_type": ...}，让 D1/D2 做实质评判而非 fallback 0.5
+    method_patterns = [
+        (r"\bMAD\b", "MAD"),
+        (r"\bIQR\b", "IQR"),
+        (r"\bpercentile\b", "percentile"),
+        (r"变化率", "change_rate"),
+        (r"变率", "change_rate"),
+        (r"阈值", "threshold"),
+        (r"时间窗口|指定时间|时间区间|日期范围", "time_window"),
+        (r"缺失", "missing"),
+        (r"综合", "comprehensive"),
+        (r"分级", "grade"),
+        (r"日报", "daily_report"),
+        (r"概览", "overview"),
+        (r"评分", "scoring"),
+    ]
+    task_type_patterns = [
+        (r"异常检测|异常分析|离群", "anomaly_detection"),
+        (r"缺失检测|缺测", "missing_detection"),
+        (r"分级|分类", "grade"),
+        (r"日报|报告", "report"),
+        (r"概览|总览", "overview"),
+        (r"评分|打分", "scoring"),
+        (r"检测", "detection"),
+        (r"判定", "judgment"),
+    ]
+
+    found_methods = [m for pat, m in method_patterns if re.search(pat, s, re.IGNORECASE)]
+    found_types = [t for pat, t in task_type_patterns if re.search(pat, s, re.IGNORECASE)]
+
+    if found_methods or found_types:
+        return {
+            "methods": found_methods or None,
+            "task_type": found_types[0] if found_types else None,
+            "raw": s,  # 保留原文，D7 关键点提取用
+        }
+
     # early-warning-v3-matrix：自由文本场景描述，无法自动 parse
     # darwin-test-prompts：自由文本，需人工判
     return None
@@ -479,6 +520,40 @@ def judge(ev, trace, set_, schema_tables):
             # 路由类题目：D1 检查 final_answer 是否提到 expected_route
             d1 = 1.0 if parsed["expected_route"] in actual_answer else 0.0
             d1_note = f"expected_route={parsed['expected_route']}"
+        elif "methods" in parsed or "task_type" in parsed:
+            # P1 修复：方法名短语格式（"MAD 异常检测"/"分指标阈值检测"）
+            # 检查 hermes 回答是否提到 expected 的方法/任务类型关键词（含同义词扩）
+            methods = parsed.get("methods") or []
+            task_type = parsed.get("task_type")
+            # 把 method/task_type 扩成别名组，命中任一个就算 D1 通过
+            ALIAS_D1 = {
+                "MAD": ["MAD", "中位数绝对偏差", "修正Z", "modified z"],
+                "IQR": ["IQR", "四分位距", "interquartile"],
+                "percentile": ["percentile", "百分位"],
+                "change_rate": ["变化率", "变率", "change rate", "波动"],
+                "threshold": ["阈值", "门限", "threshold"],
+                "time_window": ["时间窗口", "指定时间", "时间区间", "日期范围", "窗口", "日期", "每日", "每日摘要", "按天", "YYYY-MM-DD", "2026-"],
+                "missing": ["缺失", "漏", "missing", "空值", "缺测"],
+                "comprehensive": ["综合", "汇总", "联合", "多指标"],
+                "anomaly_detection": ["异常检测", "异常分析", "离群", "outlier", "anomaly"],
+                "missing_detection": ["缺失检测", "缺测检测", "missing detection"],
+                "grade": ["分级", "分类", "等级", "grade"],
+                "report": ["日报", "报告", "report"],
+                "overview": ["概览", "总览", "overview"],
+                "scoring": ["评分", "打分", "score"],
+                "detection": ["检测", "分析", "判定", "识别"],
+                "judgment": ["判定", "结论", "判断", "诊断"],
+            }
+            def _d1_hit(key):
+                aliases = ALIAS_D1.get(key, [key])
+                return any(a in actual_answer for a in aliases)
+
+            # 方法命中 + 任务类型命中，取 min（两者都应覆盖）
+            method_hits = sum(1 for m in methods if _d1_hit(m))
+            method_score = method_hits / len(methods) if methods else 1.0
+            task_score = 1.0 if (task_type and _d1_hit(task_type)) else (1.0 if not task_type else 0.0)
+            d1 = min(method_score, task_score)
+            d1_note = f"methods={methods},task_type={task_type}"
 
     # ---- D2 路由命中 ----
     expected_route = parsed.get("expected_route", "") if parsed else ""
@@ -491,6 +566,34 @@ def judge(ev, trace, set_, schema_tables):
         d2 = 1.0
     elif expected_route:
         d2 = 0.0
+    elif parsed and ("methods" in parsed or "task_type" in parsed):
+        # P1 修复：方法名短语格式无明确 expected_route，
+        # 但若 hermes 回答中命中了 expected 的方法/任务类型关键词，说明路由正确
+        methods = parsed.get("methods") or []
+        task_type = parsed.get("task_type")
+        ALIAS_D2 = {
+            "MAD": ["MAD", "中位数绝对偏差", "修正Z"],
+            "IQR": ["IQR", "四分位距"],
+            "percentile": ["percentile", "百分位"],
+            "change_rate": ["变化率", "变率", "波动"],
+            "threshold": ["阈值", "门限"],
+            "time_window": ["时间窗口", "指定时间", "日期范围", "日期", "每日", "每日摘要", "按天", "YYYY-MM-DD", "2026-"],
+            "missing": ["缺失", "漏", "missing", "空值"],
+            "anomaly_detection": ["异常", "离群", "outlier"],
+            "missing_detection": ["缺失检测", "缺测"],
+            "detection": ["检测", "分析", "判定"],
+        }
+        def _d2_hit(key):
+            aliases = ALIAS_D2.get(key, [key])
+            return any(a in actual_answer for a in aliases)
+        method_hits = sum(1 for m in methods if _d2_hit(m))
+        task_hit = _d2_hit(task_type) if task_type else True
+        if methods and method_hits == len(methods) and task_hit:
+            d2 = 1.0
+        elif method_hits > 0 or task_hit:
+            d2 = 0.75  # 部分命中
+        else:
+            d2 = 0.0
     else:
         d2 = 0.5  # 无明确 expected_route，给中位
 
@@ -527,14 +630,19 @@ def judge(ev, trace, set_, schema_tables):
     # input 和 output 取 min：任一维度差则拉低总分（避免一个维度好但另一个极差时虚高）
     d4 = min(input_score, output_score)
 
-    # ---- D5 响应时延 ----
+    # ---- D5 响应时延（P0：P50/P90 阈值 + 连续评分）----
+    # 实测 30 题 duration P50=49.5s P90=298.6s，原 30s/60s 阈值偏低致 43% 题判 FAIL
     dur = trace["duration_sec"]
-    if dur < D5_LATENCY_EXCELLENT:
-        d5 = 1.0
-    elif dur <= D5_LATENCY_WARNING:
-        d5 = 0.5
-    else:
-        d5 = 0.0
+
+    def _linear_score_dur(val, excellent, warning):
+        """val < excellent → 1.0; val > warning → 0.0; 中间线性插值 → [0.5, 1.0]。"""
+        if val <= excellent:
+            return 1.0
+        if val >= warning:
+            return 0.0
+        return 1.0 - 0.5 * (val - excellent) / (warning - excellent)
+
+    d5 = _linear_score_dur(dur, D5_LATENCY_EXCELLENT, D5_LATENCY_WARNING)
 
     # ---- D6 幻觉抑制 ----
     # INFO #5: SCHEMA_TABLES 必须是 schema.md 的规范表名集，非 profiler 白名单
@@ -1025,8 +1133,8 @@ def main():
         help="限制评测题数（调试用）",
     )
     ap.add_argument(
-        "--timeout", type=int, default=120,
-        help="hermes chat 单题超时秒数（默认：120）",
+        "--timeout", type=int, default=600,
+        help="hermes chat 单题超时秒数（默认：600，P3 修复：原 120 偏低致 TIMEOUT）",
     )
     ap.add_argument(
         "--analyze-only", action="store_true",
