@@ -1,6 +1,6 @@
 ---
 name: darwin-skill
-description: "Darwin Skill 2.0 (达尔文.skill 2.0): autonomous skill optimizer, v2.0 integrates Microsoft Research SkillLens (arXiv 2605.23899) 9-dim rubric + SkillOpt (arXiv 2605.23904) validation-gated design + human-in-the-loop checkpoints. Evaluates SKILL.md files using a 9-dimension rubric (structure + effectiveness + meta-skill blacklists), runs hill-climbing with git version control, spawns independent judge agents for blind evaluation, validates improvements through test prompts with auto-break on diminishing returns, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\"."
+description: "达尔文 skill 优化器 v2.0：用 9 维 rubric 评估 SKILL.md 质量，hill-climbing 循环改进，git 版本控制 + 独立子 agent 盲评 + 测试验证。触发词：优化 skill、skill 评分、自动优化、skill 质量检查、达尔文、darwin、帮我改改 skill、skill 怎么样、skill review。"
 ---
 
 # Darwin Skill 2.0
@@ -112,7 +112,7 @@ frontmatter 触发词、花叔生态内部 skill 名引用、明确标注 runtim
 
 ```
 1. 确认优化范围：
-   - 全部skills → 扫描 .claude/skills/*/SKILL.md
+   - 全部 skills → 扫描 {skill 目录}/*/SKILL.md
    - 指定skills → 用户指定列表
 2. 创建 git 分支：auto-optimize/YYYYMMDD-HHMM
 3. 初始化 results.tsv（如不存在）
@@ -242,7 +242,7 @@ for each skill:
    else: git stash pop 恢复
 ```
 
-这解决了 hill-climbing 的局部最优问题——有时候需要「先拆后建」才能突破瓶颈。
+这解决了 hill-climbing 的局部最优问题——当微调失效时，完整重写是唯一出路。
 **🔴 CHECKPOINT · 🛑 STOP：必须征得用户同意后才执行。**
 
 ### Phase 3: 汇总报告
@@ -284,7 +284,7 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 ```
 
 新增 `eval_mode` 列：`full_test`（跑了子agent测试）或 `dry_run`（模拟推演）。
-文件位置：`.claude/skills/darwin-skill/results.tsv`
+文件位置：`{skill 目录}/darwin-skill/results.tsv`
 
 ---
 
@@ -419,68 +419,61 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 > "You write the goals and constraints in program.md; let an agent generate and test code deltas indefinitely; keep only what measurably improves the objective."
 > — Karpathy, autoresearch
 
-本skill的对应关系：
-- **program.md** → 本文件（评估rubric和约束规则）
-- **train.py** → 每个SKILL.md
-- **val_bpb** → 9维加权总分（含实测表现 + meta-skill 反例黑名单）
-- **git ratchet** → 只保留有改进的commit
-- **test set** → 每个skill的test-prompts.json
-
-区别：增加了人在回路（autoresearch是全自主的，skill优化需要人的判断力），以及双重评估机制（结构+效果），因为skill的「好坏」比loss数值更微妙。
+对应：program.md → 本 rubric，train.py → SKILL.md，val_bpb → 9 维总分，git ratchet → 只保留改进的 commit。
+区别：增加人在回路 + 双重评估（结构 + 效果），因为 skill 的「好坏」比 loss 数值更微妙。
 
 ---
 
-## 成果卡片生成（Result Card）
+## 成果输出（Phase 3 交付物）
 
-每个skill优化完成后（或全量汇总后），自动生成视觉成果卡片，截图保存为PNG。
+每个 skill 优化完成后，在 Phase 3 生成结构化报告。默认输出为终端 ASCII 表格（零依赖、即开即用）；如需视觉卡片，使用可选的 HTML 模板流程。
 
-### 卡片模板
+### 默认：ASCII 报告
 
-模板位置：`templates/result-card.html`
-
-3种风格，每次随机选择一种：
-
-| 风格 | CSS类 | URL hash | 视觉特点 |
-|------|--------|----------|---------|
-| Warm Swiss | `.theme-swiss` | `#swiss` | 暖白底+赤陶橙，Inter字体，干净网格 |
-| Dark Terminal | `.theme-terminal` | `#terminal` | 近黑底+荧光绿，等宽字体，扫描线 |
-| Newspaper | `.theme-newspaper` | `#newspaper` | 暖白纸+深红，衬线字体，双栏编辑风 |
-
-### 生成流程
+在 Phase 3 汇总报告中直接输出：
 
 ```
-1. 复制 templates/result-card.html 到临时工作文件
-2. 用 sed/编辑工具 替换占位数据：
-   - data-field="skill-name" → 实际skill名
-   - data-field="score-before/after/delta" → 实际分数
-   - 9个维度的 dim-bar-before/after width → 实际百分比（若模板仍是旧 8 维布局，加一行 dim9 反例黑名单条目）
-   - data-field="improvement-1/2/3" → 实际改进摘要
-   - data-field="date" → 当前日期
-3. 随机选择风格：hash 设为 swiss/terminal/newspaper 之一
-4. 用 scripts/screenshot.mjs 截图（2x 高清，只截 .card 元素，自动 open 图片）：
-   node .claude/skills/darwin-skill/scripts/screenshot.mjs \
-     /abs/path/to/card.html /abs/path/to/output.png
-   # 回退方案（脚本失败时）：
-   npx playwright screenshot "file:///path/to/card.html#[theme]" \
-     output.png --viewport-size=960,1280 --wait-for-timeout=2000
-5. 提示用户查看成果卡片 PNG
+=== Darwin Skill 优化报告 ===
+日期: YYYY-MM-DD
 
-### 资源文件速查
+分数变化:
+┌──────────────────┬────────┬────────┬────────┐
+│ Skill            │ Before │ After  │ Δ      │
+├──────────────────┼────────┼────────┼────────┤
+│ skill-a          │ 72     │ 83     │ +11    │
+│ skill-b          │ 78     │ 87     │ +9     │
+├──────────────────┼────────┼────────┼────────┤
+│ 平均             │ 75     │ 85     │ +10    │
+└──────────────────┴────────┴────────┴────────┘
+
+维度短板 → 改进映射:
+  skill-a: dim3(6→9) 补充三段式 fallback 表
+  skill-b: dim5(7→9) 软化措辞→硬性指令
+
+验证统计:
+  full_test: A 次 | dry_run: B 次 | keep: X | revert: Z
+```
+
+### 可选：HTML 视觉卡片
+
+需要截图分享时，用 Playwright 从 HTML 模板生成 PNG。模板需单独安装（不随 skill 分发，避免体积膨胀）：
+
+```bash
+# 安装模板（一次性）：
+npx skills add darwin-skill-templates  # 或手动下载 HTML 模板到 templates/ 目录
+
+# 生成卡片：
+npx playwright screenshot "file:///path/to/card.html#swiss" \
+  output.png --viewport-size=960,1280 --wait-for-timeout=2000
+```
+
+模板仓库：github.com/alchaincyf/darwin-skill/templates/
+
+### 资源文件
 
 | 路径 | 用途 |
 |---|---|
-| `templates/result-card.html` | 3风格主模板（swiss/terminal/newspaper，hash切换） |
-| `templates/result-card-dark.html` / `-white.html` | 单一风格替代模板（需要锁定风格时用） |
-| `scripts/screenshot.mjs` | 2x 高清截图，只截 .card，自动 open |
-| `results.tsv` | 历次优化日志（9列含 eval_mode） |
-| `{skill目录}/test-prompts.json` | 每个 skill 的测试 prompt 集（用于维度8实测） |
-
-### 何时生成
-
-- **单skill卡片**：每个skill优化完成后，展示该skill的分数变化
-- **总览卡片**：全部优化完成后（Phase 3），展示全局战绩
-
-### 品牌元素
-
-- 顶部：Darwin.skill 品牌标识 + 日期
-- 底部：「Train your Skills like you train your models」+ github.com/alchaincyf/darwin-skill
+| `references/skilllens-evidence.md` | SkillLens 论文数据 + 本机验证 + HL 案例 |
+| `references/runtime-neutrality.md` | 红灯/绿灯对照表 + 审查时机 |
+| `results.tsv` | 历次优化日志（9 列含 eval_mode） |
+| `test-prompts.json` | 测试 prompt 集（用于维度 8 实测） |
