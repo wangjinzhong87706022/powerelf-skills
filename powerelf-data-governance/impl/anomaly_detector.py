@@ -354,6 +354,11 @@ def run_detection(engine, table, field, threshold=None, st_id=None, days=30, met
             detail[score_label] = anom_result[score_source][idx]
         if tm_col and original_idx in df.index:
             detail["time"] = str(df.loc[original_idx, tm_col])
+        # ③ 补 st_id 设备列：从 df 同行取 st_id（若表有此列），让 CSV 自带设备维度
+        if "st_id" in df.columns and original_idx in df.index:
+            detail["st_id"] = df.loc[original_idx, "st_id"]
+        else:
+            detail["st_id"] = st_id if st_id else ""
         anomaly_details.append(detail)
 
     # 解释集（mad 路径与历史版本逐字一致；iqr/percentile 用方法感知文案）
@@ -432,19 +437,20 @@ def _build_daily_summary(df, field, tm_col):
 
 
 def export_csv(result, out_path):
-    """把 run_detection 的结果导出为 CSV（含 anomaly_details 全部明细）。
+    """把 run_detection 的结果导出为 CSV（含 anomaly_details 全量明细 + st_id 设备列）。
 
-    列：index, time, value, modified_z/iqr_dev/percentile, judgment, method, table, field。
+    列：index, time, value, modified_z/iqr_dev/percentile, judgment, method, table, field, st_id, 复核结论。
     UTF-8 BOM 编码（Excel 友好），含空白的"复核结论"列供人工填写。
+    ③ 修复：加 st_id 设备列，让 hermes 一次拿全异常+设备维度无需再查关联表。
     """
     import csv
     details = result.get("anomaly_details", [])
-    # 列头：固定列 + 动态评分列（ModifiedZ / iqr_dev / percentile）
-    base_cols = ["index", "time", "value", "judgment", "method", "table", "field", "复核结论"]
+    # 列头：固定列 + 动态评分列（ModifiedZ / iqr_dev / percentile）+ st_id
+    base_cols = ["index", "time", "value", "judgment", "method", "table", "field", "st_id", "复核结论"]
     score_cols = []
     if details:
         for k in details[0].keys():
-            if k not in ("index", "time", "value"):
+            if k not in ("index", "time", "value", "st_id"):
                 score_cols.append(k)
     header = base_cols[:3] + score_cols + base_cols[3:]
 
@@ -461,6 +467,7 @@ def export_csv(result, out_path):
                 result.get("method", ""),
                 result.get("table", ""),
                 result.get("field", ""),
+                d.get("st_id", ""),  # ③ 补 st_id 设备列
                 "",  # 复核结论空列
             ])
             w.writerow(row)

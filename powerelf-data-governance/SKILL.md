@@ -47,6 +47,7 @@ metadata:
 | 插值/缺失补全 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` §插值 自写，但**必须一次写对**（先读 schema.md 确认字段，再写） | ❌ 反复 patch 重跑 |
 | 连续相同值检测 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` 自写，但**必须一次写对** | ❌ 反复 patch 重跑 |
 | 趋势分析（改善/恶化） | `python3 impl/profiler.py --db "$DB_URL" --table <T> --trend 30d`（含趋势判定输出） | ❌ 自己写趋势 SQL |
+| 异常明细 + 设备关联 | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> --detail full --format csv --output /tmp/xxx.csv`（**CSV 已含 st_id 设备列**，一次拿全异常+设备维度，无需再查关联表） | ❌ 用 `execute_code` 自己写代码串联（沙箱会 scrub `.env` 的 `DB_URL` 导致脚本报错，且会触发 `code_retry_guard` 插件 bug 杀进程） |
 
 **判定流程**（每次对话第一步必须执行）：
 
