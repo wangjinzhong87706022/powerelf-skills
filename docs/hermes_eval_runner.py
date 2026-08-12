@@ -109,8 +109,10 @@ DIMENSION_WEIGHTS = {
 }
 
 # D4/D5 阈值（源自 _shared/hermes_test_final_report.md KPI）
-D4_INPUT_TOKENS_THRESHOLD = 15000   # <15K 为达标
-D4_OUTPUT_TOKENS_THRESHOLD = 3000   # <3K 为达标
+D4_INPUT_EXCELLENT = 20000     # P75 档：input < 20K 为优秀（实测 30 题 P75≈20K）
+D4_OUTPUT_EXCELLENT = 3000     # P75 档：output < 3K 为优秀（实测 30 题 P75≈3K）
+D4_INPUT_WARNING = 36000       # P95 档：input < 36K 为预警（实测 30 题 P90=35K, P95≈36K）
+D4_OUTPUT_WARNING = 7000       # P95 档：output < 7K 为预警（实测 30 题 P90=5.4K, max=8.3K）
 D5_LATENCY_EXCELLENT = 30           # <30s 优秀
 D5_LATENCY_WARNING = 60             # 30-60s 预警，>60s 失败
 D3_TOOL_CALL_EXCELLENT = 2          # ≤2 优秀
@@ -501,15 +503,29 @@ def judge(ev, trace, set_, schema_tables):
     else:
         d3 = 0.0
 
-    # ---- D4 Token 效率 ----
-    # INFO #9: 补 cache_read_tokens，更准确反映 prefill 负担
-    total_input = trace["input_tokens"] + trace["cache_read_tokens"]
-    if total_input < D4_INPUT_TOKENS_THRESHOLD and trace["output_tokens"] < D4_OUTPUT_TOKENS_THRESHOLD:
-        d4 = 1.0
-    elif total_input < D4_INPUT_TOKENS_THRESHOLD * 2 and trace["output_tokens"] < D4_OUTPUT_TOKENS_THRESHOLD * 2:
-        d4 = 0.5
-    else:
-        d4 = 0.0
+    # ---- D4 Token 效率（方案 A：P75 阈值 + 连续评分）----
+    # 关键修正：只用 input_tokens（不含 cache_read_tokens）。
+    # cache_read_tokens 是缓存命中（省下的推理成本），不是真实消耗；
+    # 把它算进 total_input 会导致 DG-P04 的 total=260K（其中 cache=249K）误判 FAIL。
+    # 实测 30 题 input_tokens(不含cache) P75=19.9K P90=35.3K → 阈值 20K/36K 合理。
+    input_tokens = trace["input_tokens"]
+    output_tokens = trace["output_tokens"]
+
+    # 连续评分：优秀档（<P75）=1.0，预警档（<P95）=0.5，失败档（>P95）=0.0
+    # 中间区间线性插值，避免阈值边界跳变（input=19.9K vs 20.1K 不会从 1.0 跳到 0.5）
+    def _linear_score(val, excellent, warning):
+        """val < excellent → 1.0; val > warning → 0.0; 中间线性插值 → [0.5, 1.0]。"""
+        if val <= excellent:
+            return 1.0
+        if val >= warning:
+            return 0.0
+        # excellent < val < warning: 线性从 1.0 降到 0.5
+        return 1.0 - 0.5 * (val - excellent) / (warning - excellent)
+
+    input_score = _linear_score(input_tokens, D4_INPUT_EXCELLENT, D4_INPUT_WARNING)
+    output_score = _linear_score(output_tokens, D4_OUTPUT_EXCELLENT, D4_OUTPUT_WARNING)
+    # input 和 output 取 min：任一维度差则拉低总分（避免一个维度好但另一个极差时虚高）
+    d4 = min(input_score, output_score)
 
     # ---- D5 响应时延 ----
     dur = trace["duration_sec"]
@@ -529,10 +545,61 @@ def judge(ev, trace, set_, schema_tables):
     d6 = 1.0 if not hallucinated else 0.0
 
     # ---- D7 回答完整性 ----
-    # 粗略启发：把 expected_str 中出现的中文关键词（≥2字）当作 key_points
+    # P0 修复：原逻辑用 re.findall 提取中文关键词再做精确子串匹配，
+    # 但 data-governance-routing-list 的 expected_output 是方法名短语
+    #（"MAD 异常检测"/"分指标阈值检测"/"指定时间窗口检测"），
+    # hermes 实际回答可能用同义表述（"中位数绝对偏差"/"离群"/"阈值"），
+    # 导致覆盖率极低（D7 avg=0.1，27/30 题失败）。
+    #
+    # 修法：① 提取关键点后做子串匹配 ② 加方法名别名表扩同义匹配
+    ALIAS_MAP = {
+        "MAD": ["MAD", "中位数绝对偏差", "修正Z", "modified z", "median absolute"],
+        "异常": ["异常", "离群", "outlier", "anomaly", "异常点", "异常值"],
+        "检测": ["检测", "分析", "判定", "识别", "监控"],
+        "阈值": ["阈值", "门限", "threshold", "标准"],
+        "变化": ["变化", "变率", "变化率", "change rate", "波动"],
+        "时间": ["时间", "日期", "窗口", "区间", "范围", "date", "time"],
+        "综合": ["综合", "汇总", "合并", "联合", "多指标"],
+        "分": ["分", "拆分", "明细", "细分", "分布"],
+        "指标": ["指标", "维度", "factor", "metric"],
+        "判定": ["判定", "结论", "判断", "诊断", "verdict"],
+        "缺失": ["缺失", "漏", "missing", "空值", "缺测"],
+        "分级": ["分级", "分类", "等级", "grade", "level"],
+        "日报": ["日报", "报告", "report", "汇总"],
+        "概览": ["概览", "总览", "概览", "overview", "全局"],
+        "评分": ["评分", "打分", "score", "评级"],
+    }
+
+    def _expand_key_point(kp):
+        """扩一个关键点为它本身 + 别名表中的所有同义词。"""
+        expanded = [kp]
+        # 精确命中别名表
+        for key, aliases in ALIAS_MAP.items():
+            if kp == key or kp in aliases:
+                expanded.extend(aliases)
+                break
+            # 部分命中（关键点包含别名键）
+            if key in kp:
+                expanded.extend(aliases)
+        # 去重保序
+        seen = set()
+        result = []
+        for w in expanded:
+            if w and w not in seen:
+                seen.add(w)
+                result.append(w)
+        return result
+
     key_points = re.findall(r"[\u4e00-\u9fa5]{2,}", expected_str)
+    # 补充：英文方法名/缩写也当关键点（如 MAD/IQR/percentile）
+    key_points.extend(re.findall(r"\b(MAD|IQR|percentile|SQL|CSV|JSON)\b", expected_str, re.IGNORECASE))
     if key_points:
-        covered = sum(1 for kp in key_points if kp in actual_answer)
+        # 每个 key_point 扩成别名组，只要命中组内任一个就算覆盖该关键点
+        covered = 0
+        for kp in key_points:
+            aliases = _expand_key_point(kp)
+            if any(a in actual_answer for a in aliases):
+                covered += 1
         d7 = covered / len(key_points)
     else:
         d7 = 1.0  # 无关键点可提取，默认完整

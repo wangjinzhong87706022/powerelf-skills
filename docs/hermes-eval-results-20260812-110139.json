@@ -1,0 +1,254 @@
+{
+  "eval_run_id": "hermes-eval-20260812-110139",
+  "evaluated_at": "2026-08-12T11:13:04.849508",
+  "master_version": "1.0",
+  "readiness_filter": "green",
+  "total_questions": 293,
+  "evaluated_questions": 5,
+  "skipped": {
+    "placeholder_reconstructed": 0,
+    "readiness_filter": 0,
+    "empty_prompt_or_expected": 0,
+    "max_questions_limit": 48
+  },
+  "overall_score": 0.455,
+  "overall_verdict": "PARTIAL",
+  "per_set_summary": {
+    "data-governance-routing-list": {
+      "count": 5,
+      "avg_score": 0.455,
+      "pass": 0,
+      "partial": 4,
+      "fail": 1
+    }
+  },
+  "per_dimension_summary": {
+    "D1_functional": {
+      "avg": 0.5,
+      "fail_count": 0
+    },
+    "D2_routing": {
+      "avg": 0.5,
+      "fail_count": 0
+    },
+    "D3_tool_eff": {
+      "avg": 0.2,
+      "fail_count": 4
+    },
+    "D4_token_eff": {
+      "avg": 0.0,
+      "fail_count": 5
+    },
+    "D5_latency": {
+      "avg": 0.3,
+      "fail_count": 3
+    },
+    "D6_halluc": {
+      "avg": 0.8,
+      "fail_count": 1
+    },
+    "D7_completeness": {
+      "avg": 0.9,
+      "fail_count": 0
+    }
+  },
+  "results": [
+    {
+      "id": "DG-P01",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD 异常检测",
+      "score": 0.275,
+      "verdict": "FAIL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 0.0,
+        "D7_completeness": 0.5
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [
+        "eq_id全部为NULL"
+      ],
+      "trace_summary": {
+        "session_id": "20260812_110140_298a53",
+        "duration_sec": 166.86,
+        "tool_call_count": 14,
+        "message_count": 29,
+        "input_tokens": 38186,
+        "output_tokens": 4395,
+        "cache_read_tokens": 330342,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "skill_view",
+          "skill_view",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P02",
+      "set": "data-governance-routing-list",
+      "name": "可问-分指标阈值检测",
+      "score": 0.475,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.5,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_110431_690f4e",
+        "duration_sec": 57.39,
+        "tool_call_count": 6,
+        "message_count": 14,
+        "input_tokens": 23261,
+        "output_tokens": 1253,
+        "cache_read_tokens": 120094,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P03",
+      "set": "data-governance-routing-list",
+      "name": "可问-MAD + 变化率综合判定",
+      "score": 0.675,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 1.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 1.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_110532_236a46",
+        "duration_sec": 29.6,
+        "tool_call_count": 2,
+        "message_count": 6,
+        "input_tokens": 4085,
+        "output_tokens": 608,
+        "cache_read_tokens": 58997,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal"
+        ]
+      }
+    },
+    {
+      "id": "DG-P04",
+      "set": "data-governance-routing-list",
+      "name": "可问-指定时间窗口检测",
+      "score": 0.425,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_110605_8c7fe1",
+        "duration_sec": 113.79,
+        "tool_call_count": 13,
+        "message_count": 27,
+        "input_tokens": 9505,
+        "output_tokens": 2973,
+        "cache_read_tokens": 302384,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "read_file",
+          "terminal",
+          "write_file",
+          "terminal",
+          "patch",
+          "patch",
+          "patch",
+          "terminal",
+          "read_file"
+        ]
+      }
+    },
+    {
+      "id": "DG-P05",
+      "set": "data-governance-routing-list",
+      "name": "可问-变化率检测 + 综合判定",
+      "score": 0.425,
+      "verdict": "PARTIAL",
+      "dimensions": {
+        "D1_functional": 0.5,
+        "D2_routing": 0.5,
+        "D3_tool_eff": 0.0,
+        "D4_token_eff": 0.0,
+        "D5_latency": 0.0,
+        "D6_halluc": 1.0,
+        "D7_completeness": 1.0
+      },
+      "d1_note": "manual_judge",
+      "hallucinated_tables": [],
+      "trace_summary": {
+        "session_id": "20260812_110802_054442",
+        "duration_sec": 299.2,
+        "tool_call_count": 11,
+        "message_count": 19,
+        "input_tokens": 32882,
+        "output_tokens": 3789,
+        "cache_read_tokens": 168513,
+        "reasoning_tokens": 0,
+        "tool_chain": [
+          "clarify",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal",
+          "terminal"
+        ]
+      }
+    }
+  ]
+}
