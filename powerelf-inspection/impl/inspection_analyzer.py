@@ -1673,6 +1673,79 @@ def _render_report_markdown(context):
         return _FALLBACK_TEMPLATE.format(**context)
 
 
+def _render_offline_overview(engine, days):
+    """离线三口径（评审 §6.4 / T8c）：快照 A / 窗口内新增 B / 窗口内活跃度 C。
+    返回 markdown 表格字符串；任一查询失败返回空串（调用方已 try/except 兜底）。
+    Why: 消除"524 记录 vs 54/128"口径混用——三口径分列展示，汇总只计窗口内。
+    """
+    import pandas as _pd
+    from sqlalchemy import text as _text
+
+    # A. 当前快照（台账实时状态，与窗口无关）
+    snap = _pd.read_sql(_text(
+        "SELECT COUNT(*) AS total, SUM(status = 0) AS offline, SUM(status = 1) AS online, "
+        "SUM(status = 2) AS abnormal FROM eq_equip_base WHERE deleted = 0"), engine).iloc[0]
+    total = int(snap["total"] or 0)
+    offline = int(snap["offline"] or 0)
+    a_pct = f"{offline / total * 100:.1f}%" if total else "N/A"
+
+    # B. 窗口内新增离线（offline_start_time 落在窗口内；该表无 deleted 列）
+    new_rows = _pd.read_sql(_text(
+        "SELECT COUNT(*) AS n FROM eq_equip_offline_record "
+        "WHERE offline_start_time >= NOW() - INTERVAL :days DAY"), engine,
+        params={"days": days}).iloc[0]["n"]
+
+    # C. 窗口内数据活跃度：各监测表窗口内 COUNT(DISTINCT eq_id) / 映射设备数
+    rows = []
+    for table, tcol in [("st_rsvr_r", "tm"), ("st_pptn_r", "tm"), ("st_pressure_r", "tm"),
+                        ("st_percolation_r", "tm"), ("dsm_dfr_srvrds_srhrds", "tm"),
+                        ("rei_gate_r", "tm"), ("rei_pump_r", "tm")]:
+        mapped = _pd.read_sql(_text(
+            "SELECT COUNT(DISTINCT eq_id) AS n FROM eq_business_equip_relation "
+            "WHERE business_table = :t"), engine, params={"t": table}).iloc[0]["n"]
+        try:
+            active = _pd.read_sql(_text(
+                f"SELECT COUNT(DISTINCT eq_id) AS n FROM {table} "
+                f"WHERE deleted = 0 AND eq_id IS NOT NULL "
+                f"AND {tcol} >= NOW() - INTERVAL :days DAY"), engine,
+                params={"days": days}).iloc[0]["n"]
+        except Exception:
+            active = 0
+        rows.append((table, int(active or 0), int(mapped or 0)))
+
+    lines = ["| 口径 | 数值 | 时间语义 |", "|---|---|---|",
+             f"| 当前快照 | 离线 {offline}/{total} ({a_pct}) | 此刻台账状态 |",
+             f"| 窗口内新增离线 | {int(new_rows)} 次 | 近{days}天新发生 |"]
+    for table, active, mapped in rows:
+        pct = f"{active / mapped * 100:.0f}%" if mapped else "N/A"
+        lines.append(f"| 窗口内活跃度（{table}） | {active}/{mapped} ({pct}) | 近{days}天有数据设备/映射设备 |")
+    return "\n".join(lines)
+
+
+def _render_coverage(engine, days):
+    """数据覆盖清单（T8c）：各业务表近 days 天行数。返回 markdown 表格。
+    Why: 防止"15 维全成功 vs 4 维无数据"的自相矛盾——附录透明列出每表覆盖量。
+    """
+    import pandas as _pd
+    from sqlalchemy import text as _text
+    specs = [("st_rsvr_r", "tm"), ("st_pptn_r", "tm"), ("st_pressure_r", "tm"),
+             ("st_percolation_r", "tm"), ("dsm_dfr_srvrds_srhrds", "tm"),
+             ("rei_gate_r", "tm"), ("rei_pump_r", "tm"), ("wq_pcp_d", "spt"),
+             ("st_soil_moisture_r", "tm"), ("st_termite_monitor_r", "tm"),
+             ("business_check_task", "create_time"), ("ew_info_message", "create_time")]
+    lines = [f"| 表 | 近{days}天行数 |", "|---|---|"]
+    for table, tcol in specs:
+        try:
+            n = _pd.read_sql(_text(
+                f"SELECT COUNT(*) AS n FROM {table} WHERE deleted = 0 "
+                f"AND {tcol} >= NOW() - INTERVAL :days DAY"), engine,
+                params={"days": days}).iloc[0]["n"]
+        except Exception:
+            n = "ERR"
+        lines.append(f"| {table} | {n} |")
+    return "\n".join(lines)
+
+
 def validate_report_consistency(analyses, critical, warnings):
     """报告一致性断言闸（T1）。
     返回 (passed: bool, violations: list[str])。
@@ -1829,6 +1902,37 @@ def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
     except Exception:
         pass  # QA 闸导入失败不影响报告主体
 
+    # T8 图表：PNG 输出到 <skill>/reports/，失败不影响报告主体
+    charts_md = ""
+    try:
+        from charts import render_charts  # 本文件同目录（impl/）
+        _skill_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+        charts_dir = _os.path.join(_skill_root, "reports")
+        chart_sets = render_charts(engine, days, analyses, charts_dir)
+        parts = []
+        for _items in chart_sets.values():
+            for it in _items:
+                rel = _os.path.relpath(it["path"], _skill_root).replace(_os.sep, "/")
+                parts.append(f"![{it['title']}]({rel})")
+        if parts:
+            charts_md = "## 巡检图表\n\n" + "\n\n".join(parts) + "\n"
+    except Exception as e:
+        logger.warning("图表生成失败（不影响报告主体）: %s", e)
+
+    # T8c：离线三口径（快照 A / 窗口内新增 B / 窗口内活跃度 C）——失败不影响主体
+    offline_md = ""
+    try:
+        offline_md = _render_offline_overview(engine, days)
+    except Exception as e:
+        logger.warning("离线三口径渲染失败（不影响报告主体）: %s", e)
+
+    # T8c：数据覆盖清单（各表近 days 天行数）——失败不影响主体
+    coverage_md = ""
+    try:
+        coverage_md = _render_coverage(engine, days)
+    except Exception as e:
+        logger.warning("数据覆盖清单渲染失败（不影响报告主体）: %s", e)
+
     report = _render_report_markdown({
         "generated_at": now,
         "run_id": get_run_id(),
@@ -1841,6 +1945,9 @@ def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
         "recommendations": recommendations.rstrip(),
         "data_notes": data_notes,
         "qa_checklist": qa_checklist,
+        "charts": charts_md,
+        "offline_overview": offline_md,
+        "coverage": coverage_md,
     })
 
     return report, analyses

@@ -25,3 +25,6 @@ Thumbs.db
 
 # trigger-eval 临时评测工作台（本地实验产物，不跟踪）
 powerelf-data-governance/trigger-eval/
+
+# 巡检报告图表产物（运行时可再生成）
+powerelf-inspection/reports/

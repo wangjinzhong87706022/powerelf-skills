@@ -19,6 +19,12 @@
 
 {sections}
 
+{charts}
+
+## 设备状态（三口径分层）
+
+{offline_overview}
+
 ## 巡检建议
 
 {recommendations}
@@ -26,6 +32,10 @@
 ## Data Notes（无数据/数据质量维度说明）
 
 {data_notes}
+
+## 附录：数据覆盖清单（近{days}天各表行数）
+
+{coverage}
 
 ## 最终结论（三问）
 
