@@ -1673,6 +1673,55 @@ def _render_report_markdown(context):
         return _FALLBACK_TEMPLATE.format(**context)
 
 
+def validate_report_consistency(analyses, critical, warnings):
+    """报告一致性断言闸（T1）。
+    返回 (passed: bool, violations: list[str])。
+    设计：汇总计数必须 ≡ 明细；不得"全成功"与"无数据"同现；不得"变化率N次"与"正常"同现；
+    MAD 统计只允许 inspection 自带一个来源。
+    Why: 实测一份带 5 处矛盾的报告被评为 Ready to share（评审 N1）。本闸与
+    verify_output.py（事后 CLI 校验）互补：此处是生成时内嵌闸，渲染前阻断并降级置信度。
+    """
+    import re as _re
+    violations = []
+
+    # 1. severity 汇总 ≡ findings 明细（口径漂移检测；复用 verify_output 计数规则）
+    exp_critical = sum(1 for a in analyses for f in (a.get('findings') or [])
+                       if f.get('level') == 'CRITICAL')
+    exp_warning = sum(1 for a in analyses for f in (a.get('findings') or [])
+                      if f.get('level') == 'WARNING')
+    if exp_critical != critical or exp_warning != warnings:
+        violations.append(
+            f"severity 汇总与明细不符：报告 critical={critical}/warnings={warnings}，"
+            f"明细 critical={exp_critical}/warnings={exp_warning}")
+
+    # 2. "N 维全部成功" 与 "无数据维度" 不得同现
+    dim_total = len(analyses)
+    no_data_dims = [a.get('category') for a in analyses
+                    if a.get('status') in ('无数据', '数据不足', 'inconclusive')]
+    if no_data_dims and len(no_data_dims) < dim_total:
+        violations.append(
+            f"声明覆盖 {dim_total} 维，但 {len(no_data_dims)} 维无数据/不足：{no_data_dims}；"
+            f"应将 dim_count 改为 {dim_total - len(no_data_dims)} 或显式标注未覆盖")
+
+    # 3. "变化率 N 次" 与 "正常" 自相矛盾检测（问题③）
+    for a in analyses:
+        for f in (a.get('findings') or []):
+            text = f"{f.get('message','')} {f.get('detail','')}"
+            has_rate = bool(_re.search(r'变化率|change_rate', text)) and bool(
+                _re.search(r'(\d+)\s*次', text))
+            has_normal = ('正常' in text) or ('分布正常' in text)
+            if has_rate and has_normal:
+                violations.append(
+                    f"{a.get('category')} 自相矛盾：既报变化率超限又标正常 —— {f.get('message','')[:50]}")
+
+    # 4. MAD 维度数一致性：报告路径只允许 inspection 自带一个来源（兜底告警）
+    mad_sections = [a for a in analyses if a.get('category') == 'MAD统计异常']
+    if len(mad_sections) > 1:
+        violations.append(f"MAD 统计出现 {len(mad_sections)} 个来源，疑似跨工具混装")
+
+    return len(violations) == 0, violations
+
+
 def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
     """生成巡检报告"""
     analyses = []
@@ -1763,13 +1812,20 @@ def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
     else:
         data_notes = "本次全部维度均有数据且质量达标。"
 
-    # QA 闸（P2-T8）
+    # QA 闸（P2-T8）+ 一致性闸（T1：渲染前校验，违规降级置信度）
+    passed, violations = validate_report_consistency(analyses, critical, warnings)
+    confidence_tier = "Ready to share" if passed else "Needs revision"
+    if not passed:
+        violation_block = "## ⚠ 一致性闸未通过（置信度降为 Needs revision）\n\n" \
+            + "\n".join(f"- {v}" for v in violations)
+        data_notes = (data_notes + "\n\n" + violation_block) if data_notes else violation_block
+
     qa_checklist = ""
     try:
         import sys as _sys
         _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
         from report import _QA_CHECKLIST
-        qa_checklist = _QA_CHECKLIST.format(confidence_tier="With caveats")
+        qa_checklist = _QA_CHECKLIST.format(confidence_tier=confidence_tier)
     except Exception:
         pass  # QA 闸导入失败不影响报告主体
 

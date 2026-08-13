@@ -96,6 +96,8 @@
 - `:1772` `qa_checklist = _QA_CHECKLIST.format(confidence_tier="With caveats")` ← 硬编码，无校验
 - `:1753-1764` `data_notes` 构造
 
+**复用说明（评审修正）**：`impl/verify_output.py` 已内置 `check_summary_consistency`（summary 计数≡findings 明细）、`check_exit_code`、`red_flags`（`::33/:46/:74`）。为避免两份一致性逻辑分叉，T1 的"severity 汇总≡明细"校验应**复用 verify_output 的计数规则**（`sum(1 for f ... level=='CRITICAL')`），或在实现时 `import`/抽取共享的计数辅助函数，而非另写一套口径。职责划分：verify_output 是**事后 CLI 校验**（对已产出的 envelope JSON），T1 是**生成时内嵌闸**（渲染前阻断）——两者互补，规则同源。
+
 **改动骨架**：
 
 ```python

@@ -4,6 +4,19 @@
 > 关联仓库：powerelf-skills（`powerelf-inspection` / `powerelf-data-governance` / `powerelf-monitor`）
 > 触发背景：对全设备执行近 7 天智能巡检后，发现报告存在"离线设备数异常偏多、MAD 统计表只显 4 维、渗压变化率 507 次却标正常、水位 MAD 异常率 21.6%、报告前后不一致"等问题，本文记录根因分析与优化方案。
 
+## ✅ 实施状态更新（2026-08-13 晚，按 inspection-report-unification-spec.md 执行）
+
+| 任务 | 状态 | 落地内容 |
+|---|---|---|
+| T5 | ✅ 已完成 | `simulate_7d_data.py` 新增 `--clean-mode {all-mock,window}`（默认 all-mock 全清 `eq_code='MOCK'`），7-30 天带残留 MOCK（786m/60mm）已清零 |
+| T3 | ✅ 已完成 | `offline_detector.py` 新增 `resolve_threshold`（st_id→st_type→`dg_equip_offline.tm` 三级解析）+ YZ=0 短路 `NOT_MONITORED`；6 单测全绿；实测渗压站 st_id=93 → NOT_MONITORED、RR 站 → 60 |
+| T1 | ✅ 已完成 | `inspection_analyzer.py` 新增 `validate_report_consistency` 一致性闸（severity≡明细 / 无数据同现 / 变化率-正常矛盾 / MAD 多源），渲染前校验并驱动 `confidence_tier`（违规→Needs revision）；6 单测全绿；干净数据放行 Ready to share |
+| T2 | ✅ 已完成 | `SKILL.md` "When NOT to Use" 边界表限定语义（巡检报告的 MAD/离线禁止调 governance 拼装）+ "报告单源纪律"段 + `pitfalls.md` 新增 #8 |
+| T6 | ✅ 已完成 | `monitor/SKILL.md` frontmatter `name: powerelf-monitor` → `powerelf-monitor-legacy`（+`legacy: true`），消除 hermes 同名歧义；现行 `powerelf-monitor/` 不动 |
+| 引擎红线 | ✅ 通过 | `simulate_7d_data.py --days 7` + `inspection_analyzer --days 7 --json`：exit=2，5/5 问题设备命中，正常设备零误报 |
+
+> 遗留：T7（MAD/离线 DRY 下沉 `_shared/lib`）与 T8（图表增强）为 P2 独立立项，未在本批执行。
+
 ---
 
 ## 1. 巡检检测机制现状

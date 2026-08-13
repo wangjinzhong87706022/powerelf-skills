@@ -94,6 +94,25 @@ def _exec(conn, sql, params=None):
     cur.execute(sql, params or ())
     return cur.rowcount
 
+def _delete_mock(conn, table, window_days=None):
+    """清 eq_code='MOCK' 数据。window_days=None 表示全清（推荐，防跨代残留）。
+    Why: anomaly_detector 默认 30 天窗，旧清理只清 days 天 → 7–30 天带残留 MOCK
+    污染 MAD（评审 §6.2 / T5）。部分表无 eq_code 列（dsm 表），届时回退整窗清理。
+    """
+    n = 0
+    try:
+        if window_days is None:
+            sql = f"DELETE FROM {table} WHERE deleted=0 AND eq_code='MOCK'"
+        else:
+            sql = (f"DELETE FROM {table} WHERE deleted=0 AND eq_code='MOCK' "
+                   f"AND tm >= NOW()-INTERVAL {window_days} DAY")
+        n = _exec(conn, sql)
+    except Exception:
+        n = 0
+    if n == 0:
+        n = _delete_window(conn, table, window_days or 30)
+    return n
+
 def _delete_window(conn, table, days):
     """清理近 days 天窗口内数据（先按 eq_code='MOCK' 精删，兜底删整窗）。"""
     n = 0
@@ -334,6 +353,9 @@ def main():
     ap = argparse.ArgumentParser(description="生成智能巡检近 N 天模拟数据（写本地库）")
     ap.add_argument("--days", type=int, default=7, help="模拟窗口天数（默认 7）")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--clean-mode", choices=["all-mock", "window"], default="all-mock",
+                    help="写库前清理策略：all-mock 全清 eq_code='MOCK'（默认，防 7-30 天带残留污染 MAD）；"
+                         "window 仅清近 days 天窗口")
     ap.add_argument("--dry-run", action="store_true", help="只打印计划不写库")
     args = ap.parse_args()
     days = max(3, min(args.days, 30))
@@ -365,7 +387,10 @@ def main():
     conn = get_connection()
     try:
         for table, sql, rows in plan:
-            n_del = _delete_window(conn, table, days)
+            if args.clean_mode == "all-mock":
+                n_del = _delete_mock(conn, table, window_days=None)   # 全清 MOCK，防跨代残留
+            else:
+                n_del = _delete_window(conn, table, days)
             cur = conn.cursor()
             # 分批插入（每批 500），避免长事务
             for i in range(0, len(rows), 500):

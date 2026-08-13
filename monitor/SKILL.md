@@ -1,5 +1,5 @@
 ---
-name: powerelf-monitor
+name: powerelf-monitor-legacy
 description: "实时监控分析 — 水位变化率/库容平衡/GNSS位移速率/闸泵电气校验/雨情强度/Mann-Kendall趋势检测。分析水位变化趋势，不是查水位也不是查异常。核心表: powerelf_srm_yml.st_rsvr_r, powerelf_srm_yml.dsm_dfr_srvrds_srhrds"
 version: 2.0.0
 author: dataagent-powerelf
@@ -9,6 +9,7 @@ metadata:
   hermes:
     tags: [monitoring, analysis, reservoir, gnss, gate, pump, rainfall, trend, anomaly, water-conservancy]
     category: powerelf
+    legacy: true
 ---
 
 # 实时监控分析引擎 (Monitor Analysis Engine)

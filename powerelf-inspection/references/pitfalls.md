@@ -170,3 +170,26 @@ with Session(engine_insp) as s_insp:
 ```
 
 **参见:** `_shared/lib/db.py`（单一连接源）
+
+---
+
+## 8. 跨 skill 混装报告（报告单源纪律）
+
+**问题:** 生成巡检报告后，再调用 `powerelf-data-governance` 的 `anomaly_detector` / `classify_offline_by_duration` / `profiler` 并把输出拼进报告。governance 的 MAD 是全表混排 + 30 天窗、离线是记录口径 + 全历史无窗——与 inspection 的 `--days` 窗口 / 按 `st_id` 分组 / 设备口径完全不同，混装必然产生矛盾数字（"524 记录 vs 54/128""渗压 507 次却正常"）。
+
+❌ **错误:**
+```python
+# inspection 报告生成后，又调 governance 工具并拼装
+env = inspection_analyzer.main(...)           # 15 维，--days 7
+gov = anomaly_detector(...)                    # 全表混排，30 天窗 ← 窗口/分组分叉
+report["MAD表"] = gov["mad_analysis"]          # 数字口径不一致，读者无法对账
+```
+
+✅ **正确:**
+```python
+# 巡检报告必须且只能由 inspection_analyzer 一次产出
+env = inspection_analyzer.main(...)            # 自带维度 12 设备状态 / 14 MAD（按 st_id）
+# governance 工具只用于独立的数据质量深度排查（独立产出，不进巡检报告）
+```
+
+**参见:** `SKILL.md`"报告单源纪律" + `docs/inspection-architecture-review.md`（N2/N5）

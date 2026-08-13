@@ -126,11 +126,19 @@ pip install pandas numpy sqlalchemy pymysql scikit-learn
 | 你想要的 | 应使用 |
 |---|---|
 | 某站当前水位/流量实时值、趋势看盘 | `powerelf-chatbi` / `powerelf-monitor` |
-| 数据质量（异常/缺失/离线/卡滞/插值） | `powerelf-data-governance` |
+| **作为巡检报告一部分的** MAD/离线/设备状态 | **本 skill（inspection_analyzer 自带维度 12 设备状态 / 维度 14 MAD）——禁止再调 `powerelf-data-governance` 拼装** |
+| 独立的数据质量深度排查（缺失/插值/卡滞专题，独立产出、不进巡检报告） | `powerelf-data-governance` |
 | 阈值/告警判定与分发 | `powerelf-early-warning` |
 | 实时 12 类监测、REST、预警触发 | `powerelf-monitor` |
 
 ### 工具命令
+
+> **报告单源纪律**：巡检报告（Markdown / envelope）必须且只能由 `inspection_analyzer.py` 一次产出。
+> 禁止在生成报告后再去调用 `powerelf-data-governance` 的 `anomaly_detector` / `classify_offline_by_duration` / `profiler`
+> 并把其输出拼进报告——那会引入不同时间窗口（30天/全历史）、不同分组（全表混排）、不同计数单位（记录数），
+> 历史上导致"524记录 vs 54/128""渗压507次却正常"等矛盾（见 `docs/inspection-architecture-review.md`）。
+> inspection 已内置等价且按 st_id 分组的 MAD（维度14）与设备快照（维度12）。
+> governance 工具仅用于独立的数据质量深度排查，其结果**不得**进入巡检报告。
 
 #### 1. 传感器巡检分析（15维度）
 

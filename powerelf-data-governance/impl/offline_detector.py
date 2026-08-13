@@ -52,6 +52,69 @@ DEFAULT_THRESHOLDS = {
     "YZ": 60,
 }
 
+# 表名 → 主站类型兜底映射（st_id 查不到 st_type 时用）
+_TABLE_TO_STYPE = {
+    "st_rsvr_r": "RR",
+    "st_river_r": "ZZ",
+    "st_pptn_r": "PP",
+    "st_pressure_r": "YZ",
+    "st_percolation_r": "YZ",
+    "dsm_dfr_srvrds_srhrds": "GN",
+    "rei_gate_r": "DD",
+    "rei_pump_r": "DP",
+}
+
+
+def _lookup_st_type(engine, table, st_id):
+    """st_id → eq_business_equip_relation.st_type。
+    Why: 阈值按站类型配置（dg_equip_offline），需先解析设备所属站类型（评审 §6.1）。
+    """
+    if st_id is None:
+        return None
+    try:
+        df = pd.read_sql(text(
+            "SELECT st_type FROM eq_business_equip_relation "
+            "WHERE st_id = :st_id LIMIT 1"
+        ), engine, params={"st_id": st_id})
+        return str(df.iloc[0]["st_type"]) if not df.empty else None
+    except Exception:
+        return None
+
+
+def _lookup_dg_offline(engine, st_type):
+    """st_type → dg_equip_offline.tm（离线阈值分钟；varchar 转 int）。
+    Why: dg_equip_offline 是离线阈值配置的单一事实源（SP=360/PP=120/YZ=0…）。
+    """
+    try:
+        df = pd.read_sql(text(
+            "SELECT tm FROM dg_equip_offline "
+            "WHERE st_type = :st_type AND deleted = 0 LIMIT 1"
+        ), engine, params={"st_type": st_type})
+        if df.empty or df.iloc[0]["tm"] is None:
+            return None
+        return int(str(df.iloc[0]["tm"]).strip())
+    except Exception:
+        return None
+
+
+def resolve_threshold(engine, table, st_id, default=60):
+    """按站类型从 dg_equip_offline 读离线阈值。
+    解析链：st_id → eq_business_equip_relation.st_type → dg_equip_offline.tm
+    → 回退 DEFAULT_THRESHOLDS[st_type] → 再回退 default。
+    返回 0 表示该站类型配置为"不检测"（YZ 类）。
+    Why: 旧代码 .get(table, 60) 键是站类型却查表名，配置从未生效（评审 §6.1）。
+    """
+    st_type = _lookup_st_type(engine, table, st_id)
+    if st_type is None:
+        st_type = _TABLE_TO_STYPE.get(table)
+    if st_type:
+        configured = _lookup_dg_offline(engine, st_type)
+        if configured is not None:
+            return configured
+        if st_type in DEFAULT_THRESHOLDS:
+            return DEFAULT_THRESHOLDS[st_type]
+    return default
+
 
 def load_latest_time(engine, table, st_id=None, time_field="tm"):
     """加载设备最新采集时间"""
@@ -88,7 +151,18 @@ def run_detection(engine, table, st_id=None, threshold=None):
         latest = datetime.fromisoformat(latest)
 
     if threshold is None:
-        threshold = DEFAULT_THRESHOLDS.get(table, 60)
+        threshold = resolve_threshold(engine, table, st_id)
+
+    # YZ=0 短路：站类型配置为"不检测"时，不再按 0 分钟判离线（T3）
+    if threshold == 0:
+        return {
+            "status": "NOT_MONITORED",
+            "table": table,
+            "st_id": st_id,
+            "threshold_minutes": 0,
+            "message": "该站类型离线阈值配置为 0（不检测）",
+            "explanation": f"设备(st_id={st_id}) 站类型离线阈值=0，按配置不检测",
+        }
 
     offline_status = determine_status(latest, threshold, now)
     deadline = latest + timedelta(minutes=threshold)
