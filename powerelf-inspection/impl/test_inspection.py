@@ -643,6 +643,42 @@ def test_write_report_artifacts_absolute(tmp_path):
 
 
 # ============================================================
+# D2/D3/D4 评审修正：--output 图表绝对路径 / 强降雨线阈值引用 / error 路径 SMART
+# ============================================================
+
+def test_output_absolutizes_chart_links():
+    """D2：--output 副本的图表链接重写为绝对路径（skill 根外不再断链）"""
+    from inspection_analyzer import _absolutize_chart_links
+    md = "## 巡检图表\n\n![趋势](reports/trend_st_rsvr_r.png)\n\n![分布](reports/dist_st_pptn_r.png)\n"
+    out = _absolutize_chart_links(md, skill_root="/opt/powerelf-inspection")
+    assert "](/opt/powerelf-inspection/reports/trend_st_rsvr_r.png)" in out
+    assert "](/opt/powerelf-inspection/reports/dist_st_pptn_r.png)" in out
+    assert "](reports/" not in out  # 无残留相对链接
+    # 非图表链接不动
+    md2 = "[模板](references/report-template.md)"
+    assert _absolutize_chart_links(md2, skill_root="/x") == md2
+
+
+def test_rain_shortburst_line_follows_threshold(monkeypatch):
+    """D3：>30mm 硬编码改读 THRESHOLDS['rain_shortburst_mm']——调阈值线跟着动"""
+    monkeypatch.setitem(_ia.THRESHOLDS, "rain_shortburst_mm", 40)
+    monkeypatch.setattr(_ia, "read_sensor_data", lambda eng, table, cols, days: _rain_df(35))
+    findings = _ia.analyze_rainfall(None, days=7)["findings"]
+    # 35mm ≤ 自定义强降雨线40：只保留蓝档 INFO（原实现误发 WARNING）
+    assert len(findings) == 1 and findings[0]["level"] == "INFO", findings
+
+
+@envelope_only
+def test_error_next_steps_smart():
+    """D4：error 路径 next_steps 也带 owner/deadline/acceptance（契约对称）"""
+    err = make_error("DB_CONNECT_FAILED", "Connection refused")
+    env = build_envelope([], "insp-t", "cmd", error=err)
+    step = env["agent"]["next_steps"][0]
+    for k in ("owner", "deadline", "acceptance"):
+        assert step.get(k), f"error next_step 缺 SMART 字段 {k}: {step}"
+
+
+# ============================================================
 # 自动诊断路由单元测试（Phase 2，无需 DB）
 # ============================================================
 

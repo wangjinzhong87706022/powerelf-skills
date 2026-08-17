@@ -181,7 +181,8 @@ python3 impl/inspection_analyzer.py --db "mysql+pymysql://user:pass@host:3306/db
   "error": null,
   "artifacts": {
     "report_md": "<skill>/report_insp-<uuid>.md",
-    "charts": ["<skill>/reports/trend_st_rsvr_r.png", "…"]
+    "charts": ["<skill>/reports/trend_st_rsvr_r.png", "…"],
+    "csv": "<--csv 路径>（仅 --csv 时存在）"
   },
   "agent": {
     "status": "critical | warning | ok | no_data | inconclusive",
@@ -206,7 +207,7 @@ python3 impl/inspection_analyzer.py --db "mysql+pymysql://user:pass@host:3306/db
 
 #### 输出纪律（7 条）
 
-1. findings 核心 4 字段（severity/title/detail/category）+ 附注 `data_source`（表.列+时间窗锚点，防结论漂移）、`correlated_with`（同一份证据只归属一条主 finding，被关联者降为佐证不独立计数）；
+1. findings 核心 4 字段（severity/title/detail/category）+ 附注 `data_source`（表.列+时间窗锚点，防结论漂移）、`correlated_with`（同维度同测站的多条 findings 互为佐证、互填 ID；被关联者**仍各自计数**——summary 计数必须 ≡ findings 明细，见纪律 #4，佐证关系只靠 correlated_with 表达，不做计数降级）；
 2. 必需实体写进 title/detail：测点编码、eq_id、所属工程/坝段、异常时间窗、量级（**当前值与窗口峰值双值**，区分"持续高位"与"瞬时尖峰"）——报告读者不需回查数据库即可行动；
 3. `category=root_cause` 即 stop-ready：detail 已含必要实体+安全下一步时不再追加分析轮次；`next_steps[]` 是优先级计划不是 checklist，只为补"具名缺失实体"才执行下一条；
 4. summary 计数 ≡ findings 明细：禁止口径漂移；

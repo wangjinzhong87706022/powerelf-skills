@@ -619,11 +619,13 @@ def analyze_rainfall(engine, days=7, thresholds=None):
 
         if graded and graded["level"] in ("CRITICAL", "WARNING"):
             findings.append(graded)
-        elif max_p > 30:
-            # 蓝色 INFO 被 >30mm 强降雨线覆盖 → 单条 WARNING（原 INFO+WARNING 双报去重）
+        elif max_p > THRESHOLDS["rain_shortburst_mm"]:
+            # 蓝色 INFO 被强降雨线覆盖 → 单条 WARNING（原 INFO+WARNING 双报去重）。
+            # 阈值引用 THRESHOLDS 单源（D3），不再硬编码 30——调线时本分支跟着动。
+            burst = THRESHOLDS["rain_shortburst_mm"]
             findings.append({
                 "level": "WARNING",
-                "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (短时强降雨>30mm) @ {max_p_time}",
+                "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (短时强降雨>{burst:g}mm) @ {max_p_time}",
                 "detail": "短时强降雨，需关注下游防洪"
                           + ("；达蓝色预警线" if graded else "")
             })
@@ -2094,6 +2096,17 @@ def _write_report_artifacts(report, run_id, skill_root=None, since=None):
         return None
 
 
+def _absolutize_chart_links(report, skill_root):
+    """D2：--output 副本的图表链接重写为绝对路径。
+
+    报告正文内嵌相对链接 `](reports/xxx.png)` 只在 skill 根下可解析；
+    用户把报告 --output 到任意目录时图片断链。本函数仅重写 reports/
+    前缀（模板等其它相对链接不动）。skill 根下的正本仍保持相对路径。
+    """
+    return report.replace(
+        "](reports/", f"]({_os.path.abspath(skill_root)}/reports/")
+
+
 def make_error(code, message):
     """错误对象定型 {code, message, fix_hint}。code 必须取自封闭枚举。"""
     if code not in ERROR_FIX_HINTS:
@@ -2145,22 +2158,28 @@ def _station_key(title):
     return m.group(1) if m else None
 
 
+def _title_dim(title):
+    """提取 finding title 的 [维度] 前缀；无前缀返回空串（D8 去重）。"""
+    return title[1:title.index("]")] if title.startswith("[") and "]" in title else ""
+
+
 def _link_correlated(findings):
     """P1 聚合：同维度同测站的多条 findings 互填 correlated_with（纪律#1 佐证链）。
 
     如渗压计93 的突变(F003)+MAD(F004) 互为佐证，报告根因段可按此分组呈现。
+    注意：被关联者仍各自计数（summary 计数 ≡ findings 明细，纪律#4）——
+    佐证关系经 correlated_with 表达，不做计数降级（防两纪律打架）。
     """
     groups = {}
     for ef in findings:
-        dim = ef["title"][1:ef["title"].index("]")] if ef["title"].startswith("[") and "]" in ef["title"] else ""
         station = _station_key(ef["title"])
         if station:
-            groups.setdefault((dim, station), []).append(ef["id"])
+            groups.setdefault((_title_dim(ef["title"]), station), []).append(ef["id"])
     for ef in findings:
-        dim = ef["title"][1:ef["title"].index("]")] if ef["title"].startswith("[") and "]" in ef["title"] else ""
         station = _station_key(ef["title"])
         if station:
-            peers = [fid for fid in groups[(dim, station)] if fid != ef["id"]]
+            peers = [fid for fid in groups[(_title_dim(ef["title"]), station)]
+                     if fid != ef["id"]]
             if peers:
                 ef["correlated_with"] = peers
 
@@ -2179,8 +2198,7 @@ def export_findings_csv(envelope, path):
                         "根因类别", "数据来源", "测站", "复核结论"])
             for ef in findings:
                 title = ef.get("title", "")
-                dim = title[1:title.index("]")] if title.startswith("[") and "]" in title else ""
-                w.writerow([ef.get("id"), ef.get("severity"), dim, title,
+                w.writerow([ef.get("id"), ef.get("severity"), _title_dim(title), title,
                             ef.get("detail", ""), ef.get("category", ""),
                             ef.get("data_source", ""),
                             _station_key(title) or "", ""])
@@ -2204,7 +2222,9 @@ def build_envelope(analyses, run_id, command, days=30, error=None, artifacts=Non
             "agent": {"status": "no_data", "summary": f"巡检未能执行：{error['code']}",
                       "findings": [], "next_steps": [
                           {"kind": "manual", "label": "修复环境", "command": None,
-                           "reason": error["fix_hint"]}]},
+                           "reason": error["fix_hint"],
+                           "owner": "运维值班", "deadline": "立即",
+                           "acceptance": "环境修复后复跑巡检"}]},
         }
 
     findings = []
@@ -2442,9 +2462,14 @@ def main():
 
     if args.output:
         # 写盘失败不毁输出：正文已走 stdout，仅记录错误（Phase 4.5）
+        # D2：报告副本的图表链接重写为绝对路径（--output 可能在 skill 根外）
+        out_body = body
+        if body == report:
+            out_body = _absolutize_chart_links(
+                body, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
         try:
             with open(args.output, 'w', encoding='utf-8') as f:
-                f.write(body)
+                f.write(out_body)
             print(f"\n报告已保存到: {args.output}", file=sys.stderr)
         except OSError as e:
             logger.error("report_file_write_error: %s", e)
