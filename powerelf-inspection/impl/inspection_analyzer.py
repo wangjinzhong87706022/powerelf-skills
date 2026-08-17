@@ -1816,6 +1816,25 @@ def _render_coverage(engine, days):
     return "\n".join(lines)
 
 
+def smart_recommendations(critical, warnings):
+    """P2：巡检建议 SMART 表（优先级/行动/责任方/时限/验收）。
+
+    CRITICAL → P0 紧急 2 小时内现场核查；WARNING → P1 本周内复核；
+    全清 → 例行巡检。替代原"1. 紧急… 2. 关注…"泛化措辞——
+    读者（值班长/班组）拿到建议即知谁在何时做什么、做到什么程度算完。
+    """
+    rows = ["| 优先级 | 行动 | 责任方 | 时限 | 验收标准 |", "|---|---|---|---|---|"]
+    if critical > 0:
+        rows.append(f"| P0 紧急 | 现场核查 {critical} 项 CRITICAL（见 findings 明细/CSV） | "
+                    "运行值班负责人 | 2小时内 | 现场复核读数并回传记录（附照片） |")
+    if warnings > 0:
+        rows.append(f"| P1 关注 | 复核 {warnings} 项 WARNING | 巡检班组 | 本周内 | "
+                    "逐项填写复核结论（--csv 复核列） |")
+    if critical == 0 and warnings == 0:
+        rows.append("| 例行 | 常规计划巡检 | 巡检班组 | 按月度计划 | 巡检记录归档 |")
+    return "\n".join(rows)
+
+
 def validate_report_consistency(analyses, critical, warnings):
     """报告一致性断言闸（T1）。
     返回 (passed: bool, violations: list[str])。
@@ -1934,13 +1953,8 @@ def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
 
         sections += "\n"
 
-    recommendations = ""
-    if critical > 0:
-        recommendations += "1. **紧急**: 有CRITICAL级发现，需立即组织现场检查\n"
-    if warnings > 0:
-        recommendations += "2. **关注**: 有WARNING级发现，建议本周内安排巡检\n"
-    if critical == 0 and warnings == 0:
-        recommendations += "- 各项指标正常，建议按常规计划巡检\n"
+    # P2：SMART 建议表（责任方/时限/验收），替代泛化措辞
+    recommendations = smart_recommendations(critical, warnings)
 
     # Data Notes 表（Phase 4.3）：本次所有 NOT_APPLICABLE/NO_DATA/QUERY_FAILED/inconclusive 项
     note_rows = []
@@ -2270,23 +2284,31 @@ def build_envelope(analyses, run_id, command, days=30, error=None, artifacts=Non
         next_steps.append({
             "kind": "manual", "label": "现场核查",
             "command": None,
-            "reason": "存在 CRITICAL 级发现，按边界规则需人工确认后处置"})
+            "reason": "存在 CRITICAL 级发现，按边界规则需人工确认后处置",
+            "owner": "运行值班负责人", "deadline": "2小时内",
+            "acceptance": "现场复核读数并回传记录（附照片）"})
     if warning_n > 0:
         next_steps.append({
             "kind": "manual", "label": "本周安排巡检复核",
             "command": None,
-            "reason": f"{warning_n} 项 WARNING 需在例行巡检中确认"})
+            "reason": f"{warning_n} 项 WARNING 需在例行巡检中确认",
+            "owner": "巡检班组", "deadline": "本周内",
+            "acceptance": "逐项填写复核结论（--csv 复核列）"})
     if inconclusive_cats:
         next_steps.append({
             "kind": "manual", "label": "先修数据再下结论",
             "command": None,
             "reason": f"数据完整性<80%（红档）维度：{'、'.join(inconclusive_cats)}，"
-                      "先经 powerelf-data-governance 排查采集/传输，再复跑巡检"})
+                      "先经 powerelf-data-governance 排查采集/传输，再复跑巡检",
+            "owner": "数据治理岗", "deadline": "3个工作日内",
+            "acceptance": "复跑巡检后该维度脱离红档"})
     if no_data_cats:
         next_steps.append({
             "kind": "manual", "label": "核查无数据维度",
             "command": None,
-            "reason": "；".join(no_data_notes) + "（区分设备离线与本工程无此类设备）"})
+            "reason": "；".join(no_data_notes) + "（区分设备离线与本工程无此类设备）",
+            "owner": "运维值班", "deadline": "1个工作日内",
+            "acceptance": "区分设备离线与本工程无此类设备并在报告标注"})
 
     envelope = {
         "ok": True, "run_id": run_id, "command": command, "error": None,

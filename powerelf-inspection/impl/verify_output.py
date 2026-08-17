@@ -70,6 +70,37 @@ def check_critical_entities(env, problems):
 
 _EXPLAIN_WORDS = ("因", "由于", "降雨", "调度", "闸门", "泵", "汛", "诊断", "外因", "季节")
 
+# P2-2：完整报告必备章节（缺任一 → 图表/三口径/覆盖清单被静默降级过）
+_REPORT_SECTIONS = ("巡检图表", "设备状态（三口径分层）", "Data Notes", "附录：数据覆盖清单")
+
+
+def check_report_artifacts(env, problems):
+    """报告产物闸：四章节齐全、至少一张图表嵌入、charts 文件真实存在。
+
+    无 artifacts 的 envelope（旧版/错误路径）跳过，保持向后兼容。
+    Why: 图表/三口径/覆盖清单渲染失败只 logger.warning 不毁报告——
+    曾导致"报告只有 CSV 没有图表"被静默放行，本闸把它变成显式 FAIL。
+    """
+    import os
+    art = env.get("artifacts") or {}
+    rmd = art.get("report_md")
+    if not rmd:
+        return
+    try:
+        with open(rmd, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError as e:
+        problems.append(f"artifacts.report_md 不可读: {rmd} ({e})")
+        return
+    for sec in _REPORT_SECTIONS:
+        if sec not in text:
+            problems.append(f"报告缺章节「{sec}»: {os.path.basename(rmd)}")
+    if "![" not in text:
+        problems.append(f"报告未嵌入任何图表（![ 缺失）: {os.path.basename(rmd)}")
+    for c in art.get("charts", []):
+        if not os.path.exists(c):
+            problems.append(f"artifacts.charts 文件不存在: {c}")
+
 
 def red_flags(env):
     flags = []
@@ -123,6 +154,7 @@ def main():
     check_summary_consistency(env, problems)
     check_exit_code(env, args.exit_code, problems)
     check_critical_entities(env, problems)
+    check_report_artifacts(env, problems)  # P2-2：报告章节/图表产物闸
     flags = red_flags(env)
 
     for p in problems:

@@ -570,6 +570,79 @@ def test_export_findings_csv(tmp_path):
 
 
 # ============================================================
+# P2：SMART 行动建议 / verify_output 报告章节闸 / 绝对路径（无需 DB）
+# ============================================================
+
+@envelope_only
+def test_envelope_next_steps_smart():
+    """P2-1：next_steps 每条带 owner/deadline/acceptance（SMART：责任方/时限/验收）"""
+    env = build_envelope(_SAMPLE_ANALYSES, "insp-t", "cmd", days=7)  # 含 critical+warning
+    steps = env["agent"]["next_steps"]
+    assert steps, "有 CRITICAL/WARNING 必有 next_steps"
+    for s in steps:
+        for k in ("owner", "deadline", "acceptance"):
+            assert s.get(k), f"next_step[{s.get('label')}] 缺 SMART 字段 {k}: {s}"
+    crit = next(s for s in steps if s["label"] == "现场核查")
+    assert "2小时" in crit["deadline"] or "2 小时" in crit["deadline"]
+
+
+def test_smart_recommendations_table():
+    """P2-1：报告巡检建议 SMART 表（责任方/时限/验收列），CRITICAL→2小时紧急"""
+    from inspection_analyzer import smart_recommendations
+    md = smart_recommendations(critical=1, warnings=2)
+    for kw in ("责任方", "时限", "验收"):
+        assert kw in md, f"建议表缺 {kw} 列"
+    assert "2小时" in md or "2 小时" in md
+    assert "本周" in md  # WARNING 时限
+    md_calm = smart_recommendations(critical=0, warnings=0)
+    assert "常规" in md_calm and "责任方" in md_calm
+
+
+def test_verify_report_artifacts_sections(tmp_path):
+    """P2-2：verify_output 校验报告四章节齐全 + 图表文件存在 + 至少一张图嵌入"""
+    import verify_output as vo
+    good = tmp_path / "report_good.md"
+    good.write_text(
+        "# 智能巡检报告\n## 巡检图表\n![趋势](reports/a.png)\n"
+        "## 设备状态（三口径分层）\n| 当前快照 |\n## Data Notes\nx\n"
+        "## 附录：数据覆盖清单（近7天各表行数）\n| 表 |\n", encoding="utf-8")
+    chart = tmp_path / "a.png"
+    chart.write_bytes(b"\x89PNG fake")
+    env = {"agent": {"findings": []},
+           "artifacts": {"report_md": str(good), "charts": [str(chart)]}}
+    problems = []
+    vo.check_report_artifacts(env, problems)
+    assert problems == [], f"章节齐全不应报错: {problems}"
+
+    bad = tmp_path / "report_bad.md"
+    bad.write_text("# 智能巡检报告\n只有正文，章节缺失", encoding="utf-8")
+    env_bad = {"agent": {"findings": []},
+               "artifacts": {"report_md": str(bad),
+                             "charts": [str(tmp_path / "missing.png")]}}
+    problems2 = []
+    vo.check_report_artifacts(env_bad, problems2)
+    assert any("巡检图表" in p for p in problems2)
+    assert any("三口径" in p for p in problems2)
+    assert any("覆盖清单" in p for p in problems2)
+    assert any("missing.png" in p for p in problems2)
+    # 无 artifacts 的 envelope 不报错（向后兼容）
+    problems3 = []
+    vo.check_report_artifacts({"agent": {"findings": []}}, problems3)
+    assert problems3 == []
+
+
+def test_write_report_artifacts_absolute(tmp_path):
+    """P2-3：artifacts 产物路径必须是绝对路径（agent 直接引用，无需拼接）"""
+    from inspection_analyzer import _write_report_artifacts
+    import os
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "t.png").write_bytes(b"\x89PNG")
+    art = _write_report_artifacts("# r", "insp-t", skill_root=str(tmp_path))
+    assert os.path.isabs(art["report_md"])
+    assert art["charts"] and all(os.path.isabs(p) for p in art["charts"])
+
+
+# ============================================================
 # 自动诊断路由单元测试（Phase 2，无需 DB）
 # ============================================================
 

@@ -194,7 +194,8 @@ python3 impl/inspection_analyzer.py --db "mysql+pymysql://user:pass@host:3306/db
       "data_source": "st_pressure_r.water_pressure @ [-30d, now]",
       "correlated_with": []
     }],
-    "next_steps": [{"kind": "command|manual", "label": "…", "command": null, "reason": "…"}]
+    "next_steps": [{"kind": "command|manual", "label": "…", "command": null, "reason": "…",
+                    "owner": "责任方", "deadline": "时限", "acceptance": "验收标准"}]
   }
 }
 ```
@@ -239,7 +240,7 @@ python3 impl/inspection_tool.py --mode registry --db "$DB_URL"
 ```bash
 python3 impl/test_inspection.py --db "$DB_URL" --days 7
 python3 impl/inspection_analyzer.py --json > /tmp/env.json; ec=$?
-python3 impl/verify_output.py /tmp/env.json --exit-code $ec   # envelope 一致性 + red-flag 元检查
+python3 impl/verify_output.py /tmp/env.json --exit-code $ec   # envelope 一致性 + red-flag + 报告四章节/图表产物闸
 ```
 
 静态评测用例见 `autoresearch/eval_cases/`（✅/❌ 成对 + 空数据三态）。
