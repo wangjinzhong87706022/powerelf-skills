@@ -18,8 +18,11 @@
 """
 
 import argparse
+import csv
+import glob
 import json
 import logging
+import re
 import sys
 import os as _os
 from datetime import datetime, timedelta
@@ -296,7 +299,7 @@ def read_alerts(engine, days=30):
             SELECT id, ew_name, ew_type, level_r, value, gather_time, message_confirm
             FROM ew_info_message
             WHERE deleted = 0 AND create_time >= NOW()-INTERVAL :days DAY
-            ORDER BY create_time DESC LIMIT 500
+            ORDER BY create_time DESC
         """), engine, params={"days": days})
     except Exception as e:
         logger.warning("read_alerts 失败: %s", e)
@@ -568,8 +571,13 @@ def analyze_rainfall(engine, days=7, thresholds=None):
     rain_yellow = get_threshold(thresholds, '2', '3', default=50)
     rain_blue = get_threshold(thresholds, '2', '4', default=30)
 
-    for st_id in df['st_id'].unique():
-        st_data = df[df['st_id'] == st_id].copy()
+    for st_id_raw in df['st_id'].unique():
+        # st_pptn_r.st_id 可能是 float(85.0)：title 渲染归一为整数，防"测站85.0"
+        try:
+            st_id = int(st_id_raw) if float(st_id_raw).is_integer() else st_id_raw
+        except (TypeError, ValueError):
+            st_id = st_id_raw
+        st_data = df[df['st_id'] == st_id_raw].copy()
         st_data['p'] = pd.to_numeric(st_data['p'], errors='coerce')
         st_data = st_data.dropna(subset=['p'])
 
@@ -580,39 +588,47 @@ def analyze_rainfall(engine, days=7, thresholds=None):
         max_p = st_data['p'].max()
         max_p_time = st_data.loc[st_data['p'].idxmax(), 'tm'] if max_p > 0 else None
 
-        # 检查整个时间窗口内的极端雨量事件
+        # 检查整个时间窗口内的极端雨量事件（P1 去重：同站同事件只出一条，
+        # 分级 CRITICAL/WARNING 已表达严重度时不再叠加强降雨条目；
+        # 蓝色 INFO 与硬编码强降雨线(>30mm)同时命中时合并升级为单条 WARNING）
+        graded = None
         if max_p > rain_red:
-            findings.append({
+            graded = {
                 "level": "CRITICAL",
                 "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (红色预警>{rain_red}mm) @ {max_p_time}",
                 "detail": "红色预警级别，需启动防汛响应"
-            })
+            }
         elif max_p > rain_orange:
-            findings.append({
+            graded = {
                 "level": "CRITICAL",
                 "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (橙色预警>{rain_orange}mm) @ {max_p_time}",
                 "detail": "橙色预警级别"
-            })
+            }
         elif max_p > rain_yellow:
-            findings.append({
+            graded = {
                 "level": "WARNING",
                 "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (黄色预警>{rain_yellow}mm) @ {max_p_time}",
-                "detail": "黄色预警级别"
-            })
+                "detail": "黄色预警级别，构成短时强降雨"
+            }
         elif max_p > rain_blue:
-            findings.append({
+            graded = {
                 "level": "INFO",
                 "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (蓝色预警>{rain_blue}mm) @ {max_p_time}",
                 "detail": "蓝色预警级别"
-            })
+            }
 
-        # 短时强降雨（单时段>30mm）
-        if max_p > 30:
-                findings.append({
-                    "level": "WARNING",
-                    "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm",
-                    "detail": "短时强降雨，需关注"
-                })
+        if graded and graded["level"] in ("CRITICAL", "WARNING"):
+            findings.append(graded)
+        elif max_p > 30:
+            # 蓝色 INFO 被 >30mm 强降雨线覆盖 → 单条 WARNING（原 INFO+WARNING 双报去重）
+            findings.append({
+                "level": "WARNING",
+                "message": f"测站{st_id}: 单时段最大雨量{max_p:.1f}mm (短时强降雨>30mm) @ {max_p_time}",
+                "detail": "短时强降雨，需关注下游防洪"
+                          + ("；达蓝色预警线" if graded else "")
+            })
+        elif graded:
+            findings.append(graded)  # 蓝色线低于 30mm（自定义阈值）时保留 INFO
 
     if not findings:
         findings.append({"level": "OK", "message": "雨量正常", "detail": f"分析{len(df['st_id'].unique())}个测站"})
@@ -886,6 +902,58 @@ def analyze_inspection_results(engine, days=30):
     }
 
 
+# 离线清单的关键类型优先序：直接影响大坝安全判读的监测类型排前
+_OFFLINE_PRIORITY_TYPES = ("渗压", "位移", "GNSS", "水位", "闸门", "泵站", "雨量")
+
+# 设备名类型关键词（真实库 eq_equip_base.category 是数字码"0/1/2"，名称才含类型语义）
+_OFFLINE_TYPE_KEYWORDS = ("渗压计", "渗流计", "GNSS", "位移", "水位计", "闸门", "泵站",
+                          "雨量计", "视频", "通信", "电源", "广播", "摄像头")
+
+
+def _device_type_label(name, category):
+    """从设备名提取类型关键词；名称无关键词时退回 category（数字码以"类型N"呈现防粘连）。"""
+    s = str(name or "")
+    for kw in _OFFLINE_TYPE_KEYWORDS:
+        if kw in s:
+            return kw
+    cat = str(category)
+    return f"类型{cat}" if cat.isdigit() else cat
+
+
+def _offline_device_summary(equip, max_types=4, codes_per_type=3):
+    """离线设备按类型汇总（名称关键词分类、关键类型优先），供离线率 WARNING 的 detail 引用。
+
+    格式：关键类型离线：渗压计3台(C000,C001,C002)、水位2台(C003,C004)、视频36台…等41台
+    """
+    off = equip[equip['status'] == 0]
+    if off.empty:
+        return "无离线设备"
+    labels = [_device_type_label(n, c) for n, c in zip(off['name'], off['category'])]
+    grouped = {}
+    for label, code in zip(labels, off['code']):
+        grouped.setdefault(label, []).append(code)
+    ordered = sorted(
+        grouped.items(),
+        key=lambda kv: (0 if any(t in kv[0] for t in _OFFLINE_PRIORITY_TYPES) else 1,
+                        -len(kv[1])))
+    parts = []
+    for cat, codes in ordered[:max_types]:
+        shown = ",".join(str(c) for c in codes[:codes_per_type])
+        more = f"等{len(codes)}台" if len(codes) > codes_per_type else ""
+        sep = "-" if str(cat)[-1:].isdigit() else ""  # 数字码标签加分隔符，防"类型04台"粘连
+        parts.append(f"{cat}{sep}{len(codes)}台({shown}{more})")
+    tail = f"…等{len(off)}台" if len(ordered) > max_types else f"，共{len(off)}台"
+    return "关键类型离线：" + "、".join(parts) + tail
+
+
+def _abnormal_device_summary(equip, cap=10):
+    """异常(status=2)设备清单：编码(名称)，可定位到台。"""
+    abn = equip[equip['status'] == 2]
+    items = [f"{r['code']}({r['name']})" for _, r in abn.head(cap).iterrows()]
+    more = f"…等{len(abn)}台" if len(abn) > cap else ""
+    return "、".join(items) + more
+
+
 def analyze_equipment(engine):
     """分析设备状态"""
     findings = []
@@ -904,14 +972,16 @@ def analyze_equipment(engine):
         findings.append({
             "level": "WARNING",
             "message": f"设备离线率偏高: {offline_rate:.1%} ({offline}/{total})",
-            "detail": "超过30%设备离线，需检查通信或电源"
+            "detail": "超过30%设备离线，需检查通信或电源；"
+                      + _offline_device_summary(equip)
         })
 
     if abnormal > 0:
         findings.append({
             "level": "WARNING",
             "message": f"有{abnormal}台设备处于异常状态",
-            "detail": "需检查异常设备"
+            "detail": "需检查异常设备；异常设备清单(status=2)："
+                      + _abnormal_device_summary(equip)
         })
 
     # 按类型统计
@@ -1960,10 +2030,54 @@ def generate_report(engine, days=30, limit=5000, auto_diagnosis=True):
 # 封闭错误码枚举——下游按 code 分支，不解析 message
 ERROR_FIX_HINTS = {
     "DB_CONNECT_FAILED": "检查 POWERELF_DB_* 环境变量与网络连通性（source ../_shared/bootstrap.sh）",
+    "DB_URL_UNRESOLVED": "未给 --db 且环境变量解析失败：确认 ~/.hermes/.env 已由 hermes 加载，"
+                         "或显式传 --db mysql+pymysql://user:pass@host:3306/db",
     "TABLE_MISSING": "确认目标库为 powerelf_srm_yml 且已执行建表脚本；勿重试本维度",
     "QUERY_TIMEOUT": "缩小 --days 窗口或降低 --limit；确认索引 (st_id, tm) 存在",
     "BAD_ARGS": "检查 CLI 参数：--days/--limit 必须为正整数，--db 为合法连接串",
 }
+
+
+def _shared_sqlalchemy_url():
+    """经 lib/db.py shim → _shared/lib/db.py 从环境变量解析连接（单一事实源）。
+
+    hermes 启动即加载 ~/.hermes/.env 到进程环境，故 CLI 不带 --db 也能解析；
+    命令行不再出现 mysql 字样，绕开终端危险命令拦截。失败向上抛由 main 转 envelope。
+    """
+    sys.path.insert(0, _os.path.join(
+        _os.path.dirname(_os.path.abspath(__file__)), "..", "lib"))
+    from db import get_sqlalchemy_url
+    return get_sqlalchemy_url()
+
+
+def _resolve_db_url(cli_value):
+    """--db 显式给出则原样返回；缺省走共享层环境解析。"""
+    if cli_value:
+        return cli_value
+    return _shared_sqlalchemy_url()
+
+
+def _write_report_artifacts(report, run_id, skill_root=None, since=None):
+    """P0-F1：完整报告无条件落盘 <skill>/report_<run_id>.md，并收集本轮图表 PNG。
+
+    解决 --json 丢弃报告的问题：envelope 经 artifacts 引用落盘产物，
+    agent 无需手工重查维度重拼报告。写盘失败返回 None，不毁 stdout 输出
+    （Phase 4.5 纪律）。since 为本轮起始 datetime，用于过滤历史残留图表。
+    """
+    base = skill_root or _os.path.dirname(
+        _os.path.dirname(_os.path.abspath(__file__)))
+    try:
+        report_path = _os.path.join(base, f"report_{run_id}.md")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        since_ts = since.timestamp() - 1 if since is not None else 0
+        charts = sorted(
+            p for p in glob.iglob(_os.path.join(base, "reports", "*.png"))
+            if _os.path.getmtime(p) >= since_ts)
+        return {"report_md": report_path, "charts": charts}
+    except OSError as e:
+        logger.warning("报告产物落盘失败（不影响 stdout 输出）: %s", e)
+        return None
 
 
 def make_error(code, message):
@@ -2007,12 +2121,68 @@ CATEGORY_DATA_SOURCES = {
 _SEVERITY_MAP = {"CRITICAL": "critical", "WARNING": "warning", "INFO": "info"}
 
 
-def build_envelope(analyses, run_id, command, days=30, error=None):
+# 测站标识提取：覆盖全部维度的 title 前缀（测站/渗压计/渗流计/闸门站/泵站/GNSS测站/雨量站）
+_STATION_RE = re.compile(r"(?:GNSS测站|闸门站|泵站|渗压计|渗流计|雨量站|测站)(\d+)")
+
+
+def _station_key(title):
+    """从 finding title 提取测站标识；无标识返回 None。"""
+    m = _STATION_RE.search(title)
+    return m.group(1) if m else None
+
+
+def _link_correlated(findings):
+    """P1 聚合：同维度同测站的多条 findings 互填 correlated_with（纪律#1 佐证链）。
+
+    如渗压计93 的突变(F003)+MAD(F004) 互为佐证，报告根因段可按此分组呈现。
+    """
+    groups = {}
+    for ef in findings:
+        dim = ef["title"][1:ef["title"].index("]")] if ef["title"].startswith("[") and "]" in ef["title"] else ""
+        station = _station_key(ef["title"])
+        if station:
+            groups.setdefault((dim, station), []).append(ef["id"])
+    for ef in findings:
+        dim = ef["title"][1:ef["title"].index("]")] if ef["title"].startswith("[") and "]" in ef["title"] else ""
+        station = _station_key(ef["title"])
+        if station:
+            peers = [fid for fid in groups[(dim, station)] if fid != ef["id"]]
+            if peers:
+                ef["correlated_with"] = peers
+
+
+def export_findings_csv(envelope, path):
+    """P1-F3：findings 导出 UTF-8 BOM CSV（Excel 友好），含复核结论空列。
+
+    列：编号,严重程度,监测维度,发现标题,详细说明,根因类别,数据来源,测站,复核结论。
+    替代 agent 手写 CSV 脚本（单源纪律）。写盘失败返回 None 不毁主流程。
+    """
+    try:
+        findings = (envelope.get("agent") or {}).get("findings", [])
+        with open(path, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["编号", "严重程度", "监测维度", "发现标题", "详细说明",
+                        "根因类别", "数据来源", "测站", "复核结论"])
+            for ef in findings:
+                title = ef.get("title", "")
+                dim = title[1:title.index("]")] if title.startswith("[") and "]" in title else ""
+                w.writerow([ef.get("id"), ef.get("severity"), dim, title,
+                            ef.get("detail", ""), ef.get("category", ""),
+                            ef.get("data_source", ""),
+                            _station_key(title) or "", ""])
+        return path
+    except OSError as e:
+        logger.warning("findings CSV 写盘失败（不影响主流程）: %s", e)
+        return None
+
+
+def build_envelope(analyses, run_id, command, days=30, error=None, artifacts=None):
     """把 15 个 analyze_* 的平铺 findings 归一为 envelope 契约。
 
     契约：{ok, run_id, command, error, agent:{status, summary, findings[], next_steps[]}}
     findings 核心 4 字段 severity/title/detail/category + 附注 data_source/correlated_with。
     OK 级条目是"本维度正常"占位，不进 findings（envelope 用 status/summary 表达正常）。
+    artifacts（P0-F1）：{report_md, charts[]} 落盘产物绝对路径，防 --json 模式丢失报告。
     """
     if error is not None:
         return {
@@ -2118,11 +2288,15 @@ def build_envelope(analyses, run_id, command, days=30, error=None):
             "command": None,
             "reason": "；".join(no_data_notes) + "（区分设备离线与本工程无此类设备）"})
 
-    return {
+    envelope = {
         "ok": True, "run_id": run_id, "command": command, "error": None,
         "agent": {"status": status, "summary": summary,
                   "findings": findings, "next_steps": next_steps},
     }
+    _link_correlated(findings)  # P1：同维度同测站互填 correlated_with
+    if artifacts is not None:
+        envelope["artifacts"] = artifacts
+    return envelope
 
 
 def envelope_exit_code(envelope):
@@ -2174,10 +2348,12 @@ def append_run_ledger(run_id, command, exit_code, envelope, duration_s):
 
 def main():
     parser = argparse.ArgumentParser(description="智能巡检分析工具")
-    parser.add_argument("--db", required=True, help="数据库连接")
+    parser.add_argument("--db", help="数据库连接（缺省经 _shared/lib/db.py 从环境变量解析，"
+                                     "hermes 已加载 ~/.hermes/.env，通常无需显式传）")
     parser.add_argument("--days", type=int, default=30, help="分析天数")
     parser.add_argument("--limit", type=int, default=5000, help="每表最大查询行数")
     parser.add_argument("--output", help="输出报告文件路径")
+    parser.add_argument("--csv", help="findings 明细 CSV 输出路径（UTF-8 BOM，含复核结论空列）")
     parser.add_argument("--json", action="store_true", help="输出 envelope JSON（Phase 1 契约）")
     parser.add_argument("--legacy-json", action="store_true",
                         help="输出旧版裸 analyses 数组（过渡一个版本后移除）")
@@ -2203,8 +2379,16 @@ def main():
         _finish(envelope)
 
     try:
+        db_url = _resolve_db_url(args.db)
+    except Exception as e:
+        envelope = build_envelope([], run_id, command,
+                                  error=make_error("DB_URL_UNRESOLVED", e))
+        print(json.dumps(envelope, ensure_ascii=False, indent=2, default=str))
+        _finish(envelope)
+
+    try:
         # 双超时（Phase 4.7）：connect 10s + read 120s，防单查询挂死整轮巡检
-        engine = create_engine(args.db, connect_args={
+        engine = create_engine(db_url, connect_args={
             "connect_timeout": 10, "read_timeout": 120})
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -2216,7 +2400,14 @@ def main():
 
     report, analyses = generate_report(engine, args.days, args.limit,
                                        auto_diagnosis=not args.no_auto_diagnosis)
-    envelope = build_envelope(analyses, run_id, command, days=args.days)
+    # P0-F1：报告无条件落盘并经 envelope.artifacts 引用（--json 不再丢失报告与图表）
+    artifacts = _write_report_artifacts(report, run_id, since=_started)
+    envelope = build_envelope(analyses, run_id, command, days=args.days,
+                              artifacts=artifacts)
+    if args.csv:  # P1-F3：内置明细 CSV，替代 agent 手写脚本（单源纪律）
+        csv_path = export_findings_csv(envelope, args.csv)
+        if csv_path and artifacts is not None:
+            envelope["artifacts"]["csv"] = csv_path
 
     if args.legacy_json:
         body = json.dumps(analyses, ensure_ascii=False, indent=2, default=str)

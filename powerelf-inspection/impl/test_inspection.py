@@ -319,6 +319,257 @@ def test_run_id_format():
 
 
 # ============================================================
+# P0：--db 缺省解析 + envelope artifacts（无需 DB）
+# ============================================================
+
+def test_resolve_db_url_passthrough():
+    """--db 显式给出时原样返回，不走环境解析"""
+    from inspection_analyzer import _resolve_db_url
+    url = "mysql+pymysql://user:pw@127.0.0.1:3306/powerelf_srm_yml"
+    assert _resolve_db_url(url) == url
+
+
+def test_resolve_db_url_from_env(monkeypatch):
+    """--db 缺省时经 _shared/lib/db.py 从环境变量解析（hermes 启动即加载 ~/.hermes/.env）"""
+    from inspection_analyzer import _resolve_db_url
+    monkeypatch.setenv("POWERELF_DB_HOST", "10.0.0.9")
+    monkeypatch.setenv("POWERELF_DB_PORT", "3307")
+    monkeypatch.setenv("POWERELF_DB_NAME", "powerelf_test_db")
+    for var in ("SRM_DB_HOST", "SRM_DB_PORT", "SRM_DB_NAME"):
+        monkeypatch.delenv(var, raising=False)
+    url = _resolve_db_url(None)
+    assert "10.0.0.9:3307" in url
+    assert "powerelf_test_db" in url
+
+
+def test_resolve_db_url_unresolvable(monkeypatch):
+    """环境残缺且共享层抛错时，向上抛异常（main 层转 DB_URL_UNRESOLVED envelope）"""
+    import importlib
+    import inspection_analyzer as ia
+    from inspection_analyzer import _resolve_db_url
+
+    def _boom():
+        raise RuntimeError("no db config anywhere")
+
+    real = getattr(ia, "_shared_sqlalchemy_url", None)
+    ia._shared_sqlalchemy_url = _boom
+    try:
+        with pytest.raises(Exception):
+            _resolve_db_url(None)
+    finally:
+        if real is not None:
+            ia._shared_sqlalchemy_url = real
+        else:
+            del ia._shared_sqlalchemy_url
+    importlib.reload(ia)  # 恢复模块干净状态
+
+
+@envelope_only
+def test_envelope_carries_artifacts():
+    """envelope 携带 artifacts（report_md + charts 绝对路径），--json 不再丢失报告产物"""
+    art = {"report_md": "/tmp/powerelf-inspection/report_insp-x.md",
+           "charts": ["/tmp/powerelf-inspection/reports/trend_st_rsvr_r.png"]}
+    env = build_envelope(_SAMPLE_ANALYSES, "insp-test", "cmd", days=7, artifacts=art)
+    assert env["artifacts"] == art
+    # 未提供时不造空字段
+    env2 = build_envelope(_SAMPLE_ANALYSES, "insp-test", "cmd", days=7)
+    assert "artifacts" not in env2
+
+
+def test_write_report_artifacts(tmp_path):
+    """报告无条件落盘到 <skill>/report_<run_id>.md，并收集 reports/ 下本轮图表"""
+    from inspection_analyzer import _write_report_artifacts
+    (tmp_path / "reports").mkdir()
+    chart = tmp_path / "reports" / "trend_st_rsvr_r.png"
+    chart.write_bytes(b"\x89PNG fake")
+
+    art = _write_report_artifacts("# 巡检报告\n正文", "insp-test", skill_root=str(tmp_path))
+
+    assert art is not None
+    report_path = tmp_path / "report_insp-test.md"
+    assert report_path.exists()
+    assert report_path.read_text(encoding="utf-8").startswith("# 巡检报告")
+    assert art["report_md"] == str(report_path)
+    assert str(chart) in art["charts"]
+
+
+# ============================================================
+# P1：设备清单 / 雨量去重 / 同站关联 / CSV 导出（无需 DB）
+# ============================================================
+
+def _equip_rows(n_offline_by_cat=None, abnormal=None, online=70):
+    """构造 eq_equip_base 形状的行；n_offline_by_cat={"渗压计":3,...}"""
+    rows, i = [], 0
+    for cat, n in (n_offline_by_cat or {}).items():
+        for _ in range(n):
+            rows.append({"id": i, "name": f"E{i:03d}", "code": f"C{i:03d}",
+                         "status": 0, "category": cat})
+            i += 1
+    for code, name in (abnormal or []):
+        rows.append({"id": i, "name": name, "code": code, "status": 2, "category": "传感器"})
+        i += 1
+    for _ in range(online):
+        rows.append({"id": i, "name": f"E{i:03d}", "code": f"C{i:03d}",
+                     "status": 1, "category": "传感器"})
+        i += 1
+    return rows
+
+
+def test_equip_offline_detail_lists_critical_types(monkeypatch):
+    """F009：离线率 WARNING 的 detail 必须列出关键类型离线清单（渗压/水位优先+编码+总数）"""
+    import pandas as pd
+    rows = _equip_rows(n_offline_by_cat={"渗压计": 3, "水位": 2, "视频": 36}, online=63)
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+    result = _ia.analyze_equipment(None)
+    off = [f for f in result["findings"] if "离线率" in f["message"]]
+    assert len(off) == 1
+    detail = off[0]["detail"]
+    assert "渗压计" in detail and "3台" in detail, f"渗压计清单缺失: {detail}"
+    assert "水位" in detail and "2台" in detail
+    assert "C000" in detail  # 具体编码可定位
+    assert "视频" in detail and "共41台" in detail  # 类型未截断时总数兜底
+    # 关键类型排在非关键类型前
+    assert detail.index("渗压计") < detail.index("视频")
+
+
+def test_equip_offline_detail_truncates_many_types(monkeypatch):
+    """离线类型超过上限时截断展示但保留总数"""
+    import pandas as pd
+    rows = _equip_rows(n_offline_by_cat={"渗压计": 2, "视频": 10, "通信": 10, "电源": 10, "广播": 10},
+                       online=58)
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+    result = _ia.analyze_equipment(None)
+    off = [f for f in result["findings"] if "离线率" in f["message"]]
+    assert len(off) == 1
+    detail = off[0]["detail"]
+    assert "渗压计2台" in detail          # 关键类型永远展示
+    assert "…" in detail and "等42台" in detail  # 截断 + 总数兜底
+    # 5 类离线只展示 4 类：至少一个非关键类型被截断（用"类型N台"模式匹配，避开前缀文案干扰）
+    import re as _re
+    shown = sum(1 for t in ("视频", "通信", "电源", "广播") if _re.search(rf"{t}\d+台", detail))
+    assert shown == 3, f"应截断1个非关键类型，实际展示{shown}个: {detail}"
+
+
+def test_equip_offline_classifies_by_name_keyword(monkeypatch):
+    """真库 category 是数字码（"0"）：类型应从设备名关键词提取，防 '054台' 歧义拼接"""
+    import pandas as pd
+    rows = []
+    for i, nm in enumerate(["振弦渗压计E01", "振弦渗压计E02", "振弦渗压计E03",
+                            "西坝咀雨量计", "E900"]):
+        rows.append({"id": i, "name": nm, "code": f"C{i:03d}", "status": 0, "category": "0"})
+    for i in range(10):
+        rows.append({"id": 100 + i, "name": f"E{i:03d}", "code": f"X{i:03d}",
+                     "status": 1, "category": "0"})
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+    result = _ia.analyze_equipment(None)
+    off = [f for f in result["findings"] if "离线率" in f["message"]][0]
+    detail = off["detail"]
+    assert "渗压计3台" in detail and "C000" in detail   # 名称关键词分类
+    assert "雨量计1台" in detail
+    assert "054台" not in detail                        # 数字码不再与台数粘连
+    assert "类型0" in detail                            # 无关键词者退回 category 数字码
+    assert detail.index("渗压计") < detail.index("类型0")  # 关键类型排前
+
+
+def test_rain_station_id_renders_int(monkeypatch):
+    """st_pptn_r.st_id 为 float(85.0) 时 title 必须渲染 '测站85' 而非 '测站85.0'"""
+    monkeypatch.setattr(_ia, "read_sensor_data",
+                        lambda eng, table, cols, days: _rain_df(35, st_id=85.0))
+    findings = _ia.analyze_rainfall(None, days=7)["findings"]
+    rain = [f for f in findings if "雨量" in f["message"]]
+    assert len(rain) == 1
+    assert "测站85:" in rain[0]["message"]
+    assert "85.0" not in rain[0]["message"]
+
+
+def test_equip_abnormal_detail_lists_devices(monkeypatch):
+    """F010：异常设备 WARNING 的 detail 必须列出设备编码+名称（可定位到台）"""
+    import pandas as pd
+    rows = _equip_rows(abnormal=[("C099", "GNSS测站99"), ("C100", "渗压计100")], online=98)
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+    result = _ia.analyze_equipment(None)
+    abn = [f for f in result["findings"] if "异常状态" in f["message"]]
+    assert len(abn) == 1
+    detail = abn[0]["detail"]
+    assert "C099" in detail and "GNSS测站99" in detail
+    assert "C100" in detail and "渗压计100" in detail
+
+
+def _rain_df(max_p, st_id=85):
+    import pandas as pd
+    return pd.DataFrame([
+        {"st_id": st_id, "p": 0.0, "dr": 1.0, "dyp": 0.0, "tm": "2026-08-15 08:00"},
+        {"st_id": st_id, "p": float(max_p), "dr": 1.0, "dyp": float(max_p), "tm": "2026-08-15 12:00"},
+        {"st_id": st_id, "p": 0.0, "dr": 1.0, "dyp": float(max_p), "tm": "2026-08-15 13:00"},
+    ])
+
+
+def test_rain_blue_band_single_warning(monkeypatch):
+    """F001/F002 去重：30-50mm 蓝色带同一事件只出 1 条 WARNING（不再 INFO+WARNING 双报）"""
+    monkeypatch.setattr(_ia, "read_sensor_data", lambda eng, table, cols, days: _rain_df(35))
+    findings = _ia.analyze_rainfall(None, days=7)["findings"]
+    rain = [f for f in findings if "雨量" in f["message"]]
+    assert len(rain) == 1, f"蓝色带应只有1条，实际: {rain}"
+    assert rain[0]["level"] == "WARNING"
+    assert "蓝色" in rain[0]["message"] or "蓝色" in rain[0]["detail"]
+
+
+def test_rain_yellow_band_no_duplicate(monkeypatch):
+    """分级已表达严重度（黄色 WARNING）时不再追加硬编码'短时强降雨'重复条目"""
+    monkeypatch.setattr(_ia, "read_sensor_data", lambda eng, table, cols, days: _rain_df(60))
+    findings = _ia.analyze_rainfall(None, days=7)["findings"]
+    rain = [f for f in findings if "雨量" in f["message"]]
+    assert len(rain) == 1, f"黄色带应只有1条，实际: {rain}"
+    assert rain[0]["level"] == "WARNING" and "黄色" in rain[0]["message"]
+
+
+def test_rain_red_critical_single(monkeypatch):
+    """红色 CRITICAL 单条，不叠加强降雨 WARNING"""
+    monkeypatch.setattr(_ia, "read_sensor_data", lambda eng, table, cols, days: _rain_df(120))
+    findings = _ia.analyze_rainfall(None, days=7)["findings"]
+    rain = [f for f in findings if "雨量" in f["message"]]
+    assert len(rain) == 1 and rain[0]["level"] == "CRITICAL" and "红色" in rain[0]["message"]
+
+
+@envelope_only
+def test_envelope_correlates_same_station():
+    """F003/F004 聚合：同维度同测站的多条 findings 互填 correlated_with"""
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "message": "渗压计93: 突变17.08kPa", "detail": ""},
+        {"level": "WARNING", "message": "渗压计93: 统计异常 z_score=57.6", "detail": ""},
+        {"level": "WARNING", "message": "渗压计94: 突变3.00kPa", "detail": ""},
+    ]}]
+    env = build_envelope(analyses, "insp-t", "cmd", days=7)
+    fs = env["agent"]["findings"]
+    assert fs[0]["correlated_with"] == [fs[1]["id"]] and fs[1]["correlated_with"] == [fs[0]["id"]]
+    assert fs[2]["correlated_with"] == []  # 不同测站不关联
+
+
+@envelope_only
+def test_export_findings_csv(tmp_path):
+    """内置 CSV 导出：UTF-8 BOM、表头含复核结论空列、行数=findings、测站列提取"""
+    from inspection_analyzer import export_findings_csv
+    analyses = [{"category": "渗压监测", "findings": [
+        {"level": "WARNING", "message": "渗压计93: 突变17.08kPa", "detail": "d1"},
+        {"level": "INFO", "message": "测站85: 单时段最大雨量35.0mm", "detail": "d2"},
+    ]}]
+    env = build_envelope(analyses, "insp-t", "cmd", days=7)
+    p = tmp_path / "findings.csv"
+    out = export_findings_csv(env, str(p))
+    assert out == str(p) and p.exists()
+    raw = p.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf")  # Excel 友好
+    text = raw.decode("utf-8-sig")
+    lines = text.strip().splitlines()
+    assert lines[0].startswith("编号,严重程度,监测维度")
+    assert lines[0].endswith("测站,复核结论")
+    assert len(lines) == 3  # 表头 + 2 findings
+    assert "渗压监测" in lines[1] and ",93," in lines[1]
+    assert ",85," in lines[2]  # 测站85 提取
+    assert lines[1].endswith(",")  # 复核结论空列
+
+
+# ============================================================
 # 自动诊断路由单元测试（Phase 2，无需 DB）
 # ============================================================
 
@@ -526,6 +777,81 @@ def test_envelope_passes_pattern_through():
     fs = env["agent"]["findings"]
     assert fs[0].get("pattern") == "step"
     assert "pattern" not in fs[1]  # 无 pattern 的 finding 不强加该键
+
+
+# ============================================================
+# 设备状态边界测试（Phase 5，无需 DB）
+# ============================================================
+
+equip_only = pytest.mark.skipif(not (HAS_ANALYZER and HAS_ENVELOPE),
+                                reason="无法导入 analyzer/envelope 层")
+
+
+@equip_only
+def test_equip_offline_rate_boundary_exact_30pct(monkeypatch):
+    """边界：100台设备，30台离线(status=0)，离线率恰30% → 不触发 > 0.3 的WARNING"""
+    import pandas as pd
+    # 30台 status=0(离线), 70台 status=1(在线), 0台 status=2(异常)
+    rows = []
+    for i in range(30):
+        rows.append({"id": i, "name": f"E{i:03d}", "code": f"C{i:03d}", "status": 0, "category": "传感器"})
+    for i in range(70):
+        rows.append({"id": 30 + i, "name": f"E{30+i:03d}", "code": f"C{30+i:03d}", "status": 1, "category": "传感器"})
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+
+    result = _ia.analyze_equipment(None)
+    findings = result["findings"]
+
+    # 离线率 == 0.3 不触发 > 0.3 的 WARNING
+    offline_warnings = [f for f in findings if "离线率" in f["message"]]
+    assert len(offline_warnings) == 0, f"离线率恰 30% 不应触发 WARNING, 实际: {offline_warnings}"
+
+    # abnormal == 0 不触发异常设备分支
+    abnormal_warnings = [f for f in findings if "异常状态" in f["message"]]
+    assert len(abnormal_warnings) == 0, "0台异常不应触发 WARNING"
+
+    # 应返回 OK 级 finding
+    assert any(f["level"] == "OK" for f in findings), "无异常时应返回 OK 级 finding"
+    assert result["stats"]["total"] == 100
+    assert result["stats"]["offline"] == 30
+    assert result["stats"]["abnormal"] == 0
+
+
+@equip_only
+def test_equip_offline_rate_over_30pct(monkeypatch):
+    """离线率 > 30% → 触发 WARNING"""
+    import pandas as pd
+    rows = []
+    for i in range(31):
+        rows.append({"id": i, "name": f"E{i:03d}", "code": f"C{i:03d}", "status": 0, "category": "传感器"})
+    for i in range(69):
+        rows.append({"id": 31 + i, "name": f"E{31+i:03d}", "code": f"C{31+i:03d}", "status": 1, "category": "传感器"})
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+
+    result = _ia.analyze_equipment(None)
+    findings = result["findings"]
+
+    offline_warnings = [f for f in findings if "离线率" in f["message"]]
+    assert len(offline_warnings) == 1, "离线率 31% 应触发 WARNING"
+    assert offline_warnings[0]["level"] == "WARNING"
+
+
+@equip_only
+def test_equip_abnormal_any_triggers_warning(monkeypatch):
+    """0台离线，但1台异常(status=2) → 触发异常设备 WARNING"""
+    import pandas as pd
+    rows = []
+    for i in range(99):
+        rows.append({"id": i, "name": f"E{i:03d}", "code": f"C{i:03d}", "status": 1, "category": "传感器"})
+    rows.append({"id": 99, "name": "E099", "code": "C099", "status": 2, "category": "传感器"})
+    monkeypatch.setattr(_ia, "read_equipment", lambda eng: pd.DataFrame(rows))
+
+    result = _ia.analyze_equipment(None)
+    findings = result["findings"]
+
+    abnormal_warnings = [f for f in findings if "异常状态" in f["message"]]
+    assert len(abnormal_warnings) == 1, "1台异常应触发 WARNING"
+    assert abnormal_warnings[0]["level"] == "WARNING"
 
 
 # ============================================================

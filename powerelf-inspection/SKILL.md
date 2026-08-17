@@ -143,12 +143,24 @@ pip install pandas numpy sqlalchemy pymysql scikit-learn
 #### 1. 传感器巡检分析（15维度）
 
 ```bash
-python3 impl/inspection_analyzer.py --db "$DB_URL"
-python3 impl/inspection_analyzer.py --db "$DB_URL" --days 30 --output report.md
-python3 impl/inspection_analyzer.py --db "$DB_URL" --days 7 --json          # envelope 契约输出
-python3 impl/inspection_analyzer.py --db "$DB_URL" --days 7 --legacy-json   # 旧版裸数组（过渡）
-python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # 关闭自动诊断链
+# ✅ 一键完整报告（交付给用户的标准方式）——--db 缺省经 _shared/lib/db.py 从
+#    ~/.hermes/.env 环境变量解析，命令行不出现 mysql 字样、无需手拼 URL：
+python3 impl/inspection_analyzer.py --days 7 --output report.md
+
+python3 impl/inspection_analyzer.py --days 7 --json          # envelope 契约输出（程序校验/评测判分用）
+python3 impl/inspection_analyzer.py --days 7 --json --csv findings.csv  # 附 findings 明细 CSV（UTF-8 BOM，含复核结论空列）
+python3 impl/inspection_analyzer.py --days 7 --legacy-json   # 旧版裸数组（过渡）
+python3 impl/inspection_analyzer.py --days 7 --no-auto-diagnosis  # 关闭自动诊断链
+python3 impl/inspection_analyzer.py --db "mysql+pymysql://user:pass@host:3306/db" --days 7  # 显式指定（仅环境变量不可用时）
 ```
+
+> **输出模式边界（单源纪律的一部分）**：
+> - **给用户的完整报告**必须走 `--output report.md`（或默认 stdout）：模板自带**巡检图表、
+>   离线三口径、数据覆盖清单、Data Notes、QA 闸**章节。
+> - `--json` 只输出 envelope，**用于程序校验/评测判分**，不作为报告交付物。
+> - 无论何种模式，完整报告都会落盘 `<skill>/report_<run_id>.md`，且 envelope 的
+>   `artifacts.report_md / artifacts.charts[]`（绝对路径）始终引用它——**禁止**拿到 JSON 后
+>   再手工重查各维度拼报告/自造 CSV，直接引用 artifacts 产物即可。
 
 分析维度：水库水情、雨量、渗压、渗流、GNSS位移、闸门、泵站、水质、墒情、白蚁、巡检结果、设备状态、告警、MAD统计异常、多指标关联异常
 
@@ -167,6 +179,10 @@ python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # �
 {
   "ok": true, "run_id": "insp-<uuid>", "command": "inspection_analyzer --days 30",
   "error": null,
+  "artifacts": {
+    "report_md": "<skill>/report_insp-<uuid>.md",
+    "charts": ["<skill>/reports/trend_st_rsvr_r.png", "…"]
+  },
   "agent": {
     "status": "critical | warning | ok | no_data | inconclusive",
     "summary": "N 项巡检，M 项异常，最严重的是……",
@@ -183,7 +199,7 @@ python3 impl/inspection_analyzer.py --db "$DB_URL" --no-auto-diagnosis      # �
 }
 ```
 
-错误对象定型 `{code, message, fix_hint}`，code 封闭枚举：`DB_CONNECT_FAILED / TABLE_MISSING / QUERY_TIMEOUT / BAD_ARGS`——**下游按 code 分支，不解析 message**。
+错误对象定型 `{code, message, fix_hint}`，code 封闭枚举：`DB_CONNECT_FAILED / DB_URL_UNRESOLVED / TABLE_MISSING / QUERY_TIMEOUT / BAD_ARGS`——**下游按 code 分支，不解析 message**。
 
 **退出码**：`0` 无异常 / `2` 检出 CRITICAL / `3` DB 连接失败 / `4` inconclusive（数据不足以下结论）/ `5` 关键表缺失。
 
@@ -222,7 +238,7 @@ python3 impl/inspection_tool.py --mode registry --db "$DB_URL"
 
 ```bash
 python3 impl/test_inspection.py --db "$DB_URL" --days 7
-python3 impl/inspection_analyzer.py --db "$DB_URL" --json > /tmp/env.json; ec=$?
+python3 impl/inspection_analyzer.py --json > /tmp/env.json; ec=$?
 python3 impl/verify_output.py /tmp/env.json --exit-code $ec   # envelope 一致性 + red-flag 元检查
 ```
 
@@ -265,6 +281,25 @@ python3 impl/verify_output.py /tmp/env.json --exit-code $ec   # envelope 一致�
 第5层: 多指标关联 (矛盾分析)
   └─ 关联异常 → CRITICAL
 ```
+
+> ⚠️ **核心阈值速查（判定必用，严禁凭记忆猜）**——以下为**严格比较，恰等于阈值一律不触发**。
+> 用户给"假设数据·直接判断"时，**先用本表精确比对**再下结论，禁止用 σ/标准差近似替代绝对阈值。
+> 权威明细见 `rules/anomaly-and-complex-conditions.md`、`_shared/rules/`（本表为高频速查缓存）。
+>
+> | 指标 | 触发条件（严格） | 反例（**不触发**） |
+> |---|---|---|
+> | 渗压突变 | `\|wp−prev_wp\| > 5` kPa 或 `>10%/h` | 50.0→54.9（Δ4.9）不触发；50.0→55.1（Δ5.1）触发 |
+> | 水位突变 | `\|z−prev_z\| > 0.5` m 或 `>5%/h` | Δ恰0.5 不触发 |
+> | GNSS位移突变 | `\|Δh−prev\| > 2` mm/d | 恰2.0 不触发 |
+> | 流量比值 | `inq/otq > 2.0` → 关注(WARNING) | inq=20,otq=10（比值恰2.0）不触发 |
+> | 泵频率 | `<48 或 >52` Hz → 异常（定速泵50±） | 变频泵(VFD)不适用此阈值 |
+> | 雨量等级≠预警 | 等级表是描述性（颜色≠预警）；**单时段 p 发预警看四档**：红`>100` / 橙`>80` / 黄`>50` / 蓝`>30` mm（`ew_info_rules` 缺省兜底，SL 158-2010） | 100.1mm → **红色预警**（>100）；恰100.0 不触发；29.9mm 属大雨但不发预警（<30） |
+> | MAD统计异常（第4层） | 稳定基线上离群点 z`>4.0`（渗压/渗流口径）→ WARNING，结论写"**MAD统计异常**" | 基线自身波动大（σ大）时单点偏离 z<4.0 不触发 |
+> | 设备离线率 | `> 30%` → WARNING"设备离线率偏高"（`equip_offline_rate_max`，通信/供电系统性问题） | 100台离线恰30台（30%）不触发；31台（31%）触发 |
+> | 巡检完成率 | `< 70%` → WARNING"巡检完成率偏低"（`completion_rate_min` 考核线） | 100条完成恰70条（70%）不触发；69条（69%）触发 |
+>
+> 判定纪律：先做减法取**精确差值**，再与阈值比；阈值边界一律"严格大于/小于"，禁止四舍五入。
+> **结论必须自述命中的检测层（第N层+层名）与级别**，如"第2层变化率 + 第4层 MAD统计异常 → WARNING"——多层同时命中时逐层列出。雨量 p>200（单小时）是**数据校验线**（极端值需确认），不是预警阈值。
 
 置信度公式: `0.3×阈值分 + 0.2×数据质量 + 0.2×趋势分 + 0.2×历史分 + 0.1×上下文分`
 - >85%: 直接推送

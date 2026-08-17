@@ -28,3 +28,5 @@ powerelf-data-governance/trigger-eval/
 
 # 巡检报告图表产物（运行时可再生成）
 powerelf-inspection/reports/
+powerelf-inspection/report_insp-*.md
+powerelf-inspection/state/
