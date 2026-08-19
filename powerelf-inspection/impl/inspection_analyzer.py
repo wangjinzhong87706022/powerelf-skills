@@ -681,11 +681,33 @@ def analyze_pressure(engine, days=30, thresholds=None):
         pressure_change_threshold = get_registry_threshold(
             thresholds, "st_pressure_r", "rate.max_change", THRESHOLDS["pressure_change_kpa"])
         if len(wp_values) >= 2:
-            change = abs(wp_values[-1] - wp_values[-2])
-            if change > pressure_change_threshold:
-                findings.append(_change_finding(
-                    wp_values, wp_values[-2], wp_values[-1],
-                    st_id=st_id, unit="kPa", dim_label="渗压计"))
+            # 全窗口扫描所有相邻点对（非仅末端两点）：历史尖峰（如 5/20 的 10kPa 突变）
+            # 在 --days 大窗口下同样可检出，而非只有"最新一次变化"能进报告。
+            # 每测站报窗口内最大 |Δ| 处（防多点对刷屏）；latest 点恰好是最大 Δ 端点时
+            # 保持原路径语义，否则按历史尖峰处理。
+            _spikes = [(i, abs(wp_values[i] - wp_values[i - 1]))
+                       for i in range(1, len(wp_values))
+                       if abs(wp_values[i] - wp_values[i - 1]) > pressure_change_threshold]
+            if _spikes:
+                i_max = max(_spikes, key=lambda x: x[1])[0]
+                _end_hit = abs(wp_values[-1] - wp_values[-2]) > pressure_change_threshold
+                _tail = i_max == len(wp_values) - 1 and _end_hit
+                if _tail:
+                    findings.append(_change_finding(
+                        wp_values, wp_values[-2], wp_values[-1],
+                        st_id=st_id, unit="kPa", dim_label="渗压计"))
+                else:
+                    # 历史尖峰（非末端）：latest 已回落 → 按 spike 通道降级 INFO
+                    findings.append({
+                        "level": "INFO",
+                        "message": (f"渗压计{st_id}: 窗口内突变"
+                                    f"{abs(wp_values[i_max] - wp_values[i_max - 1]):.1f}kPa"
+                                    f" ({wp_values[i_max - 1]:.2f} → {wp_values[i_max]:.2f})"
+                                    f"，现已回落至{wp_values[-1]:.2f}kPa"),
+                        "detail": ("单点突变后已回落，最像瞬时干扰/毛刺或已恢复事件；"
+                                   f"窗口峰值{max(wp_values):.2f}kPa，当前{wp_values[-1]:.2f}kPa"),
+                        "pattern": "spike",
+                    })
 
         # MAD异常检测（委托 lib/anomaly）+ 季节性护栏（Phase 4.9，命中后才查历年同期）
         if len(wp_values) >= 10:
