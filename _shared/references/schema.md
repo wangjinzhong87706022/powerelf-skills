@@ -98,7 +98,7 @@
 | stcd | varchar(20) | 测站编码（**99.8% 空，勿用于 JOIN**） |
 | eq_code | varchar(20) | 设备编码 |
 
-**st_river_r**（河道水情，**本库 0 行空表，勿查**）
+**st_river_r**（河道水情，**42.4 万行，2026-08-19 从 SL323 迁入**）
 | 列名 | 类型 | 中文含义 |
 |------|------|---------|
 | tm | datetime | ★观测时间 |
@@ -222,7 +222,7 @@ CREATE TABLE st_rsvr_r (
 ```
 > tm 范围实测：2026-01-11 17:05 ~ 2026-07-01 08:00。
 
-#### st_river_r — 河道水情（实测 2026-07-16，**0 行 — 本部署未启用**）
+#### st_river_r — 河道水情（实测 2026-07-16 建表；**2026-08-19 从 SL323 迁入 42.4 万行真实数据**）
 ```sql
 CREATE TABLE st_river_r (
   id        BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -246,8 +246,8 @@ CREATE TABLE st_river_r (
   tenant_id  BIGINT NOT NULL DEFAULT 1
 );
 ```
-> ⚠️ **本部署该表为空**（4 个站映射里 3 个设备已删、1 个错配渗压计 type_flag=20）。
-> 水库系统查询"水位异常"应走 `st_rsvr_r`，不要因问"河道"就空转此表。
+> ✅ **已迁入数据**（2026-08-19）：从 SL323 `192.168.100.103` 迁入 54 个河道站、42.4 万行，时间范围 2026-02-18 ~ 2026-07-31（SL323 源即止于此），设备落在 `eq_equip_base` id 401–454（type_flag=7 水位计）。本表现已可正常用于河道水位分析/缺失检测。
+> ⚠️ 数据为**日频**（tm=当天 00:00:00）；SL323 源数据 8 月起未更新，故本地最新止于 2026-07-31。
 
 #### st_was_r — 闸站水情
 ```sql
@@ -604,7 +604,7 @@ CREATE TABLE eq_business_equip_relation (
 );
 ```
 实测映射分布（business_table / st_type / 条数）：
-`st_rsvr_r`: RR×8, ZZ×2 ｜ `st_river_r`: RR×1, ZZ×3 ｜ `st_pptn_r`: PP×8, RR×1 ｜
+`st_rsvr_r`: RR×8, ZZ×2 ｜ `st_river_r`（已迁入数据）: RR×1, ZZ×3 ｜ `st_pptn_r`: PP×8, RR×1 ｜
 `st_pressure_r`: YZ×25 ｜ `st_percolation_r`: YZ×3 ｜ `dsm_dfr_srvrds_srhrds`: GN×8 ｜
 `rei_gate_r`: DD×7 ｜ `rei_pump_r`: DP×4。
 
@@ -755,7 +755,7 @@ SELECT tm, rz, inq, otq FROM st_rsvr_r
 WHERE st_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY tm;
 -- 水库：最新一条
 SELECT * FROM st_rsvr_r WHERE st_id = ? AND deleted = 0 ORDER BY tm DESC LIMIT 1;
--- 河道（注意：本部署 st_river_r 为空）
+-- 河道（2026-08-19 已迁入 42.4 万行，2026-02-18~07-31）
 SELECT tm, z, q FROM st_river_r WHERE eq_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY);
 -- 今日降雨量（按站汇总）
 SELECT st_id, SUM(p) AS total FROM st_pptn_r WHERE deleted = 0 AND DATE(tm) = CURDATE() GROUP BY st_id;
@@ -808,7 +808,7 @@ UNION ALL SELECT 'dsm_gnss',       COUNT(*), MIN(tm), MAX(tm) FROM dsm_dfr_srvrd
 | st_pressure_r | 1,835 | 2026-05-01 ~ 2026-05-29 | 渗压 |
 | st_percolation_r | 766 | 2026-05-01 ~ 2026-05-29 | 渗流 |
 | dsm_dfr_srvrds_srhrds | 19,223 | 2025-12-03 ~ 2026-06-02 | GNSS |
-| st_river_r | **0** | — | 河道表，本部署未启用（设备已删/错配） |
+| st_river_r | 424,470 | 2026-02-18 ~ 2026-07-31 | 河道表（2026-08-19 从 SL323 迁入，54 站） |
 
 设备台账 `eq_equip_base` 共 **149** 台（type_flag 1/3/7/8/9/11/13/14/20，其中 type_flag=20 占 62 台）。
 业务映射 `eq_business_equip_relation` 共 **70** 条。

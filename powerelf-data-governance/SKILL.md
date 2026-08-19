@@ -31,25 +31,39 @@ metadata:
 
 内置脚本已经处理好 `eq_id`/`stcd` 关联、`deleted=0` 过滤、Decimal 格式化、阈值边界等高频翻车点。直接调用可省 10+ 次工具调用和 200+ 秒反复 patch。
 
+**结论必须自述所用方法名**：检测/分析类回答要写明用了什么方法（MAD/中位数绝对偏差、IQR、变化率、插值、环比、周期等，中英任一）——这是判定可追溯、可人工复核的最低要求，只给结论不述方法 = 不合格回答。
+
 | 任务类型 | 必用内置脚本 | ❌ 禁止行为 |
 |---|---|---|
 | 异常检测（MAD/IQR） | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> [--method mad|iqr]` | ❌ 自己写 `/tmp/check_xxx.py` |
 | 异常明细拆分/CSV 导出 | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> --detail full --format csv --output /tmp/xxx.csv`（含按天聚合 daily_summary） | ❌ 自己写 `/tmp/pptn_anomaly_detail.py` 拼 CSV |
 | 缺失检测 | `python3 impl/missing_detector.py --db "$DB_URL" --table <T> --st-id <ID> --freq <F> --days <D>` | ❌ 自己写 `/tmp/missing_xxx.py` |
 | 离线分级 | `python3 scripts/classify_offline_by_duration.py --db "$DB_URL"` | ❌ 逐站循环检测、手写 SQL |
-| 日报生成 | `python3 impl/generate_report.py --date YYYY-MM-DD` | ❌ 自己拼 Markdown |
-| 质量评分 | `python3 impl/quality_scorer.py --db "$DB_URL"`（详见 `references/analysis-guide.md`） | ❌ 自己实现评分逻辑 |
+| 日报/异常报告生成 | **日**: `python3 impl/generate_report.py --type anomaly --date YYYY-MM-DD`　**月度汇总**: `--date YYYY-MM`（如 `2026-05`，跨整月汇总全部表异常，秒级出报告；月度/区间报告一律用此参数，勿自拼 SQL） | ❌ 自己拼 Markdown、循环单日查询 |
+| 质量评分（单设备算分） | `python3 impl/quality_scorer.py --missing-ratio <0-1> --anomaly-ratio <0-1> --offline-date-ratio <0-1> --anomaly-date-ratio <0-1> --offline-count <N> --anomaly-count <N> --actual-records <N> --expected-records <N> [--previous-total <分>]`（四维加权：完整性35%+准确性10%+及时性40%+一致性15%，输出总分+等级+趋势；各比值从 `missing_detector`/`offline_detector`/`profiler` 输出取。注意：本脚本算**单个设备**，不吃 `--db`，详见 `rules/quality-scoring.md`） | ❌ 自己实现评分公式 |
 | 指定表和测站检测 | `python3 impl/offline_detector.py --db "$DB_URL" --table <T> --st-id <ID> --threshold <秒>`（单站离线检测） | ❌ 自己写 `/tmp/check_st_xxx.py` |
 | 概览/总览分析 | `python3 impl/profiler.py --db "$DB_URL" --table <T>`（含概览/概览明细） | ❌ 自己写 `/tmp/overview_xxx.py` |
-| 环比/趋势分析 | `python3 impl/profiler.py --db "$DB_URL" --table <T> --compare-days 7`（对比近7天） | ❌ 自己拼环比 SQL |
-| 设备筛选/较差等级 | `python3 impl/quality_scorer.py --db "$DB_URL" --filter-grade D --top 10`（筛 D 级前 10） | ❌ 自己写筛选 SQL |
+| 环比/趋势分析 | ⚠️ profiler.py **没有** `--compare-days` / `--trend` 参数（实测报 unrecognized arguments）；实际参数仅 `--db --table [--field] [--sample] [--format {json,text}]`。趋势对比改用 `generate_report.py --type anomaly --date <日期>` 跑本周/上周各一天再对比，或按 references/analysis-guide.md 自写（一次写对） | ❌ 调用不存在的 `--compare-days`/`--trend` 参数；❌ 自己拼环比 SQL |
+| 设备筛选/较差等级（"低于60分"类） | **评分分级口径：≥90 A优秀 / ≥80 B良好 / ≥60 C一般 / <60 D较差（需维护、重点关注）**。全库一键扫描**没有现成命令**（不存在 `--filter-grade`/`--top` 参数）：先对目标表用 `missing_detector`/`offline_detector` 按站聚合指标，再按上表分级筛出 <60 的站；少量重点站可逐站用 `quality_scorer.py` 算精确总分。回答时先给分级口径、再列设备清单 | ❌ 自己写全库扫描大脚本反复 patch（10 次收敛纪律适用）；❌ 调用不存在的 `--db --filter-grade --top` 参数 |
 | MTTR/时长计算 | `python3 impl/offline_detector.py --db "$DB_URL" --table <T> --st-id <ID> --mttr`（含 MTTR 输出） | ❌ 自己写时长 SQL |
-| 插值/缺失补全 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` §插值 自写，但**必须一次写对**（先读 schema.md 确认字段，再写） | ❌ 反复 patch 重跑 |
+| 插值/缺失补全 | `python3 impl/interpolate.py --db "$DB_URL" --table <T> --field <F> [--st-id <ID>] [--days 7]`（四策略自适应：线性/二次/样条/滑动平均，输出所选策略+逐点填补值+缺失率；只报告不写回库）。**用户未指明测站/字段/窗口时禁止先 clarify**——直接跑缺省（如 `--table st_rsvr_r --field rz --days 7`），先报告"哪个站缺失最多+缺失率 TOP"，末尾再问要不要深挖某站；要快速定位缺哪站可先跑 `impl/missing_detector.py` | ❌ 自己写 `/tmp/interpolate_xxx.py` 反复 patch；❌ 开工前先问"缺失的具体情况"（先跑缺省再问，不空转） |
 | 连续相同值检测 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` 自写，但**必须一次写对** | ❌ 反复 patch 重跑 |
-| 趋势分析（改善/恶化） | `python3 impl/profiler.py --db "$DB_URL" --table <T> --trend 30d`（含趋势判定输出） | ❌ 自己写趋势 SQL |
+| 趋势分析（改善/恶化） | ⚠️ 同上：profiler.py 无 `--trend` 参数；用 generate_report.py 跑两周同日期对比，或自写趋势 SQL（一次写对） | ❌ 调用不存在的 `--trend 30d` 参数；❌ 自己写趋势 SQL 反复 patch |
 | 异常明细 + 设备关联 | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> --detail full --format csv --output /tmp/xxx.csv`（**CSV 已含 st_id 设备列**，一次拿全异常+设备维度，无需再查关联表） | ❌ 用 `execute_code` 自己写代码串联（沙箱会 scrub `.env` 的 `DB_URL` 导致脚本报错，且会触发 `code_retry_guard` 插件 bug 杀进程） |
 
+**自写豁免的收敛纪律**：表中仍标 ⚠️"暂无内置脚本"的任务（如连续相同值检测）确需自写时，先读 schema.md 确认字段、**一次写对**；若 10 次工具调用内仍未跑通，**必须停下，先输出已得到的中间结论**（已发现什么、卡在哪、建议下一步）再决定是否继续——禁止让最终回答停在"让我检查一下…"式的半成品中间态。
+
 **判定流程**（每次对话第一步必须执行）：
+
+0. **先判归属（最高优先级，先于识别任务类型）**：若查询是要"查某个具体值 / 实时状态 / 趋势可视化 / 预警判断 / 纯取数"——这**不是数据治理任务**（本 skill 只管"数据本身有没有质量问题"，不管"数据内容是什么"）。**只回一行路由建议并立即结束**：
+   - 当前水位 / 雨量值（实时取数）→ `powerelf-chatbi`
+   - 水位变化曲线 / 趋势可视化 → `water-situation`
+   - 是否超警戒水位、发预警通知 → `powerelf-early-warning`
+   - 闸门开度 / 泵站运行状态 → `powerelf-monitor` / `gate-pump-operation`
+   - 纯查某张表的数据 → `powerelf-chatbi`
+
+   回复模板：`这是<复述用户任务关键词>（<实时值/运维状态/预警/纯取数/维保周期等>）查询，不属于数据治理（数据质量分析）。请改用 \`<目标skill>\`。`——**必须复述用户原话里的任务关键词**（如问"是不是该保养了"→答"维保周期检查"），确认理解无误再转出。
+   ⛔ 命中此步后**必须停止**：禁止 `skill_view` 加载目标 skill、禁止 `terminal` / `execute_code` 代为查询、禁止自己拼 SQL 取数。路由建议给出即结束，代劳会造成 10+ 次无谓工具调用。
 
 1. **识别任务类型**：异常检测 / 缺失检测 / 离线分级 / 日报 / 评分 / 概览
 2. **查上表**：命中 → 直接调内置脚本（跳到"工具命令"段复制命令行参数）
@@ -58,6 +72,20 @@ metadata:
 **自检闸**（交付前必问自己）：
 - ❓ 我是不是又自己在 `/tmp/` 写脚本了？→ 删掉，改调内置脚本
 - ❓ 内置脚本参数够不够？→ 不够先看 `--help`，再看 `references/analysis-guide.md`，最后才考虑 wrap
+- ❓ 用户问"严重吗/什么级别/严重性/分级"？→ 必须用 INFO/WARNING/ERROR/CRITICAL 文本分级（见下），禁止 emoji
+
+### 严重性分级输出规范（问"严重吗/级别/分级"时强制）
+
+当用户询问任何与**严重性 / 级别 / 严重程度 / 分级**相关的问题时（关键词：严重吗、什么级别、严重性、分级、等级、卡滞严重吗、异常严重吗），**必须用运维日志标准四级文本分级**输出，**禁止 emoji（🔴🟡🟢）/自创分级（"中等关注"/"非紧急"等）**：
+
+| 级别 | 含义 | 典型场景 |
+|---|---|---|
+| **CRITICAL** | 紧急，立即处置 | 大面积断档(>72h)、整表数据异常、安全相关测站离线 |
+| **ERROR** | 严重，当日处置 | 单站连续卡滞/漂移、关键设备长时间离线 |
+| **WARNING** | 警告，关注趋势 | 短时离线、低频采集、单点突变 |
+| **INFO** | 提示，记录备查 | 已自恢复、边界值、偶发零值 |
+
+**输出必须包含**：①总体级别判定（如"总体：**WARNING**"）；②每类问题/设备的级别标注（用上表文本，非 emoji）；③对应处置建议。复用 `generate_anomaly_report` 已有的分级口径，不要自创体系。
 
 ### 离线分级任务（最高优先级）
 
@@ -110,7 +138,7 @@ metadata:
 ### 0. 连哪个库
 
 - 本 skill 连**本地 `powerelf_srm_yml`**（环境变量 `POWERELF_DB_*`）。
-- ❌ 不是远程 `192.168.100.103` 的 SL323 库。
+- ❌ 不是远程 `192.168.100.103` 的 SL323 库。**河道水位 `st_river_r` 已于 2026-08-19 从 SL323 迁入本地（54 站 / 42.4 万行），本地库已可直接查，禁止再连 SL323。**
 - ✅ 凭证由 `query()` 自动读取，**永远不需要、也不应该**看到密码。
 - 🚫 **禁止 grep 代码找密码**，**禁止把密码打印到输出**。
 
@@ -269,6 +297,7 @@ python3 impl/generate_report.py --date 2026-07 --type anomaly
 | 表名 | 时间列 | 关联键 |
 |------|--------|--------|
 | st_rsvr_r | tm | eq_id |
+| st_river_r | tm | eq_id |  <!-- 2026-08-19 从 SL323 迁入，54站/42.4万行，水位 z/流量 q -->
 | st_pptn_r | tm | eq_id |
 | st_pressure_r | tm | eq_id |
 | st_percolation_r | tm | eq_id |
