@@ -165,6 +165,7 @@ def query(sql: str, timeout: int = 30) -> list:
 
     - 自动开关连接（用完即关，无需手动 close）
     - 只读护栏：仅放行 SELECT/WITH/SHOW/EXPLAIN/DESCRIBE
+    - 白名单隔离：拒绝访问 BLOCKED_MONITORING_TABLES（如 st_river_r）
     - 读超时（默认 30s，timeout=0 表示不限）
     - 空结果返回 []，绝不返回 None
 
@@ -176,6 +177,7 @@ def query(sql: str, timeout: int = 30) -> list:
             print(r['tm'], r['rz'])
     """
     _assert_readonly(sql)
+    _assert_allowed_monitoring_tables(sql)
     conn = get_connection(read_timeout=(timeout or None))
     try:
         cur = conn.cursor()
@@ -203,10 +205,10 @@ COLUMN_MEANINGS = {
         "inq": "入库流量(m³/s)", "rwchrcd": "雨水情编码", "rwptn": "雨水势",
         "otq": "出库流量(m³/s)", "msqmt": "测量方式",
         "w": "蓄水量(万m³)", "rz": "库水位(m)★主检测字段",
-        "eq_id": "设备ID(→eq_equip_base.id)★关联键", "stcd": "测站编码(本表99.8%空,勿用于JOIN)",
-        "msvmt": "监测方式", "eq_code": "设备编码", "inqdr": "入库流量差",
+        "eq_id": "设备ID(→eq_equip_base.id)★关联键", "stcd": "测站编码(99.8%空/脏值,模拟器结构性不写,勿用于JOIN)",
+        "msvmt": "监测方式", "eq_code": "设备编码(★站点关联走此列,非stcd)", "inqdr": "入库流量差",
     },
-    "st_river_r": {  # 河道水情（2026-08-19 从 SL323 迁入 42.4万行，54站）
+    "st_river_r": {  # 河道水情（2026-08-19 从 SL323 迁入 42.4万行，54站）— ⚠扬州河道站，本项目不用，已移出ALLOWED_TABLES
         "tm": "观测时间", "z": "河道水位(m)★", "q": "流量(m³/s)★",
         "xsa": "过水断面面积", "xsavv": "断面平均流速", "xsmxv": "断面最大流速",
         "flwchrcd": "流势编码", "wptn": "水势(4涨5落6平)",
@@ -291,10 +293,41 @@ _FRAMEWORK_COL_MEANINGS = {
 # 监测表白名单（单一事实源）——governance/inspection/chatbi 入口校验均应引用此常量，
 # 杜绝幽灵表名（schema.md 不存在的旧名如 st_deformation_r / st_gnss_r 等）。
 ALLOWED_TABLES = frozenset({
-    "st_rsvr_r", "st_river_r", "st_pptn_r",
+    "st_rsvr_r", "st_pptn_r",
     "st_pressure_r", "st_percolation_r",
     "dsm_dfr_srvrds_srhrds",  # GNSS 位移
 })
+# 监测表黑名单：库中保留但已隔离、禁止 skill 访问的监测表（2026-08-19 起 st_river_r：
+# 扬州/里下河河道站，非本水库工程监测对象）。数据留库备查，但 query()/columns() 会拒绝。
+# 恢复访问：把表名从 BLOCKED_TABLES 移到 ALLOWED_TABLES。
+BLOCKED_MONITORING_TABLES = frozenset({
+    "st_river_r",
+})
+# 监测表全集 = 白名单 ∪ 黑名单。只有命中此全集的表才受白名单/黑名单约束，
+# 框架表（eq_equip_base / eq_business_equip_relation / dg_* / information_schema 等）不受约束、可自由只读查询。
+_MONITORING_UNIVERSE = ALLOWED_TABLES | BLOCKED_MONITORING_TABLES
+
+
+def _assert_allowed_monitoring_tables(sql: str) -> None:
+    """白名单隔离：拦截对 BLOCKED_MONITORING_TABLES 的访问。
+
+    扫描 SQL 中 FROM/JOIN 后的表名，若命中监测表全集中的黑名单成员则拒绝。
+    仅约束监测表（白名单∪黑名单），框架表自由通过，因此不会误伤 eq_*/dg_* 等正常查询。
+    设计动机：ALLOWED_TABLES 从 frozenset 移除一张表并不能阻止 `query('SELECT * FROM <表>')`，
+    因为 _assert_readonly 只查首关键字、不查表名——本函数补上这一层，使"移出白名单"
+    真正等于"skill 无法访问"。
+    """
+    import re
+    # 匹配 FROM / JOIN 后的表名（支持反引号、别名、AS、换行、子查询）
+    for m in re.finditer(
+        r"\b(?:FROM|JOIN)\s+`?([A-Za-z_][A-Za-z0-9_]*)`?", sql, re.IGNORECASE
+    ):
+        tbl = m.group(1).lower()
+        if tbl in BLOCKED_MONITORING_TABLES:
+            raise ValueError(
+                f"表 {tbl!r} 已被隔离（BLOCKED_MONITORING_TABLES）：本项目暂不用此监测表。"
+                f"如需恢复，将其从 db.py BLOCKED_MONITORING_TABLES 移至 ALLOWED_TABLES。"
+            )
 
 
 def _sanitize_table_name(table: str) -> str:

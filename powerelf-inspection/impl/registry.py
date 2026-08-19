@@ -23,8 +23,11 @@ except ImportError:
 logger = logging.getLogger("inspection.registry")
 
 # 标识符白名单（防 SQL 注入：table/fields/time_field 来自 sys_data_source_registry，DB 可写）
+# 2026-08-19：st_river_r 已隔离（db.py BLOCKED_MONITORING_TABLES，扬州河道站本项目不用），
+# 从白名单移除——sys_data_source_registry id=2 已置 status=0，load_registry 不再返回它；
+# 内置回退的水位/流量监测也改走 st_rsvr_r。此白名单移除作为第二道防线。
 _ALLOWED_TABLES = {
-    "st_river_r","st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
+    "st_rsvr_r","st_pressure_r","st_percolation_r","st_pptn_r",
     "rei_gate_r","rei_pump_r","eq_equip_base","eq_equip_defect","ew_camera_info",
     "dsm_dfr_srvrds_srhrds","srm_robot_data_day","srm_illegal_acts",
 }
@@ -61,15 +64,17 @@ def load_registry(engine):
 def get_builtin_registry():
     """内置默认注册表（兼容无注册表场景）"""
     data = [
-        {"name": "水位监测", "source_table": "st_river_r",
-         "keywords": "水位,库水位,上游水位,下游水位,河道水位,汛限水位",
+        # 2026-08-19：st_river_r 已隔离（db.py BLOCKED_MONITORING_TABLES，扬州河道站本项目不用），
+        # 内置回退的水位/流量监测改走水库表 st_rsvr_r（rz=库水位, inq=入库流量, otq=出库流量）。
+        {"name": "水位监测", "source_table": "st_rsvr_r",
+         "keywords": "水位,库水位,上游水位,下游水位,汛限水位",
          "station_type": "1", "max_distance": 500,
-         "query_fields": "z,q,tm", "time_field": "tm", "default_hours": 24,
+         "query_fields": "rz,tm", "time_field": "tm", "default_hours": 24,
          "judge_rules": None, "sort_order": 10},
-        {"name": "流量监测", "source_table": "st_river_r",
+        {"name": "流量监测", "source_table": "st_rsvr_r",
          "keywords": "流量,入库流量,出库流量,泄洪流量,过闸流量",
          "station_type": "1", "max_distance": 500,
-         "query_fields": "q,tm", "time_field": "tm", "default_hours": 24,
+         "query_fields": "inq,otq,tm", "time_field": "tm", "default_hours": 24,
          "judge_rules": None, "sort_order": 11},
         {"name": "渗压监测", "source_table": "st_pressure_r",
          "keywords": "渗压,扬压力,孔隙水压力,坝体渗压,渗透压力",

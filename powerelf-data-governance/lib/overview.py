@@ -32,9 +32,10 @@ import sys
 from typing import Dict, List, Optional
 
 # 监测表 → (中文标签, 主检测字段)。与 schema.md / business_rules.md 对齐。
+# st_river_r 已隔离（2026-08-19，BLOCKED_MONITORING_TABLES）：扬州河道站，本项目暂不用，
+# 不再纳入概览扫描。如需恢复，加回本字典并同时从 db.py BLOCKED 移到 ALLOWED。
 MONITOR_TABLES: Dict[str, tuple] = {
     "st_rsvr_r": ("水库水位", "rz"),
-    "st_river_r": ("河道水位", "z"),
     "st_pptn_r": ("雨量", "p"),
     "st_pressure_r": ("渗压", "ext_pressure"),
     "st_percolation_r": ("渗流", "percolation"),
@@ -42,8 +43,8 @@ MONITOR_TABLES: Dict[str, tuple] = {
 }
 
 # 水位类业务表 → 这些表若映射到渗压类设备（type_flag 3 或 20，或名称含 渗压/pressure）
-# 视为错配（来自 7/16 实测：st_river_r 的 eq_id=157 是振弦渗压计 type_flag=20）。
-_WATER_LEVEL_TABLES = {"st_rsvr_r", "st_river_r"}
+# 视为错配。st_river_r 已隔离移出，水位类仅剩 st_rsvr_r。
+_WATER_LEVEL_TABLES = {"st_rsvr_r"}
 _PRESSURE_TYPE_FLAGS = {3, 20}
 _PRESSURE_NAME_HINTS = ("渗压", "pressure", "渗流", "percolation")
 

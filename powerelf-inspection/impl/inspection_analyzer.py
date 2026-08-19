@@ -1616,8 +1616,8 @@ def _diagnose_gate_closed_flow(engine, st_id=None):
     else:
         trace.append("闸门开度时序平稳")
     df, code = _diag_sql(engine,
-        "SELECT COUNT(*) AS n FROM st_river_r "
-        "WHERE deleted=0 AND tm >= NOW()-INTERVAL 12 HOUR AND q > 0")
+        "SELECT COUNT(*) AS n FROM st_rsvr_r "
+        "WHERE deleted=0 AND tm >= NOW()-INTERVAL 12 HOUR AND (otq > 0 OR inq > 0)")
     if code:
         trace.append(f"断面流量: {code}")
     elif int(df['n'].iloc[0] or 0) > 0:

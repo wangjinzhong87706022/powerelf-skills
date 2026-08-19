@@ -95,7 +95,7 @@ def update_device_status(conn, device_id, status):
         cur.close()
 
 
-def create_offline_record(conn, equipment_code, offline_start, offline_end=None, duration_seconds=None):
+def create_offline_record(conn, equipment_code, offline_start, offline_end=None, duration_seconds=None, time_period_id=1):
     """创建设备离线记录
 
     Args:
@@ -104,6 +104,7 @@ def create_offline_record(conn, equipment_code, offline_start, offline_end=None,
         offline_start: 离线开始时间 (datetime)
         offline_end: 离线结束时间 (datetime, 可选)
         duration_seconds: 离线时长(秒, 可选)
+        time_period_id: 时间段ID (默认1)
 
     Returns:
         int: 新记录ID
@@ -113,8 +114,8 @@ def create_offline_record(conn, equipment_code, offline_start, offline_end=None,
 
     sql = """
         INSERT INTO eq_equip_offline_record
-        (equipment_code, offline_start_date, offline_start_time, offline_end_time, total_offline_duration, tenant_id)
-        VALUES (%s, %s, %s, %s, %s, 1)
+        (equipment_code, offline_start_date, offline_start_time, offline_end_time, time_period_id, total_offline_duration, tenant_id)
+        VALUES (%s, %s, %s, %s, %s, %s, 1)
     """
     cur = conn.cursor()
     try:
@@ -123,6 +124,7 @@ def create_offline_record(conn, equipment_code, offline_start, offline_end=None,
             offline_start.date(),
             offline_start,
             offline_end,
+            time_period_id,
             duration_seconds or 0
         ))
         conn.commit()
@@ -271,6 +273,34 @@ def batch_fix_anomalies(conn, fixes):
         "total_count": len(fixes),
         "failed_ids": failed_ids,
     }
+
+
+def disable_data_source(conn, source_id, reason=""):
+    """禁用数据源注册表某行（status=0）。
+
+    用于隔离已废弃/不用的监测表数据源（如 2026-08-19 隔离 st_river_r 河道表：
+    inspection 运行时经 pandas 原生引擎读 sys_data_source_registry，绕过 db.py 护栏，
+    故需在此把对应行的 status 置 0，使 load_registry 的 `WHERE status=1` 过滤掉它）。
+
+    Args:
+        conn: pymysql 连接对象
+        source_id: sys_data_source_registry.id
+        reason: 禁用原因（写入说明，便于审计追溯）
+
+    Returns:
+        bool: 是否成功
+    """
+    sql = "UPDATE sys_data_source_registry SET status = 0 WHERE id = %s"
+    cur = conn.cursor()
+    try:
+        cur.execute(sql, (source_id,))
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        raise RuntimeError(f"禁用数据源 id={source_id} 失败: {e}")
+    finally:
+        cur.close()
 
 
 def batch_fill_missing(conn, fills):

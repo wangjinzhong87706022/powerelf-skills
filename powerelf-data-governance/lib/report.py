@@ -16,6 +16,7 @@
 
 import json
 import os
+import sys
 from datetime import datetime, date
 from io import BytesIO
 
@@ -369,11 +370,11 @@ def generate_daily_report_from_db(date_str, conn=None, suggestions=None):
 
         # ── 2. 各表采集率 ──
         # 表名 -> 采集频率(min)
+        # st_river_r 已隔离（BLOCKED_MONITORING_TABLES，2026-08-19），移出采集率统计。
         monitor_tables = {
             'st_rsvr_r': 60,
             'st_pressure_r': 60,
             'st_pptn_r': 60,
-            'st_river_r': 60,
             'st_percolation_r': 60,
             'dsm_dfr_srvrds_srhrds': 60,
             'rei_gate_r': 60,
@@ -391,7 +392,7 @@ def generate_daily_report_from_db(date_str, conn=None, suggestions=None):
         """)
         station_counts = {r['tbl']: r['cnt'] for r in cur.fetchall()}
 
-        # ② ③ ④ 三张统计表 用 IN 子句一次查所有表
+        # ── 先查统计表，没数据则回退到直查原始表 ──────────────────
         tbl_list = list(monitor_tables.keys())
         in_clause = ', '.join(['%s'] * len(tbl_list))
 
@@ -402,6 +403,19 @@ def generate_daily_report_from_db(date_str, conn=None, suggestions=None):
             [date_str] + tbl_list
         )
         collection_map = {r['table_name']: r['collection_data_number'] for r in cur.fetchall()}
+
+        # 统计表没数据 → 从原始表直接计算采集数
+        if not collection_map:
+            print(f"[INFO] 统计表无 {date_str} 数据，回退到直查原始表...", file=sys.stderr)
+            for tbl in monitor_tables:
+                cur.execute(
+                    f"SELECT COUNT(*) AS cnt FROM {tbl} "
+                    f"WHERE deleted=0 AND tm >= %s AND tm < DATE_ADD(%s, INTERVAL 1 DAY)",
+                    [date_str, date_str]
+                )
+                row = cur.fetchone()
+                if row:
+                    collection_map[tbl] = row['cnt']
 
         cur.execute(
             f"SELECT table_name, missing_data_number"
