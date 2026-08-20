@@ -34,12 +34,15 @@
 算误报/漏报/根因链率/coverage。不连真实库、确定性、可重复。
 
 ```bash
-python3 impl/eval_runner.py                       # 跑全部有 fixture 的用例
-python3 impl/eval_runner.py --only PRES-SPIKE-1,SEASON-GUARD-1   # 只跑指定
-python3 impl/eval_runner.py --verbose             # finding 明细写进 results_cases.json
+python3 impl/eval_runner.py                       # 跑全部有 fixture 的用例（→ /tmp/results_cases-partial.json）
+python3 impl/eval_runner.py --only PRES-SPIKE-1,SEASON-GUARD-1   # 只跑指定（→ /tmp）
+python3 impl/eval_runner.py --verbose             # finding 明细写进输出
+python3 impl/eval_runner.py --out autoresearch/results_cases.json   # 显式更新全量验收文件（--only 时会拒绝）
 ```
 
-输出 `autoresearch/results_cases.json`（顶层对齐 `results.json` + `metrics` + `cases` 明细）。
+输出默认 `/tmp/results_cases-partial.json`（顶层对齐 `results.json` + `metrics` + `cases` 明细）。
+⚠️ `--only` 部分运行禁止写 `autoresearch/results_cases.json`（47 条全量验收记录，
+2026-08-19 曾被部分运行整文件覆写冲掉）——runner 会直接报错拒绝。
 **覆盖进度**：fixtures.py 覆盖走 `read_sensor_data` 的维度（4.9 全覆盖 + 回归）；水质/墒情/
 白蚁/巡检/设备/告警走 inline `pd.read_sql` 或专用 reader，机制不同，列在 skipped，留 extension。
 

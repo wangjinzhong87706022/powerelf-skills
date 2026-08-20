@@ -12,7 +12,9 @@ monkeypatch read_sensor_data / seasonal_check / probe_table_latest / DIAG_ROUTES
   python3 eval_runner.py --only PRES-SPIKE-1,SEASON-GUARD-1   # 只跑指定用例
   python3 eval_runner.py --verbose       # 打印每条 finding
 
-输出：autoresearch/results_cases.json + stdout 摘要（含验收线对照）。
+输出：--out 指定路径（默认 /tmp/results_cases-partial.json）+ stdout 摘要（含验收线对照）。
+  ⚠️ 更新全量验收文件 autoresearch/results_cases.json 须显式 --out 指回；
+  --only 部分运行禁止写验收文件（防覆写，2026-08-19 教训）。
 """
 
 import argparse
@@ -273,8 +275,22 @@ def main():
     ap.add_argument("--only", default="", help="逗号分隔的 case_id，只跑这些")
     ap.add_argument("--verbose", action="store_true", help="打印每条 finding")
     ap.add_argument("--cases", default=os.path.join(_CASES_DIR, "cases.json"))
-    ap.add_argument("--out", default=os.path.join(_HERE, "..", "autoresearch", "results_cases.json"))
+    ap.add_argument(
+        "--out", default="/tmp/results_cases-partial.json",
+        help="结果输出路径。默认 /tmp 部分运行文件——2026-08-19 教训：原默认值是"
+             " autoresearch/results_cases.json（47 条全量验收记录），评测 agent 按"
+             " 文档跑 --only 部分运行时整文件覆写冲掉验收记录。更新全量验收文件"
+             " 必须显式 --out 指回，且 --only 部分运行禁止写验收文件")
     args = ap.parse_args()
+
+    # 防覆写双保险：--only 部分运行不得指向验收文件（即便显式传了 --out）
+    _acceptance_out = os.path.realpath(
+        os.path.join(_HERE, "..", "autoresearch", "results_cases.json"))
+    _only = set(filter(None, args.only.split(",")))
+    if os.path.realpath(args.out) == _acceptance_out and _only:
+        ap.error(
+            f"--only 部分运行不允许写验收文件 {_acceptance_out}"
+            "（会整文件覆写冲掉全量记录）；用默认 /tmp 输出，或去掉 --only 全量跑")
 
     cases = json.load(open(args.cases))["cases"]
     only = set(filter(None, args.only.split(",")))

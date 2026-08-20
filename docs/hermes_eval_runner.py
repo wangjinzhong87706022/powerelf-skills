@@ -45,6 +45,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -80,10 +81,15 @@ _OUT_DIR = _HERE
 # 护栏语义：
 #   - 评测启动时对被测代码面（GUARDED）做内容哈希基线（允许评测前已有未提交
 #     修改——基线记录的是内容而非"必须干净"）
-#   - 每题 hermes 跑完后复检：内容哈希变化 / tracked 文件被删 / guarded 前缀下
-#     新增 untracked 代码文件 → 该题 verdict 强制 CODE-MUTATED（score=0），
-#     顶层记录 code_freeze_violations
-#   - 只检测+告警，不自动回滚（自动 checkout 会丢人工未提交修改）
+#   - 每题 hermes 跑完后（judge 之前）复检：内容哈希变化 / tracked 文件被删 /
+#     guarded 前缀下新增 untracked 代码文件 / 评测中 git add（tracked 清单增长）/
+#     基线 untracked 文件内容漂移 → 先从内容快照自动恢复，再同题重试一次（-r2）；
+#     恢复失败或重试再犯 → 该题 verdict 强制 CODE-MUTATED（score=0），
+#     顶层记录 code_freeze_violations（含恢复/重试结果）
+#   - 基线 = 评测启动时的工作树【内容】快照（含人工未提交修改），镜像落盘到
+#     {out-dir}/freeze-baseline/；恢复 = 回写快照内容而非 git checkout——不丢人工改动
+#   - 2026-08-19 hermes-eval-20260819-183116 实证升级：旧版只检测不恢复，一次
+#     突变让后续 104 题级联判 CODE-MUTATED（详见 docs/eval-mutation-forensics-20260820.md）
 #
 # GUARDED = 被 skill 实际加载执行的代码与规则文档（tracked 文件筛前缀）。
 # 预期产物排除：report_insp-*.md 等运行报告、output/、/tmp。
@@ -100,14 +106,44 @@ _UNTRACKED_OK_SUFFIXES = (".md", ".csv", ".pdf", ".png", ".jpg", ".svg", ".log",
 _UNTRACKED_OK_PREFIXES = ("report_", "output/")
 
 
-def snapshot_guarded_state():
+def _hash_files(paths):
+    """对一批工作树文件算 git blob 哈希（哈希的是工作树内容，非 HEAD/索引），返回 {path: hash}。
+
+    只收普通文件：porcelain 会把全 untracked 目录报成 `dir/`（带斜杠、无单文件
+    展开），直接喂给 hash-object 会 fatal → 基线失败 → 护栏整体关闭（实测踩过）。
     """
-    代码冻结基线。
+    paths = [p for p in paths
+             if not p.endswith("/") and os.path.isfile(_PROJECT_ROOT / p)]
+    if not paths:
+        return {}
+    hs = subprocess.run(
+        ["git", "-C", str(_PROJECT_ROOT), "hash-object", "--stdin-paths"],
+        input="\n".join(paths), capture_output=True, text=True, timeout=120,
+    )
+    if hs.returncode != 0:
+        raise RuntimeError(f"hash-object failed: {hs.stderr.strip()[:200]}")
+    hashes = hs.stdout.split()
+    if len(hashes) != len(paths):
+        raise RuntimeError("hash-object 输出数量与输入不符")
+    return dict(zip(paths, hashes))
+
+
+def snapshot_guarded_state(snapshot_dir=None):
+    """
+    代码冻结基线（工作树内容快照）。
 
     返回 {"hashes": {tracked guarded path: 内容哈希},
-          "untracked": [评测启动前已存在的 guarded untracked 代码文件]}
+          "untracked": [评测启动前已存在的 guarded untracked 代码文件],
+          "untracked_hashes": {上述 untracked path: 内容哈希},
+          "snapshot_dir": str | None}
     —— 评测前已有的人工未提交文件（含 untracked）属合法起点，不视为突变；
     突变 = 评测运行期间相对本基线的新变化。
+
+    snapshot_dir 给定时，把全部 guarded 文件【内容】镜像落盘：
+      {snapshot_dir}/tree/<relpath>       tracked guarded 文件
+      {snapshot_dir}/untracked/<relpath>  基线即存在的 untracked 代码文件
+      {snapshot_dir}/manifest.json        路径→哈希 + 项目根 + 时间戳
+    供 restore_guarded_state 自动恢复（git checkout 会丢人工未提交修改，不可用）。
 
     无法计算（非 git 仓库 / git 失败）返回 None（护栏降级关闭，run_eval 打印 WARN）。
     """
@@ -122,28 +158,48 @@ def snapshot_guarded_state():
         guarded = [p for p in tracked
                    if any(p.startswith(pre) for pre in _GUARDED_PREFIXES)]
 
-        hashes = {}
-        if guarded:
-            hs = subprocess.run(
-                ["git", "-C", str(_PROJECT_ROOT), "hash-object", "--stdin-paths"],
-                input="\n".join(guarded), capture_output=True, text=True, timeout=120,
-            )
-            if hs.returncode != 0:
-                return None
-            hlist = hs.stdout.split()
-            if len(hlist) != len(guarded):
-                return None
-            hashes = dict(zip(guarded, hlist))
+        hashes = _hash_files(guarded)
 
         untracked = _list_guarded_untracked()
-        return {"hashes": hashes, "untracked": untracked}
+        untracked_hashes = _hash_files(untracked)
+
+        snap_dir = None
+        if snapshot_dir is not None:
+            snap_dir = Path(snapshot_dir)
+            for rel_paths, sub in ((guarded, "tree"), (untracked, "untracked")):
+                for rel_path in rel_paths:
+                    dst = snap_dir / sub / rel_path
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(_PROJECT_ROOT / rel_path, dst)
+            snap_dir.mkdir(parents=True, exist_ok=True)
+            with open(snap_dir / "manifest.json", "w", encoding="utf-8") as f:
+                json.dump({
+                    "created_at": datetime.now().isoformat(),
+                    "project_root": str(_PROJECT_ROOT),
+                    "tracked": hashes,
+                    "untracked": untracked_hashes,
+                }, f, ensure_ascii=False, indent=2)
+            snap_dir = str(snap_dir)
+
+        return {
+            "hashes": hashes,
+            "untracked": untracked,
+            "untracked_hashes": untracked_hashes,
+            "snapshot_dir": snap_dir,
+        }
     except Exception as e:
         print(f"  [WARN] 代码冻结基线快照失败（护栏关闭）：{e}")
         return None
 
 
 def _list_guarded_untracked():
-    """当前 GUARDED 前缀下的 untracked 代码文件（排除运行产物后缀/前缀）。"""
+    """当前 GUARDED 前缀下的 untracked 代码文件（排除运行产物后缀/前缀）。
+
+    porcelain 会把整个目录都 untracked 的情况折叠成 `dir/`（带尾斜杠、无单文件
+    展开）：直接当文件用会让 hash-object fatal / copyfile 报 Is a directory →
+    基线失败 → 护栏整体关闭（2026-08-20 单测发现）。这里展开为目录内的真实
+    文件——新目录下的新代码文件同样要被看见，目录路径本身不进基线。
+    """
     st = subprocess.run(
         ["git", "-C", str(_PROJECT_ROOT), "status", "--porcelain", "-z"],
         capture_output=True, text=True, timeout=15,
@@ -155,9 +211,17 @@ def _list_guarded_untracked():
         if not entry:
             continue
         status, path = entry[:2], entry[3:]
-        if status == "??" and _is_guarded_code(path):
+        if status != "??" or not _is_guarded_code(path.rstrip("/")):
+            continue
+        if path.endswith("/"):
+            for f in (_PROJECT_ROOT / path).rglob("*"):
+                if f.is_file():
+                    rel = f.relative_to(_PROJECT_ROOT).as_posix()
+                    if _is_guarded_code(rel):
+                        out.append(rel)
+        else:
             out.append(path)
-    return out
+    return sorted(out)
 
 
 def _is_guarded_code(path):
@@ -167,11 +231,33 @@ def _is_guarded_code(path):
             and not any(path.startswith(pre) for pre in _UNTRACKED_OK_PREFIXES))
 
 
+def _live_guarded_tracked():
+    """当前 tracked guarded 路径集合（检测评测中 git add 带来的清单增长）。git 失败返回 None。"""
+    try:
+        ls = subprocess.run(
+            ["git", "-C", str(_PROJECT_ROOT), "ls-files", "-z"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if ls.returncode != 0:
+            return None
+        return {p for p in ls.stdout.split("\0") if p
+                and any(p.startswith(pre) for pre in _GUARDED_PREFIXES)}
+    except Exception:
+        return None
+
+
 def detect_code_mutation(baseline):
     """
-    对比当前状态与基线，返回突变文件列表（相对 baseline）：
-      - tracked 文件内容哈希变化 / 消失（被删）
-      - GUARDED 前缀下【新增】untracked 代码文件（基线里已有的不算）
+    对比当前状态与基线，返回突变条目列表（"标记 路径" 形式，相对 baseline）：
+      M  tracked 文件内容哈希变化
+      D  tracked 文件消失（被删）
+      A  GUARDED 前缀下【新增】untracked 代码文件（基线已有的不算）；
+         特例：tracked 文件被 rm --cached 移出索引但内容仍等于基线 → 不算（代码面未漂移）
+      A+ 评测中新 git add 的 guarded 代码文件（tracked 清单增长；内容与基线
+         untracked 快照一致的豁免——只是入册，代码没变）
+      U~ 基线 untracked 代码文件内容被改
+      U- 基线 untracked 代码文件被删
+      ?  检测过程出错（不可恢复处置）
 
     baseline 为 None（护栏关闭）时恒返回 []。
     """
@@ -180,31 +266,122 @@ def detect_code_mutation(baseline):
     mutated = []
     base_hashes = baseline["hashes"]
     base_untracked = set(baseline["untracked"])
+    base_untracked_hashes = baseline.get("untracked_hashes") or {}
     try:
         # 1. tracked 文件内容对比
         live = [p for p in base_hashes if os.path.exists(_PROJECT_ROOT / p)]
         if live:
-            hs = subprocess.run(
-                ["git", "-C", str(_PROJECT_ROOT), "hash-object", "--stdin-paths"],
-                input="\n".join(live), capture_output=True, text=True, timeout=120,
-            )
-            if hs.returncode == 0:
-                hashes = hs.stdout.split()
-                for path, h in zip(live, hashes):
-                    if base_hashes.get(path) != h:
-                        mutated.append(f"M {path}")
-            else:
-                mutated.append("? hash-object failed")
+            for path, h in _hash_files(live).items():
+                if base_hashes.get(path) != h:
+                    mutated.append(f"M {path}")
         for path in base_hashes:
             if not os.path.exists(_PROJECT_ROOT / path):
                 mutated.append(f"D {path}")
         # 2. 新增 untracked 代码文件（相对基线）
         for path in _list_guarded_untracked():
-            if path not in base_untracked:
-                mutated.append(f"A {path}")
+            if path in base_untracked:
+                continue
+            if path in base_hashes:
+                # 原 tracked、被移出索引：内容仍等于基线 tracked 内容 → 未漂移，跳过
+                if _hash_files([path]).get(path) == base_hashes[path]:
+                    continue
+            mutated.append(f"A {path}")
+        # 3. tracked 清单增长（评测中 git add；盲区④）
+        live_tracked = _live_guarded_tracked()
+        if live_tracked is not None:
+            for path in sorted(live_tracked - set(base_hashes)):
+                if not _is_guarded_code(path):
+                    continue  # OK 清单类（.md/report_ 等运行产物）入册不算代码污染
+                if _hash_files([path]).get(path) == base_untracked_hashes.get(path):
+                    continue  # 基线即存在的 untracked 文件原样入册，内容未变
+                mutated.append(f"A+ {path}")
+        # 4. 基线 untracked 文件内容漂移/被删（盲区⑤）
+        live_u = [p for p in base_untracked_hashes
+                  if os.path.exists(_PROJECT_ROOT / p)]
+        for path, h in _hash_files(live_u).items():
+            if base_untracked_hashes[path] != h:
+                mutated.append(f"U~ {path}")
+        for path in base_untracked_hashes:
+            if not os.path.exists(_PROJECT_ROOT / path):
+                mutated.append(f"U- {path}")
     except Exception as e:
         mutated.append(f"? detect error: {e}")
     return mutated
+
+
+def restore_guarded_state(baseline):
+    """
+    从 freeze-baseline 内容快照把被测代码面恢复到基线。不做 git checkout——
+    人工未提交修改已在基线快照内，回写快照即保住人工改动（2026-08-20 升级点）。
+
+    按当前突变逐条处置：
+      M/D   ← {snapshot_dir}/tree/<path> 回写
+      U~/U- ← {snapshot_dir}/untracked/<path> 回写
+      A     删除；若基线本就有该文件（tracked 或 untracked 记录）→ 再回写基线内容
+      A+    先 git rm --cached 移出索引，文件本身再按 A 规则处置
+
+    返回 (actions, failed)：动作描述列表、失败项列表（failed 非空时调用方不应重试）。
+    无快照可用（snapshot_dir 为空 / manifest 缺失）返回 ([], ["no_snapshot"])。
+    """
+    actions, failed = [], []
+    snap_dir = baseline.get("snapshot_dir")
+    if not snap_dir or not os.path.exists(os.path.join(snap_dir, "manifest.json")):
+        return [], ["no_snapshot"]
+
+    def _restore_from(rel_path, sub):
+        src = Path(snap_dir) / sub / rel_path
+        if not src.exists():
+            failed.append(f"snapshot_missing: {sub}/{rel_path}")
+            return False
+        dst = _PROJECT_ROOT / rel_path
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dst)
+        return True
+
+    handled = set()  # 同一路径可能同时命中多条标记（如 A+ 与 U~），处置一次即可
+    for m in detect_code_mutation(baseline):
+        if m.startswith("? "):
+            failed.append(m)
+            continue
+        mark, rel = m.split(" ", 1)
+        if rel in handled:
+            continue
+        handled.add(rel)
+        try:
+            if mark in ("M", "D"):
+                if _restore_from(rel, "tree"):
+                    actions.append(f"restored {rel} ← freeze-baseline/tree")
+            elif mark in ("U~", "U-"):
+                if _restore_from(rel, "untracked"):
+                    actions.append(f"restored {rel} ← freeze-baseline/untracked")
+            elif mark in ("A", "A+"):
+                if mark == "A+":
+                    # -f 必需：评测 agent 改过内容的 staged 文件（索引≠工作树且无
+                    # HEAD 版本）会被 git 安全检查拒绝，实测 2026-08-20 演练
+                    r = subprocess.run(
+                        ["git", "-C", str(_PROJECT_ROOT), "rm", "--cached", "-f", "-q", "--", rel],
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    if r.returncode != 0:
+                        failed.append(f"git rm --cached failed: {rel}: {r.stderr.strip()[:120]}")
+                        continue
+                    actions.append(f"unstaged {rel}（移出索引）")
+                target = _PROJECT_ROOT / rel
+                if os.path.exists(target):
+                    os.remove(target)
+                    actions.append(f"deleted {rel}")
+                # 基线本就有此文件（tracked 或 untracked）→ 回写基线内容而非只删
+                if rel in baseline["hashes"]:
+                    if _restore_from(rel, "tree"):
+                        actions.append(f"restored {rel} ← freeze-baseline/tree")
+                elif rel in (baseline.get("untracked_hashes") or {}):
+                    if _restore_from(rel, "untracked"):
+                        actions.append(f"restored {rel} ← freeze-baseline/untracked")
+            else:
+                failed.append(f"unknown mark: {m}")
+        except Exception as e:
+            failed.append(f"restore error ({m}): {e}")
+    return actions, failed
 
 # P1 #2: set_id → hermes skill 名（-s 参数值）映射表
 # set 无 source_skill 字段，需内置映射
@@ -1154,8 +1331,14 @@ def judge(ev, trace, set_, schema_tables):
 def generate_json_report(results, master, eval_run_id, readiness_filter, skipped_stats,
                          code_freeze_violations=None):
     """生成机器可读 JSON 报告。"""
-    # 计算总体得分
-    scores = [r["score"] for r in results]
+    # 计分口径：排除 CODE-MUTATED / DRY-RUN 行——前者是护栏判死的无效作答
+    # （分数反映"护栏触发"而非能力），后者是 dry-run 计划占位。
+    # 2026-08-19 教训：旧版把 CODE-MUTATED 计入均分，104 题级联污染出 0.245 假分。
+    _EXCLUDED_VERDICTS = ("CODE-MUTATED", "DRY-RUN")
+    valid_results = [r for r in results if r["verdict"] not in _EXCLUDED_VERDICTS]
+    excluded_count = len(results) - len(valid_results)
+
+    scores = [r["score"] for r in valid_results]
     overall_score = round(sum(scores) / len(scores), 3) if scores else 0.0
     overall_verdict = (
         "PASS" if overall_score >= 0.7
@@ -1163,13 +1346,18 @@ def generate_json_report(results, master, eval_run_id, readiness_filter, skipped
         else "FAIL"
     )
 
-    # 按集合汇总
+    # 按集合汇总（均分只对有效题）
     per_set = {}
     for r in results:
         sid = r["set"]
         if sid not in per_set:
-            per_set[sid] = {"count": 0, "pass": 0, "partial": 0, "fail": 0, "scores": []}
+            per_set[sid] = {"count": 0, "valid": 0, "excluded": 0,
+                            "pass": 0, "partial": 0, "fail": 0, "scores": []}
         per_set[sid]["count"] += 1
+        if r["verdict"] in _EXCLUDED_VERDICTS:
+            per_set[sid]["excluded"] += 1
+            continue
+        per_set[sid]["valid"] += 1
         per_set[sid]["scores"].append(r["score"])
         if r["verdict"] == "PASS":
             per_set[sid]["pass"] += 1
@@ -1182,17 +1370,19 @@ def generate_json_report(results, master, eval_run_id, readiness_filter, skipped
     for sid, s in per_set.items():
         per_set_summary[sid] = {
             "count": s["count"],
+            "valid": s["valid"],
+            "excluded": s["excluded"],
             "avg_score": round(sum(s["scores"]) / len(s["scores"]), 3) if s["scores"] else 0,
             "pass": s["pass"],
             "partial": s["partial"],
             "fail": s["fail"],
         }
 
-    # 按维度汇总
+    # 按维度汇总（只对有效题）
     dim_names = list(DIMENSION_WEIGHTS.keys())
     per_dim = {}
     for dn in dim_names:
-        vals = [r["dimensions"][dn] for r in results]
+        vals = [r["dimensions"][dn] for r in valid_results]
         fail_count = sum(1 for v in vals if v < 0.4)
         per_dim[dn] = {
             "avg": round(sum(vals) / len(vals), 3) if vals else 0,
@@ -1206,6 +1396,8 @@ def generate_json_report(results, master, eval_run_id, readiness_filter, skipped
         "readiness_filter": readiness_filter,
         "total_questions": master.get("summary", {}).get("total_questions", 0),
         "evaluated_questions": len(results),
+        "valid_questions": len(valid_results),
+        "excluded_from_score": excluded_count,
         "skipped": skipped_stats,
         "overall_score": overall_score,
         "overall_verdict": overall_verdict,
@@ -1229,7 +1421,9 @@ def generate_markdown_report(json_report):
     lines.append(f"| 就绪度过滤 | {json_report['readiness_filter']} |")
     lines.append(f"| 总题数 | {json_report['total_questions']} |")
     lines.append(f"| 实际评测题数 | {json_report['evaluated_questions']} |")
-    lines.append(f"| 总体得分 | **{json_report['overall_score']}** |")
+    lines.append(f"| 有效计分题数 | {json_report['valid_questions']}"
+                 f"（排除 CODE-MUTATED/DRY-RUN 共 {json_report['excluded_from_score']} 题） |")
+    lines.append(f"| 总体得分 | **{json_report['overall_score']}**（有效题均分） |")
     lines.append(f"| 总体结论 | **{json_report['overall_verdict']}** |")
     lines.append("")
 
@@ -1249,11 +1443,11 @@ def generate_markdown_report(json_report):
     if per_set:
         lines.append("## 按集合汇总")
         lines.append("")
-        lines.append("| 集合 | 题数 | 平均得分 | PASS | PARTIAL | FAIL |")
-        lines.append("|---|---|---|---|---|---|")
+        lines.append("| 集合 | 题数 | 有效 | 排除 | 平均得分（有效） | PASS | PARTIAL | FAIL |")
+        lines.append("|---|---|---|---|---|---|---|---|")
         for sid, s in sorted(per_set.items()):
             lines.append(
-                f"| {sid} | {s['count']} | {s['avg_score']} | "
+                f"| {sid} | {s['count']} | {s['valid']} | {s['excluded']} | {s['avg_score']} | "
                 f"{s['pass']} | {s['partial']} | {s['fail']} |"
             )
         lines.append("")
@@ -1263,26 +1457,33 @@ def generate_markdown_report(json_report):
     if per_dim:
         lines.append("## 按维度汇总")
         lines.append("")
-        lines.append("| 维度 | 平均得分 | 失败题数（<0.4） |")
+        lines.append("| 维度 | 平均得分（有效题） | 失败题数（<0.4） |")
         lines.append("|---|---|---|")
         for dn, d in sorted(per_dim.items()):
             lines.append(f"| {dn} | {d['avg']} | {d['fail_count']} |")
         lines.append("")
 
-    # 代码冻结违规（评测中被测代码被修改 → 该题及后续结果无效）
+    # 代码冻结违规（评测中被测代码被修改 → 逐题恢复/重试/隔离，其余题可采信）
     violations = json_report.get("code_freeze_violations") or []
     if violations:
+        recovered = sum(1 for v in violations if v.get("recovered"))
         lines.append("## 🚨 代码冻结违规（CODE-MUTATED）")
         lines.append("")
-        lines.append("> **评测有效性警告**：以下题目运行期间，评测 agent 修改了被测代码。")
-        lines.append("> 该题结果已判无效（score=0）；其后所有题目均运行在漂移代码上，")
-        lines.append("> **整轮评测结果不可直接采信**，应在干净代码上重跑。")
+        lines.append("> **护栏处置说明**：以下题目运行期间，评测 agent 修改了被测代码。")
+        lines.append(f"> 护栏已按题处置——内容快照自动恢复 {recovered}/{len(violations)} 例，")
+        lines.append("> 恢复成功后同题重试一次（source_tag 加 `-r2`）；恢复失败或重试再犯的题")
+        lines.append("> 判 CODE-MUTATED（score=0，**不计入均分**）。其余题目均运行在")
+        lines.append("> 恢复后的基线代码上，**结果可采信**，无需整轮重跑。")
         lines.append("")
-        lines.append("| 题号 | 集合 | 被改文件 |")
-        lines.append("|---|---|---|")
+        lines.append("| 题号 | 集合 | 被改文件 | 已恢复 | 已重试 |")
+        lines.append("|---|---|---|---|---|")
         for v in violations:
             files = "<br>".join(v["files"])
-            lines.append(f"| {v['id']} | {v['set']} | {files} |")
+            lines.append(
+                f"| {v['id']} | {v['set']} | {files} | "
+                f"{'✅' if v.get('recovered') else '❌'} | "
+                f"{'✅' if v.get('retried') else '—'} |"
+            )
         lines.append("")
 
     # 失败题明细（score < 0.4）
@@ -1349,13 +1550,17 @@ def run_eval(args):
     print(f"      已加载 {len(schema_tables)} 个规范表名")
 
     # 2.5 代码冻结基线（护栏：防评测 agent 就地修改被测代码）
-    baseline = snapshot_guarded_state()
+    # 内容快照落盘到 {out-dir}/freeze-baseline/，供突变后自动恢复（不 git checkout）
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    baseline = snapshot_guarded_state(snapshot_dir=out_dir / "freeze-baseline")
     code_freeze_violations = []
     if baseline is None:
         print(f"      [WARN] 代码冻结护栏关闭（基线快照失败，见前述警告）")
     else:
         print(f"      代码冻结基线：{len(baseline['hashes'])} 个 tracked guarded 文件"
-              f" + {len(baseline['untracked'])} 个已有 untracked 已快照")
+              f" + {len(baseline['untracked'])} 个已有 untracked 已快照；"
+              f"内容快照已落盘 {out_dir / 'freeze-baseline'}")
 
     # 3. 逐题评测
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1487,26 +1692,73 @@ def run_eval(args):
                 })
                 continue
 
-            # 评判
-            verdict = judge(ev, trace, set_, schema_tables)
-
-            # 代码冻结护栏：评测中 agent 改了被测代码 → 该题结果无效
+            # 代码冻结护栏：检测前移到 judge 之前——突变题的作答跑在漂移代码上，
+            # 评了也无效；流程 = detect → 自动恢复 → 同题重试一次，恢复不了才判死
             mutations = detect_code_mutation(baseline)
+            mutation_recovered = False
             if mutations:
                 print(f"\n      🚨 CODE-MUTATED：被测代码在评测中被修改——")
                 for m in mutations:
                     print(f"         {m}")
-                print(f"         （该题结果无效；回滚建议：git -C {_PROJECT_ROOT} checkout -- <file>）")
-                code_freeze_violations.append({
+                actions, failed = restore_guarded_state(baseline)
+                for a in actions:
+                    print(f"         ↻ {a}")
+                for x in failed:
+                    print(f"         [WARN] {x}")
+                post = [m for m in detect_code_mutation(baseline)
+                        if not m.startswith("? ")]
+                violation = {
                     "id": ev_id, "set": set_["set_id"], "files": mutations,
-                })
+                    "recovered": not post and not failed, "retried": False,
+                }
+                if post or failed:
+                    print(f"      [WARN] 自动恢复未彻底（剩余：{post or failed}）"
+                          f"——该题判 CODE-MUTATED")
+                elif args.no_freeze_retry:
+                    print("      （--no-freeze-retry：已恢复但不重试，该题判 CODE-MUTATED）")
+                else:
+                    # 同题重试一次：source_tag 加 -r2 后缀，避免
+                    # find_session_by_source（按 started_at 取最新）绑回旧 session
+                    retry_tag = f"{source_tag}-r2"
+                    print(f"      ↻ 已恢复，同题重试（source_tag={retry_tag}）")
+                    violation["retried"] = True
+                    run_hermes(
+                        skill=skill, query=ev["prompt"],
+                        source_tag=retry_tag, dry_run=False, timeout=args.timeout,
+                    )
+                    time.sleep(2)  # 等待 hermes 写入 state.db
+                    rsid = find_session_by_source(retry_tag)
+                    if not rsid:
+                        print(f"      [WARN] 重试 session 未写入（source_tag={retry_tag}）")
+                    else:
+                        rtrace = extract_trace(rsid)
+                        rmut = detect_code_mutation(baseline)
+                        if rtrace is not None and not rmut:
+                            # 重试跑在恢复后的基线代码上，作答有效
+                            session_id, source_tag, trace = rsid, retry_tag, rtrace
+                            mutation_recovered = True
+                        elif rmut:
+                            print(f"      🚨 重试再次突变：{rmut}（再恢复一次）")
+                            restore_guarded_state(baseline)
+                        else:
+                            print("      [WARN] 重试 trace 提取失败")
+                code_freeze_violations.append(violation)
+
+            # 评判（重试成功则评重试 trace；突变未恢复则强判 CODE-MUTATED）
+            verdict = judge(ev, trace, set_, schema_tables)
+            if mutations and not mutation_recovered:
                 verdict["verdict"] = "CODE-MUTATED"
                 verdict["score"] = 0.0
+                verdict["dimensions"] = {dn: 0.0 for dn in DIMENSION_WEIGHTS}
                 verdict["d1_note"] = f"code_mutated: {', '.join(mutations[:3])}"
                 verdict["code_mutated_files"] = mutations
+            elif mutation_recovered:
+                verdict["mutation_recovered"] = True
+                verdict["d1_note"] = f"mutation_recovered; {verdict.get('d1_note') or ''}".strip("; ")
 
             results.append(verdict)
-            print(f"{verdict['verdict']}（score={verdict['score']}）")
+            print(f"{verdict['verdict']}（score={verdict['score']}）"
+                  + (" [mutation_recovered]" if mutation_recovered else ""))
 
     # 4. 生成 JSON 报告
     print(f"\n[4/6] 生成 JSON 报告")
@@ -1514,8 +1766,6 @@ def run_eval(args):
         results, master, eval_run_id, args.readiness, skipped_stats,
         code_freeze_violations=code_freeze_violations,
     )
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
     json_out = out_dir / f"hermes-eval-results-{timestamp}.json"
     with open(json_out, "w", encoding="utf-8") as f:
         json.dump(json_report, f, ensure_ascii=False, indent=2)
@@ -1540,12 +1790,17 @@ def run_eval(args):
         mutated_count = sum(1 for r in results if r["verdict"] == "CODE-MUTATED")
         print(f"      PASS={pass_count}  PARTIAL={partial_count}  FAIL={fail_count}"
               + (f"  CODE-MUTATED={mutated_count}" if mutated_count else ""))
-        print(f"      总体得分：{json_report['overall_score']}（{json_report['overall_verdict']}）")
+        print(f"      有效计分题数：{json_report['valid_questions']}/{len(results)}"
+              f"（排除 CODE-MUTATED/DRY-RUN 共 {json_report['excluded_from_score']}）")
+        print(f"      总体得分：{json_report['overall_score']}（{json_report['overall_verdict']}，有效题均分）")
         if code_freeze_violations:
-            print(f"\n      🚨🚨 代码冻结违规 {len(code_freeze_violations)} 题——评测中被测代码被修改，")
-            print(f"         受影响题的 CODE-MUTATED 结果无效；后续题均跑在漂移代码上，整轮结果仅供参考：")
+            recovered = sum(1 for v in code_freeze_violations if v.get("recovered"))
+            print(f"\n      🚨 代码冻结违规 {len(code_freeze_violations)} 题——已逐题自动恢复"
+                  f"（{recovered}/{len(code_freeze_violations)} 成功）+ 同题重试；")
+            print(f"         恢复失败/再犯的题判 CODE-MUTATED 不计分，其余题跑在恢复后的基线代码上，可采信：")
             for v in code_freeze_violations:
-                print(f"           {v['set']}/{v['id']}: {', '.join(v['files'][:3])}")
+                print(f"           {v['set']}/{v['id']}: {', '.join(v['files'][:3])}"
+                      + (" [已恢复+重试]" if v.get("retried") else " [未恢复]"))
     print(f"\n      跳过统计：")
     for reason, count in skipped_stats.items():
         if count > 0:
@@ -1606,6 +1861,11 @@ def main():
         "--timeout", type=int, default=900,
         help="hermes chat 单题超时秒数（默认：900；P3 修复：原 120 偏低致 TIMEOUT；"
              "2026-08-19 再调：600→900，inspection 查库+跑工具长链路实测 600s 仍偶发截断）",
+    )
+    ap.add_argument(
+        "--no-freeze-retry", action="store_true",
+        help="代码冻结护栏检测到突变并自动恢复后，不同题重试"
+             "（默认重试一次，source_tag 加 -r2 后缀；重试作答有效则该题不计 CODE-MUTATED）",
     )
     ap.add_argument(
         "--analyze-only", action="store_true",
