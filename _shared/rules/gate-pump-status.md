@@ -84,8 +84,18 @@ if status == 1 (开) and gtophgt == 0:
 
 if isNaN(电压) or 电压 < 340 or 电压 > 420:
   → 电压异常（正常380V±10%）
+
+# ⚠️ 频率判定分口径（严格比较——恰等于边界值不触发；变频泵VFD均不适用）。
+# 本文件是 inspection 与 monitor 的共享事实源，两层各取各的口径：
+if isNaN(频率) or 频率 < 45 or 频率 > 55:
+  → 【巡检口径·inspection】频率异常WARNING（工频50Hz±10%，数据合理性层；
+    与巡检引擎 inspection_analyzer.py pump_freq_low_hz=45/high_hz=55 一致。
+    例：44.9 触发；恰 45.0 不触发）
 if isNaN(频率) or 频率 < 48 or 频率 > 52:
-  → 频率异常（正常50Hz±2%）
+  → 【实时监控口径·monitor】频率异常（50Hz±2Hz，电气运行监视层；
+    monitor/references/algorithm.md 实现、evolution/parameters.md 2026-05-30 标定，
+    正常带 49-51。例：47.9 触发；恰 48.0 不触发）
+# 做巡检/数据质量分析（powerelf-inspection）→ 用 45/55；做实时运行监控（powerelf-monitor）→ 用 48/52。
 
 # 三相不平衡度
 ia_val = parseFloat(ia)

@@ -138,7 +138,8 @@ metadata:
 ### 0. 连哪个库
 
 - 本 skill 连**本地 `powerelf_srm_yml`**（环境变量 `POWERELF_DB_*`）。
-- ❌ 不是远程 `192.168.100.103` 的 SL323 库。**河道水位 `st_river_r` 已于 2026-08-19 从 SL323 迁入本地（54 站 / 42.4 万行），本地库已可直接查，禁止再连 SL323。**
+- ❌ 不是远程 `192.168.100.103` 的 SL323 库。
+- ⚠️ **河道 `st_river_r`（扬州/里下河河道站，2026-08-19 从 SL323 迁入 42.4 万行）本项目暂不用**，已加入 `db.py` `BLOCKED_MONITORING_TABLES` 黑名单。`query()`/`columns()` 会在 SQL 层**强制拦截**访问（实测 `SELECT COUNT(*) FROM st_river_r` 直接抛 `ValueError`）。水库水位走 `st_rsvr_r`，不要查河道表。
 - ✅ 凭证由 `query()` 自动读取，**永远不需要、也不应该**看到密码。
 - 🚫 **禁止 grep 代码找密码**，**禁止把密码打印到输出**。
 
@@ -168,11 +169,12 @@ from db import columns
 for c in columns("st_rsvr_r"): print(c["column"], c["type"], c["meaning"])
 ```
 
-### 4. 关联键用 `eq_id`，不用 `stcd`
+### 4. 关联键用 `eq_id`，不用 `stcd`/`st_id`
 
-- `stcd` 99.8% 为 NULL → 用它 JOIN 会得全 None 设备名
-- 统一 `JOIN eq_equip_base e ON r.eq_id = e.id`
+- `st_rsvr_r.stcd` 99.8% 为 NULL + 少量脏值（模拟器结构性不写）→ 用它 JOIN 会得全 None 设备名；`st_id` 同样大量 NULL/孤儿。**统一用 `eq_id`**。
+- 统一 `JOIN eq_equip_base e ON r.eq_id = e.id`，站点名取 `e.name`、站点码取 `e.code`/`e.eq_code`。
 - ⚠️ `eq_id` 是 bigint、`code` 是字符串，不能 `eq_id='606K...'`
+- ⚠️ 约 1,387 行 `eq_id IS NULL` + 6 个孤儿 `eq_id`（设备已不在 eq_equip_base）无法关联站点，统计覆盖度时须 `WHERE eq_id IN (SELECT id FROM eq_equip_base WHERE deleted=0)`。
 
 ### 5. 每条 SQL 必须带 `deleted = 0`
 
@@ -297,7 +299,7 @@ python3 impl/generate_report.py --date 2026-07 --type anomaly
 | 表名 | 时间列 | 关联键 |
 |------|--------|--------|
 | st_rsvr_r | tm | eq_id |
-| st_river_r | tm | eq_id |  <!-- 2026-08-19 从 SL323 迁入，54站/42.4万行，水位 z/流量 q -->
+| ~~st_river_r~~ | ~~tm~~ | ~~eq_id~~ |  <!-- 🚫扬州河道站，本项目暂不用，已移出 ALLOWED_TABLES -->
 | st_pptn_r | tm | eq_id |
 | st_pressure_r | tm | eq_id |
 | st_percolation_r | tm | eq_id |

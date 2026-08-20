@@ -6,6 +6,8 @@
     python3 impl/generate_report.py --date 2026-05-15
     python3 impl/generate_report.py --date 2026-05-15 --format json
     python3 impl/generate_report.py --date 2026-05-15 --format pdf --output /tmp/report.pdf
+    python3 impl/generate_report.py --type anomaly --date 2026-05-15   # 单日异常报告
+    python3 impl/generate_report.py --type anomaly --date 2026-05      # 月度异常报告(YYYY-MM，跨整月汇总，勿自拼)
 
 环境变量: POWERELF_DB_HOST, POWERELF_DB_PORT, POWERELF_DB_NAME, POWERELF_DB_USER, POWERELF_DB_PASSWORD
          或 SRM_DB_HOST, SRM_DB_PORT, SRM_DB_NAME, SRM_DB_USER, SRM_DB_PASSWORD (后备)

@@ -9,7 +9,7 @@
    闸门开度≈1.2m、泵站 380V/50A/50Hz、水质 pH≈7.5 等），叠加小幅随机波动（防恒值，
    波动幅度低于各维度检出阈值，不触发误报）。
 3. 问题设备 5 台（2 严重 + 2 中等 + 1 细微）：
-   - 严重① 渗压计 eq_id=139：最后 6 点连续上升（458→473kPa）→ 连续上升 WARNING + MAD WARNING
+   - 严重① 渗压计 eq_id=139：最后 7 点连续上升（每点 +2.4kPa）→ 连续上升 WARNING + MAD WARNING
    - 严重② GNSS eq_id=155：speed_gh=1.2mm/d > 1.0 → CRITICAL；delta_h=12mm > 10 → WARNING
    - 中等① 泵站 eq_id=131：三相电流 50/62/38A 不平衡 24% > 10% → WARNING
    - 中等② 闸门 eq_id=132：开度单步 1.2→2.5m 突变 > 1m（末端 step，不降级）→ WARNING
@@ -97,37 +97,40 @@ def _exec(conn, sql, params=None):
 def _delete_mock(conn, table, window_days=None):
     """清 eq_code='MOCK' 数据。window_days=None 表示全清（推荐，防跨代残留）。
     Why: anomaly_detector 默认 30 天窗，旧清理只清 days 天 → 7–30 天带残留 MOCK
-    污染 MAD（评审 §6.2 / T5）。部分表无 eq_code 列（dsm 表），届时回退整窗清理。
+    污染 MAD（评审 §6.2 / T5）。
+
+    H1 修复：DELETE 成功但命中 0 行 = 库中本无 MOCK（首次运行的正常态），直接
+    返回，**绝不**回退整窗清理——旧行为把"删 0 行"与"列缺失异常"混为一谈，
+    首跑会静默清空整窗真实数据。回退仅在异常（无 eq_code 列）时发生，且醒目告警。
+    返回 (删除行数, 策略)，策略供调用方打印（M2：整窗扩围必须可见）。
     """
-    n = 0
     try:
         if window_days is None:
             sql = f"DELETE FROM {table} WHERE deleted=0 AND eq_code='MOCK'"
         else:
             sql = (f"DELETE FROM {table} WHERE deleted=0 AND eq_code='MOCK' "
                    f"AND tm >= NOW()-INTERVAL {window_days} DAY")
-        n = _exec(conn, sql)
+        return _exec(conn, sql), "mock"
     except Exception:
-        n = 0
-    if n == 0:
-        n = _delete_window(conn, table, window_days or 30)
-    return n
+        pass
+    # 无 eq_code 列（dsm/wq_pcp_d/soil/termite/task/ew）：行来源不可区分，只能整窗清理
+    days = window_days or 30
+    n = _delete_window(conn, table, days)
+    print(f"[simulate] ⚠️ {table}: 无 eq_code 列 → 整窗清理近 {days} 天全部 {n} 行"
+          f"（含可能存在的非 MOCK 行）")
+    return n, "window"
 
 def _delete_window(conn, table, days):
-    """清理近 days 天窗口内数据（先按 eq_code='MOCK' 精删，兜底删整窗）。"""
-    n = 0
-    try:
-        n = _exec(conn, f"DELETE FROM {table} WHERE deleted=0 AND tm >= NOW()-INTERVAL {days} DAY")
-    except Exception:
-        n = 0
-    # 若无 tm 列（wq_pcp_d 用 spt / business_check_task、ew_info_message 用 create_time）
+    """清理近 days 天窗口内全部数据（不分行来源）。适用无 eq_code 列的表或显式 window 模式。
+    依次尝试时间列 tm/spt/create_time（wq_pcp_d 用 spt、task/ew 用 create_time），
+    首个存在且执行成功的列即返回——删 0 行是正常结果，不再继续尝试其他列。
+    """
     for col in ("tm", "spt", "create_time"):
-        if n == 0:
-            try:
-                n = _exec(conn, f"DELETE FROM {table} WHERE deleted=0 AND {col} >= NOW()-INTERVAL {days} DAY")
-            except Exception:
-                n = 0
-    return n
+        try:
+            return _exec(conn, f"DELETE FROM {table} WHERE deleted=0 AND {col} >= NOW()-INTERVAL {days} DAY")
+        except Exception:
+            continue
+    return 0
 
 # ============================================================
 # 各表生成器：返回 [(sql, rows)]
@@ -172,13 +175,15 @@ def gen_st_pressure_r(rng, now, days):
     rows = []
     for eq_id, st_id, code in DEVICE_MAP["st_pressure_r"]:
         base = NORMAL["st_pressure_r"]
-        # 按 st_id 派生统一基线（同测站多渗压计量级一致，防同组混基线误报突变/MAD）
-        dev_base = 430.0 + ((st_id * 7) % 30) * 1.2
+        # 按 st_id 派生统一基线（同测站多渗压计量级一致，防同组混基线误报突变/MAD）；
+        # %25 上限 430+24*1.2=458.8，确保落在文档基线带 430-460 内
+        # （评审 M1：原 %30 会派生到 464.8，越界致校验器 §3.3 误报）
+        dev_base = 430.0 + ((st_id * 7) % 25) * 1.2
         wp = dev_base
         for i in range(days * 24):
             tm = now - timedelta(hours=(days * 24 - 1 - i))
             if eq_id in PROBLEM["st_pressure_r"] and i >= days * 24 - 7:
-                # 严重①：最后 7 点连续上升，每点 +2.4kPa（458→473），触发连续上升 + MAD
+                # 严重①：最后 7 点连续上升，每点 +2.4kPa（基线随站派生），触发连续上升 + MAD
                 wp += 2.4
             else:
                 wp = dev_base + rng.gauss(0, base["water_pressure"][1] * 0.5)
@@ -343,8 +348,8 @@ def gen_ew_info_message(rng, now, days):
         for j, lvl in enumerate(("3", "4")):
             tm = now - timedelta(days=(days - 1 - i), hours=(10 + j * 4))
             rows.append((f"水位监测告警-{i}-{j}", lvl, tm, 1))
-    sql = ("INSERT INTO ew_info_message (ew_name, level_r, gather_time, message_confirm, type, dot_id, "
-           "ew_rules_id, deleted, tenant_id) VALUES (%s,%s,%s,%s,'0',0,0,0,1)")
+    sql = ("INSERT INTO ew_info_message (ew_name, level_r, gather_time, message_confirm, eq_code, type, dot_id, "
+           "ew_rules_id, deleted, tenant_id) VALUES (%s,%s,%s,%s,'MOCK','0',0,0,0,1)")
     return sql, rows
 
 # ============================================================
@@ -388,14 +393,14 @@ def main():
     try:
         for table, sql, rows in plan:
             if args.clean_mode == "all-mock":
-                n_del = _delete_mock(conn, table, window_days=None)   # 全清 MOCK，防跨代残留
+                n_del, how = _delete_mock(conn, table, window_days=None)   # 全清 MOCK，防跨代残留
             else:
-                n_del = _delete_window(conn, table, days)
+                n_del, how = _delete_window(conn, table, days), "window"
             cur = conn.cursor()
             # 分批插入（每批 500），避免长事务
             for i in range(0, len(rows), 500):
                 cur.executemany(sql, rows[i:i + 500])
-            print(f"[simulate] {table}: 清理 {n_del} 行, 插入 {len(rows)} 行")
+            print(f"[simulate] {table}: 清理 {n_del} 行({how}), 插入 {len(rows)} 行")
         conn.commit()
         print("[simulate] ✅ 全部写入完成并提交")
     except Exception as e:

@@ -3,7 +3,7 @@
   "generated_at": "2026-08-10",
   "base_format": "evals-database-v2.json 规范: {id, name, prompt, expected_output}",
   "summary": {
-    "total_questions": 293,
+    "total_questions": 290,
     "per_set": {
       "early-warning-v3-matrix": 103,
       "data-governance-routing-list": 53,
@@ -11,8 +11,7 @@
       "routing-evals-v1": 6,
       "routing-evals-v2": 45,
       "inspection-eval-criteria": 10,
-      "inspection-eval-cases": 47,
-      "darwin-test-prompts": 3
+      "inspection-eval-cases": 47
     },
     "known_gaps": {
       "early-warning-v3-matrix": [
@@ -1136,13 +1135,13 @@
           "id": "DG-N01",
           "name": "不可问-XX 水库当前水位是多少？",
           "prompt": "XX 水库当前水位是多少？",
-          "expected_output": "应路由到 `water-situation`；原因：查水位不是查数据质量"
+          "expected_output": "应路由到 `water-situation` / `powerelf-chatbi`；原因：查实时水位值不是查数据质量"
         },
         {
           "id": "DG-N02",
           "name": "不可问-展示一下最近一周的水位变化曲线",
           "prompt": "展示一下最近一周的水位变化曲线",
-          "expected_output": "应路由到 `water-situation`；原因：趋势可视化，非检测"
+          "expected_output": "应路由到 `water-situation` / `powerelf-chatbi` / `powerelf-monitor`；原因：水位趋势可视化（非质量检测），chatbi 可出图、monitor 做趋势分析"
         },
         {
           "id": "DG-N03",
@@ -1546,7 +1545,7 @@
         {
           "id": "24",
           "name": "interpolation-pressure-linear",
-          "prompt": "st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
+          "prompt": "【假设场景·无需查库】st_pressure_r表5月1日到10日连续缺失了240条数据，用线性插值补上",
           "expected_output": "Provider calls powerelf-data-governance to linearly interpolate 240 missing pressure records (equipment 134)"
         },
         {
@@ -1732,7 +1731,7 @@
           "id": "EVAL9",
           "name": "EVAL9: 无误报",
           "prompt": "水库水情、位移监测、MAD统计、关联异常这4个维度是否正确报告OK？",
-          "expected_output": "Pass: 这4个维度输出OK，无WARNING | Fail: 任一维度误报为WARNING"
+          "expected_output": "Pass: 输出包含\"OK\"和\"CRITICAL\"——水库水情/MAD统计/关联异常3个维度报OK无WARNING，位移维度报CRITICAL（GNSS测站97速率1.200mm/d超过1.0mm/d为真实异常，非误报） | Fail: 水情/MAD统计/关联异常任一误报为WARNING，或位移维度漏报CRITICAL"
         },
         {
           "id": "EVAL10",
@@ -1754,163 +1753,163 @@
         {
           "id": "WL-POS-1",
           "name": "水库水情-should_report",
-          "prompt": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.5（6点5次连续上升）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.5（6点5次连续上升）",
           "expected_output": "min_level=WARNING; message_contains=连续上升 | 理由: 6 点窗口 5 次连续上升，达 consecutive_monotonic(rise,5) 阈值"
         },
         {
           "id": "WL-NEG-1",
           "name": "水库水情-should_not_report",
-          "prompt": "st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.4（末点持平）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9001, rz 序列 100.0→100.1→100.2→100.3→100.4→100.4（末点持平）",
           "expected_output": "no_finding_contains=连续上升 | 理由: 仅 4 次连续上升，阈值 5 次，差 1 不应触发"
         },
         {
           "id": "WL-POS-2",
           "name": "水库水情-should_report",
-          "prompt": "st_id=9001, 末条 inq=21.0, otq=10.0（比值 2.1）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9001, 末条 inq=21.0, otq=10.0（比值 2.1）",
           "expected_output": "min_level=WARNING; message_contains=入库流量 | 理由: 入库/出库比 2.1 > 2，蓄水过快"
         },
         {
           "id": "WL-NEG-2",
           "name": "水库水情-should_not_report",
-          "prompt": "st_id=9001, 末条 inq=20.0, otq=10.0（比值恰 2.0）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9001, 末条 inq=20.0, otq=10.0（比值恰 2.0）",
           "expected_output": "no_finding_contains=入库流量 | 理由: 比值恰等于阈值 2，判定为严格大于，不应触发"
         },
         {
           "id": "RAIN-POS-1",
           "name": "雨量监测-should_report",
-          "prompt": "st_id=9002, 单时段 p=100.1mm",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9002, 单时段 p=100.1mm",
           "expected_output": "min_level=CRITICAL; message_contains=红色预警 | 理由: 100.1mm > 红色阈值 100mm（ew_info_rules 缺省兜底）"
         },
         {
           "id": "RAIN-NEG-1",
           "name": "雨量监测-should_not_report",
-          "prompt": "st_id=9002, 单时段 p=29.9mm",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9002, 单时段 p=29.9mm",
           "expected_output": "no_finding_contains=预警 | 理由: 29.9mm，蓝色阈值 30mm，差 0.1 不应触发任何预警级"
         },
         {
           "id": "PRES-POS-1",
           "name": "渗压监测-should_report",
-          "prompt": "st_id=9003, water_pressure 序列 [50.0×9, 55.1]（末对上跳5.1kPa未回落→非spike）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9003, water_pressure 序列 [50.0×9, 55.1]（末对上跳5.1kPa未回落→非spike）",
           "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 5.1kPa > 突变阈值5kPa；末点未回落→非spike(不降级)保持WARNING（analyze_pressure变化检测只看末对，真step不可达，pattern为none）"
         },
         {
           "id": "PRES-NEG-1",
           "name": "渗压监测-should_not_report",
-          "prompt": "st_id=9003, water_pressure 相邻两点 50.0→54.9（变化 4.9kPa）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9003, water_pressure 相邻两点 50.0→54.9（变化 4.9kPa）",
           "expected_output": "no_finding_contains=突变 | 理由: 变化 4.9kPa，阈值 5kPa，差 0.1 不应触发"
         },
         {
           "id": "PRES-SPIKE-1",
           "name": "渗压监测-should_report",
-          "prompt": "st_id=9003, water_pressure 序列 [50.0×5, 85.0, 50.0×4]（中间单点85尖峰，末点50已回落=spike；35kPa远超5阈值）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9003, water_pressure 序列 [50.0×5, 85.0, 50.0×4]（中间单点85尖峰，末点50已回落=spike；35kPa远超5阈值）",
           "expected_output": "max_level=INFO; message_contains=突变; pattern=spike; no_diagnosis=True | 理由: 单点尖峰latest已回落→spike通道；Phase4.9降级INFO且不触发诊断(防毛刺撞巧合降雨生伪根因)。真实渗漏会同时触发drift趋势层+MAD层WARNING，故降级spike不漏报"
         },
         {
           "id": "PERC-POS-1",
           "name": "渗流监测-should_report",
-          "prompt": "st_id=9004, percolation 相邻 1.000→1.201（+20.1%）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9004, percolation 相邻 1.000→1.201（+20.1%）",
           "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 20.1% > 突变阈值 20%"
         },
         {
           "id": "PERC-NEG-1",
           "name": "渗流监测-should_not_report",
-          "prompt": "st_id=9004, percolation 相邻 1.000→1.199（+19.9%）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9004, percolation 相邻 1.000→1.199（+19.9%）",
           "expected_output": "no_finding_contains=突变 | 理由: 19.9%，阈值 20%，差 0.1pct 不应触发"
         },
         {
           "id": "GNSS-POS-1",
           "name": "位移监测-should_report",
-          "prompt": "st_id=9005, speed_gh 5 点 4 次连续加速",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9005, speed_gh 5 点 4 次连续加速",
           "expected_output": "min_level=WARNING; message_contains=加速 | 理由: GNSS 5 点窗口 4 次连续加速，达趋势阈值"
         },
         {
           "id": "GNSS-NEG-1",
           "name": "位移监测-should_not_report",
-          "prompt": "st_id=9005, speed_gh 5 点仅 3 次连续加速",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9005, speed_gh 5 点仅 3 次连续加速",
           "expected_output": "no_finding_contains=加速 | 理由: 仅 3 次连续加速，阈值 4 次，差 1 不应触发"
         },
         {
           "id": "GATE-POS-1",
           "name": "闸门工情-should_report",
-          "prompt": "st_id=9006, gtophgt 相邻两点 1.00→2.01（突变 1.01m）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9006, gtophgt 相邻两点 1.00→2.01（突变 1.01m）",
           "expected_output": "min_level=WARNING; message_contains=突变 | 理由: 1.01m > 单步开度突变阈值 1.0m（gate_opening_jump_m）；Phase4.9 _change_finding 统一消息为 dim_label前缀+突变，不再含'开度'名词"
         },
         {
           "id": "GATE-NEG-1",
           "name": "闸门工情-should_not_report",
-          "prompt": "st_id=9006, gtophgt 相邻两点 1.00→2.00（突变恰 1.00m）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9006, gtophgt 相邻两点 1.00→2.00（突变恰 1.00m）",
           "expected_output": "no_finding_contains=突变 | 理由: 变化恰等于阈值 1.0m，判定为严格大于，不应触发"
         },
         {
           "id": "GATE-POS-2",
           "name": "闸门工情-should_report",
-          "prompt": "st_id=9006, 单条 gtophgt=2.5, gtq=0",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9006, 单条 gtophgt=2.5, gtq=0",
           "expected_output": "min_level=WARNING; message_contains=流量为0 | 理由: 开度 2.5m>0 且流量为 0，疑似卡阻或流量计故障"
         },
         {
           "id": "GATE-NEG-2",
           "name": "闸门工情-should_not_report",
-          "prompt": "st_id=9006, 全窗口 gtophgt=0, gtq=0（闸门全关）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9006, 全窗口 gtophgt=0, gtq=0（闸门全关）",
           "expected_output": "no_finding_contains=流量为0; not_no_data=True | 理由: 输出纪律 #5：开度 0/流量 0 是合法观测（闸门关闭），不报卡阻也不归 no_data"
         },
         {
           "id": "PUMP-POS-1",
           "name": "泵站工情-should_report",
-          "prompt": "st_id=9007, 单条 freq=44.9",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9007, 单条 freq=44.9",
           "expected_output": "min_level=WARNING; message_contains=频率 | 理由: 44.9Hz < 下界 45Hz（工频 50Hz -10%）"
         },
         {
           "id": "PUMP-NEG-1",
           "name": "泵站工情-should_not_report",
-          "prompt": "st_id=9007, 单条 freq=45.0",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9007, 单条 freq=45.0",
           "expected_output": "no_finding_contains=频率 | 理由: 恰等于下界 45Hz，判定为严格小于，不应触发"
         },
         {
           "id": "PUMP-POS-2",
           "name": "泵站工情-should_report",
-          "prompt": "st_id=9007, 单条 uab=400, ubc=400, uca=464（不平衡 10.1%）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9007, 单条 uab=400, ubc=400, uca=464（不平衡 10.1%）",
           "expected_output": "min_level=WARNING; message_contains=三相不平衡 | 理由: max_dev/avg = 42.67/421.33 ≈ 10.1% > 阈值 10%（GB/T 15543）"
         },
         {
           "id": "WQ-POS-1",
           "name": "水质监测-should_report",
-          "prompt": "stcd=9008, 最新一条 ph=5.99",
+          "prompt": "【假设测试数据·无需查库，直接判断】stcd=9008, 最新一条 ph=5.99",
           "expected_output": "min_level=WARNING; message_contains=pH偏低 | 理由: 5.99 < 标准下限 6（注意：检测只取最新一条读数）"
         },
         {
           "id": "WQ-NEG-1",
           "name": "水质监测-should_not_report",
-          "prompt": "stcd=9008, 最新一条 ph=6.00",
+          "prompt": "【假设测试数据·无需查库，直接判断】stcd=9008, 最新一条 ph=6.00",
           "expected_output": "no_finding_contains=pH | 理由: 恰等于下限 6，判定为严格小于，不应触发"
         },
         {
           "id": "SOIL-POS-1",
           "name": "土壤墒情-should_report",
-          "prompt": "st_id=9009, soil_moist_evaluation='重度干旱'",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9009, soil_moist_evaluation='重度干旱'",
           "expected_output": "min_level=WARNING; message_contains=墒情评价 | 理由: 评价文本命中关键词（干旱/不足/重度）"
         },
         {
           "id": "SOIL-NEG-1",
           "name": "土壤墒情-should_not_report",
-          "prompt": "st_id=9009, soil_moist_evaluation='适宜', soil_water100cm=25.0",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9009, soil_moist_evaluation='适宜', soil_water100cm=25.0",
           "expected_output": "no_finding_contains=墒情评价 | 理由: 评价不含干旱/不足/重度关键词，且 100cm 含水量 25% ≥ 10% 下限"
         },
         {
           "id": "TERM-POS-1",
           "name": "白蚁监测-should_report",
-          "prompt": "st_id=9010, damage_level='重度' 1 条",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9010, damage_level='重度' 1 条",
           "expected_output": "min_level=CRITICAL; message_contains=危害等级 | 理由: 重度危害 → CRITICAL（中度仅 WARNING）"
         },
         {
           "id": "TERM-POS-2",
           "name": "白蚁监测-should_report",
-          "prompt": "st_id=9010, pest_density=3, check_result='未发现', damage_level=NULL",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9010, pest_density=3, check_result='未发现', damage_level=NULL",
           "expected_output": "min_level=WARNING; message_contains=虫口密度 | 理由: 密度恰达阈值 3（判定 ≥3 含边界，与多数严格比较不同）"
         },
         {
           "id": "TERM-NEG-1",
           "name": "白蚁监测-should_not_report",
-          "prompt": "st_id=9010, pest_density=2, check_result='未发现', damage_level=NULL",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9010, pest_density=2, check_result='未发现', damage_level=NULL",
           "expected_output": "no_finding_contains=白蚁 | 理由: 密度 2 < 3，未发现白蚁，无危害等级，差 1 级不应触发"
         },
         {
@@ -1952,13 +1951,13 @@
         {
           "id": "MAD-POS-1",
           "name": "MAD统计异常-should_report",
-          "prompt": "st_id=9011, water_pressure 30 点稳定 50.00±0.05，末点 60.0",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9011, water_pressure 30 点稳定 50.00±0.05，末点 60.0",
           "expected_output": "min_level=WARNING; message_contains=MAD统计异常 | 理由: 末点偏离中位数，z 远超渗压 MAD 阈值 4.0，样本 30 ≥ 下限 20"
         },
         {
           "id": "MAD-NEG-1",
           "name": "MAD统计异常-should_not_report",
-          "prompt": "st_id=9011, 同形态离群序列但总共仅 19 点",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9011, 同形态离群序列但总共仅 19 点",
           "expected_output": "no_finding_contains=MAD统计异常 | 理由: 样本 19 < min_samples 20，统计不可靠不应触发（样本量下限护栏）"
         },
         {
@@ -1976,43 +1975,43 @@
         {
           "id": "CORR-POS-2",
           "name": "关联异常-should_report",
-          "prompt": "渗压计9003 wp 6点严格递增 50→52→54→56→58→60；同期水位 rz 在 100.0~100.05 波动（变化<0.1m 且 CV≥idle_cv_min 非平线）",
+          "prompt": "【假设测试数据·无需查库，直接判断】渗压计9003 wp 6点严格递增 50→52→54→56→58→60；同期水位 rz 在 100.0~100.05 波动（变化<0.1m 且 CV≥idle_cv_min 非平线）",
           "expected_output": "min_level=WARNING; message_contains=渗压 | 理由: 渗压持续上升 + 水位稳定(非死值平线) → 关联2 应报（防渗体损坏或渗压计故障）"
         },
         {
           "id": "CORR-NEG-2",
           "name": "关联异常-should_not_report",
-          "prompt": "渗压计9003 wp 6点严格递增；同期水位 rz 全程恒等 100.000（死值平线）",
+          "prompt": "【假设测试数据·无需查库，直接判断】渗压计9003 wp 6点严格递增；同期水位 rz 全程恒等 100.000（死值平线）",
           "expected_output": "no_finding_contains=水位稳定 | 理由: 水位死值平线（CV<0.001）→ idle 护栏抑制关联2（'稳定'可能是水位计卡滞而非真稳定），不应报"
         },
         {
           "id": "QG-RED-1",
           "name": "水库水情（质量闸）-quality_gate",
-          "prompt": "st_id=9012, 30 天窗口仅注入 3 天数据（完整性 <80% 红档）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9012, 30 天窗口仅注入 3 天数据（完整性 <80% 红档）",
           "expected_output": "dimension_status=INCONCLUSIVE; envelope_status=inconclusive; exit_code=4; next_steps_contains=先修数据 | 理由: 完整性红档（<80%）不硬跑：维度 INCONCLUSIVE → envelope inconclusive → 退出码 4，转 governance"
         },
         {
           "id": "QG-PLACEHOLDER-1",
           "name": "水库水情（质量闸）-quality_gate",
-          "prompt": "st_id=9012, rz 序列混入 -99 与 999 各若干，另含合法 0.00 读数",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9012, rz 序列混入 -99 与 999 各若干，另含合法 0.00 读数",
           "expected_output": "quality_issues_contains=占位; zero_not_counted_as_placeholder=True | 理由: -99/999 属占位值集合应计入质量 issues；0 是合法观测值（纪律 #5）不得计入占位"
         },
         {
           "id": "SEASON-GUARD-1",
           "name": "水库水情（季节护栏）-guardrail",
-          "prompt": "st_id=9013, 7 月汛期注入 MAD 离群高水位（历史同期水位普涨）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9013, 7 月汛期注入 MAD 离群高水位（历史同期水位普涨）",
           "expected_output": "max_level=INFO; message_contains=MAD统计异常 | 理由: 汛期 in_season 命中 → 水位普涨降级 INFO 而非 WARNING，防季节性误报"
         },
         {
           "id": "DIAG-HIT-1",
           "name": "渗压监测（诊断链）-diagnosis",
-          "prompt": "st_id=9014 渗压突变 5.5kPa（WARNING 命中 R1 路由）；同期 -2h 窗口内 rz 上升 0.25m（≥0.2m）",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9014 渗压突变 5.5kPa（WARNING 命中 R1 路由）；同期 -2h 窗口内 rz 上升 0.25m（≥0.2m）",
           "expected_output": "finding_has=diagnosis_root_cause; detail_contains=证据链; envelope_category=root_cause | 理由: R1 第一层（水位Δ≥0.2m，先验 ~50%）命中即停 → root_cause 回填，category 升级 stop-ready"
         },
         {
           "id": "DIAG-MISS-1",
           "name": "渗压监测（诊断链）-diagnosis",
-          "prompt": "st_id=9014 渗压突变 5.5kPa；同期水位平稳（Δ<0.2m）、无降雨、闸门无动作",
+          "prompt": "【假设测试数据·无需查库，直接判断】st_id=9014 渗压突变 5.5kPa；同期水位平稳（Δ<0.2m）、无降雨、闸门无动作",
           "expected_output": "finding_not_has=diagnosis_root_cause; detail_contains=已查 | 理由: 三层候选与横向 fallback 均无证据 → 不编造根因，detail 记录已查窗口（已检为空 ≠ 忘了检）"
         },
         {
@@ -2032,35 +2031,6 @@
           "name": "任一维度-empty_data",
           "prompt": "查询抛异常",
           "expected_output": "status_code=QUERY_FAILED; no_fabricated_values=True | 理由: 查询失败 ≠ 无数据，严禁以 0 或空充数"
-        }
-      ]
-    },
-    {
-      "set_id": "darwin-test-prompts",
-      "phase": "阶段5 skill 优化器 darwin-skill",
-      "source_files": [
-        "darwin-skill/test-prompts.json"
-      ],
-      "description": "3 条优化流程引导测试（典型/全量/歧义失败场景）。",
-      "gaps": [],
-      "evals": [
-        {
-          "id": "1",
-          "name": "典型场景：单 skill 优化",
-          "prompt": "用 darwin-skill 优化 huashu-xxx 这个 skill",
-          "expected_output": "skill 应引导：Phase 0 检查 git/分支 → Phase 0.5 设计 2-3 个 test-prompts → Phase 1 spawn 独立 judge 评 9 维 rubric → 找最低维度（注意 dim2/3/4 相关簇）→ Phase 2 hill climbing（每轮 1 个维度，git ratchet）→ 检测触顶（连续 2 轮 Δ<2 自动 break）→ Phase 3 汇总 + 结果卡片"
-        },
-        {
-          "id": "2",
-          "name": "典型场景：全量评估",
-          "prompt": "评估所有 skills 的质量",
-          "expected_output": "skill 应执行 Phase 0.5-1：扫描所有 SKILL.md → 跑 runtime 中立性 gate → 用 9 维 rubric 打基线分 → 输出评分卡片（按分数排序，标注短板维度），不进入 Phase 2 优化循环"
-        },
-        {
-          "id": "3",
-          "name": "歧义/失败场景",
-          "prompt": "我想让你帮我把这个 skill 改得更好一点",
-          "expected_output": "skill 应识别为优化任务 → 询问优化范围（全量 / 单个）→ 检查异常（不在 git 仓库 / results.tsv 缺失等）按异常表 fallback → 设计测试 prompt 前展示给用户确认（检查点）"
         }
       ]
     }

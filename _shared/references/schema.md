@@ -83,7 +83,7 @@
 
 ### 监测表
 
-**st_rsvr_r**（水库水情，19.4 万行）
+**st_rsvr_r**（水库水情，201,180 行，模拟器持续写入；⚠站点关联走 `eq_id`/`eq_code`，`stcd` 列 99.8% NULL+脏值勿用）
 | 列名 | 类型 | 中文含义 |
 |------|------|---------|
 | tm | datetime | ★观测时间（分析窗口用这个，非 create_time） |
@@ -98,7 +98,7 @@
 | stcd | varchar(20) | 测站编码（**99.8% 空，勿用于 JOIN**） |
 | eq_code | varchar(20) | 设备编码 |
 
-**st_river_r**（河道水情，**42.4 万行，2026-08-19 从 SL323 迁入**）
+**st_river_r**（河道水情，42.4 万行，2026-08-19 从 SL323 迁入；🚫扬州河道站，本项目暂不用，已列入 BLOCKED_MONITORING_TABLES 强制隔离）
 | 列名 | 类型 | 中文含义 |
 |------|------|---------|
 | tm | datetime | ★观测时间 |
@@ -194,25 +194,25 @@
 
 ### 1.1 水文气象
 
-#### st_rsvr_r — 水库水情（实测 2026-07-16，194,111 行）
+#### st_rsvr_r — 水库水情（实测 2026-07-16，194,111 行；2026-08-19 实测 201,180 行，模拟器持续写入）
 ```sql
 CREATE TABLE st_rsvr_r (
   id        BIGINT PRIMARY KEY AUTO_INCREMENT,
-  st_id     BIGINT,                  -- 测站id
+  st_id     BIGINT,                  -- 测站id（大量NULL）
   project_id BIGINT,                 -- 工程id
   tm        DATETIME,                -- 采集时间
   rz        DECIMAL(8,3),            -- 水库上水位(m)        ★MAD检测字段
   blrz      DECIMAL(7,3),            -- 水库下水位(m)
   inq       DECIMAL(10,3),           -- 入库流量(m³/s)       ★检测字段
   otq       DECIMAL(10,3),           -- 出库流量(m³/s)       ★检测字段
-  w         DECIMAL(10,3),           -- 蓄水量(m³)
+  w         DECIMAL(10,3),           -- 蓄水量(万m³)
   rwchrcd   CHAR(1),                 -- 河水特征码
   rwptn     CHAR(2),                 -- 水势状态码
   msqmt     CHAR(2),  msvmt CHAR(2), -- 测流/测速方法
   inqdr     DECIMAL(5,2),            -- 入流时段长
-  eq_id     BIGINT,                  -- 设备id → eq_equip_base.id
-  eq_code   VARCHAR(20) NOT NULL,    -- 设备编码
-  stcd      VARCHAR(20),             -- 测站编码
+  eq_id     BIGINT,                  -- 设备id → eq_equip_base.id  ★站点关联走此列
+  eq_code   VARCHAR(20) NOT NULL,    -- 设备编码 ★站点关联走此列
+  stcd      VARCHAR(20),             -- 测站编码（⚠99.8%NULL+少量脏值,模拟器结构性不写,勿用于JOIN）
   creator VARCHAR(64), create_time DATETIME,
   updater VARCHAR(64), update_time DATETIME,
   deleted    BIT(1) NOT NULL DEFAULT b'0',
@@ -220,7 +220,9 @@ CREATE TABLE st_rsvr_r (
   KEY (tenant_id, tm)
 );
 ```
-> tm 范围实测：2026-01-11 17:05 ~ 2026-07-01 08:00。
+> tm 范围实测：2026-01-11 17:05 ~ 2026-08-19 10:00（模拟器持续写入）。
+>
+> ⚠️ **站点关联口径（2026-08-19 修正）**：本表 `stcd` 列 99.8% 为 NULL、另有约 1,207 行脏值（`3`/`TQP`/`606K2153` 等），系模拟器结构性不写——**站点关联一律走 `eq_id` → `eq_equip_base.id`（或 `eq_code`）**，不要用 `stcd` JOIN。另有约 1,387 行 `eq_id IS NULL` 及 6 个孤儿 `eq_id`（129/193/194/250/260/270，设备已不在 eq_equip_base）无法关联站点，统计站点数/覆盖度时须 `WHERE eq_id IN (SELECT id FROM eq_equip_base WHERE deleted=0)`。可关联的有效水库设备 7 个（eq_id 300-303, 386, 387 + 157 渗压计）。
 
 #### st_river_r — 河道水情（实测 2026-07-16 建表；**2026-08-19 从 SL323 迁入 42.4 万行真实数据**）
 ```sql
@@ -246,8 +248,9 @@ CREATE TABLE st_river_r (
   tenant_id  BIGINT NOT NULL DEFAULT 1
 );
 ```
-> ✅ **已迁入数据**（2026-08-19）：从 SL323 `192.168.100.103` 迁入 54 个河道站、42.4 万行，时间范围 2026-02-18 ~ 2026-07-31（SL323 源即止于此），设备落在 `eq_equip_base` id 401–454（type_flag=7 水位计）。本表现已可正常用于河道水位分析/缺失检测。
+> ✅ **已迁入数据**（2026-08-19）：从 SL323 `192.168.100.103` 迁入 54 个河道站、42.4 万行，时间范围 2026-02-18 ~ 2026-07-31（SL323 源即止于此），设备落在 `eq_equip_base` id 401–454（type_flag=7 水位计）。
 > ⚠️ 数据为**日频**（tm=当天 00:00:00）；SL323 源数据 8 月起未更新，故本地最新止于 2026-07-31。
+> 🚫 **本项目暂不用此表**（2026-08-19 用户决定）：54 站多为扬州/里下河地区河道断面，非本水库工程监测对象；水库水位走 `st_rsvr_r`。数据保留在库中，已加入 `db.py` `BLOCKED_MONITORING_TABLES` 黑名单——`query()`/`columns()` 会在 SQL 层**强制拦截**（实测验证：`SELECT COUNT(*) FROM st_river_r` 直接抛 `ValueError`），skill 无法再访问其数据或列结构。三层隔离均已落地：(1) db.py SQL 层拦截；(2) `sys_data_source_registry` id=2「河道水位」已置 `status=0`，inspection `load_registry` 不再返回它；(3) inspection `registry.py`/`inspection_tool.py` 内置回退与白名单均已移除 st_river_r，水位/流量监测改走 `st_rsvr_r`（rz/inq/otq）；`overview.py` 概览扫描也已移出。如需恢复，把表名从 `BLOCKED_MONITORING_TABLES` 移到 `ALLOWED_TABLES`，并把 registry id=2 置回 `status=1`。
 
 #### st_was_r — 闸站水情
 ```sql
@@ -604,7 +607,7 @@ CREATE TABLE eq_business_equip_relation (
 );
 ```
 实测映射分布（business_table / st_type / 条数）：
-`st_rsvr_r`: RR×8, ZZ×2 ｜ `st_river_r`（已迁入数据）: RR×1, ZZ×3 ｜ `st_pptn_r`: PP×8, RR×1 ｜
+`st_rsvr_r`: RR×8, ZZ×2 ｜ `st_river_r`（已迁入数据，🚫已隔离）: RR×1, ZZ×3 ｜ `st_pptn_r`: PP×8, RR×1 ｜
 `st_pressure_r`: YZ×25 ｜ `st_percolation_r`: YZ×3 ｜ `dsm_dfr_srvrds_srhrds`: GN×8 ｜
 `rei_gate_r`: DD×7 ｜ `rei_pump_r`: DP×4。
 
@@ -750,13 +753,13 @@ CREATE TABLE sys_data_source_registry (
 ## 七、常见 SQL 查询模式
 
 ```sql
--- 水库：最近一周水位变化（记得 deleted = 0）
+-- 水库：最近一周水位变化（站点关联走 eq_id，勿用 st_id/stcd）
 SELECT tm, rz, inq, otq FROM st_rsvr_r
-WHERE st_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY tm;
+WHERE eq_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY tm;
 -- 水库：最新一条
-SELECT * FROM st_rsvr_r WHERE st_id = ? AND deleted = 0 ORDER BY tm DESC LIMIT 1;
--- 河道（2026-08-19 已迁入 42.4 万行，2026-02-18~07-31）
-SELECT tm, z, q FROM st_river_r WHERE eq_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY);
+SELECT * FROM st_rsvr_r WHERE eq_id = ? AND deleted = 0 ORDER BY tm DESC LIMIT 1;
+-- 河道 st_river_r：🚫已隔离（BLOCKED_MONITORING_TABLES），下列 SQL 会抛 ValueError，仅作历史参考
+-- SELECT tm, z, q FROM st_river_r WHERE eq_id = ? AND deleted = 0 AND tm > DATE_SUB(NOW(), INTERVAL 7 DAY);
 -- 今日降雨量（按站汇总）
 SELECT st_id, SUM(p) AS total FROM st_pptn_r WHERE deleted = 0 AND DATE(tm) = CURDATE() GROUP BY st_id;
 -- 离线设备
@@ -774,7 +777,7 @@ SELECT DATE_FORMAT(tm, '%Y-%m') AS month, AVG(rz) FROM st_rsvr_r WHERE deleted =
 ```sql
 -- 各监测表：行数 + 时间范围（一条搞定，governance 入口首选）
 SELECT 'st_rsvr_r'      AS t, COUNT(*) c, MIN(tm) mn, MAX(tm) mx FROM st_rsvr_r      WHERE deleted=0
-UNION ALL SELECT 'st_river_r',     COUNT(*), MIN(tm), MAX(tm) FROM st_river_r     WHERE deleted=0
+UNION ALL SELECT 'st_river_r',     COUNT(*), MIN(tm), MAX(tm) FROM st_river_r     WHERE deleted=0  -- 🚫已隔离，整行会因 st_river_r 抛 ValueError，删此行再用
 UNION ALL SELECT 'st_pptn_r',      COUNT(*), MIN(tm), MAX(tm) FROM st_pptn_r      WHERE deleted=0
 UNION ALL SELECT 'st_pressure_r',  COUNT(*), MIN(tm), MAX(tm) FROM st_pressure_r  WHERE deleted=0
 UNION ALL SELECT 'st_percolation_r',COUNT(*),MIN(tm), MAX(tm) FROM st_percolation_r WHERE deleted=0

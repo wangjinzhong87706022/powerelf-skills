@@ -136,10 +136,20 @@ severity 饼图配色同步换成水利四色。
 - 证据文本强制注明口径："面雨量约 X mm（窗口内 Y 行未归属站点，按逐时去重）"；
 - `st_id` NULL 行作为数据质量提示进入报告 Data Notes。
 
-### 修复 2：突变类 finding 强制双值口径
+### 修复 2：突变类 finding 强制双值口径（含确定性根因）
 
-- 突变/MAD finding 的 detail 强制携带：峰值+峰值时间 ｜ 当前值+回落标志；
-- 回落判定：`peak_tm < latest_tm` 且 `|latest − median| < 3.5×MAD`（与 MAD 层 z=3~4 同口径的量化判定带）→ "已回落"；
+实证机制（计划期代码勘察确认）：`st_pressure_r` 同一 `st_id` 同一 `tm` 存在多行
+（约 4.5 行/小时，生成器多子序列共用 st_id），`read_sensor_data` 的
+`ORDER BY tm DESC LIMIT` + pandas 稳定排序使"当前值"在并列时间戳里**随机挑行**
+——F003 的 471.89 正是同刻爬坡尾行被偶然选中，属不可复现口径。修复分三层：
+
+- **2a 确定性读取**：`read_sensor_data` 排序改 `ORDER BY tm DESC, id DESC`；
+  新增 `_latest_per_tm(df)`——同一 `(st_id, tm)` 保留最大 id 行（后写覆盖/订正的
+  摄入语义），analyzer 在渗压突变/MAD 前调用；单行时刻为无操作（评测合成数据零影响）；
+- **2b 双值口径**：突变/MAD finding 的 detail 强制携带：峰值+峰值时间 ｜ 当前值+回落标志；
+  回落判定：`peak 下标 < 末位` 且 `|latest − median| < 3.5×MAD`（与 MAD 层 z=3~4
+  同口径的量化判定带）→ "已回落"；
+- **2c 回落标志三处同步**：聊天摘要、异常清单、图表阴影区间同步显示。
 - 聊天摘要、异常清单、图表阴影区间三处同步显示回落标志。
 
 ### 修复 3：spike 模式降级接入
