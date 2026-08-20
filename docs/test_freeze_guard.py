@@ -200,6 +200,13 @@ class FreezeGuardTest(unittest.TestCase):
         um = self.snap / "freeze-baseline/untracked/_shared/scripts/human_wip.py"
         self.assertEqual(um.read_text(), "wip\n")
 
+    def test_snapshot_dir_inside_repo_rejected(self):
+        # 2026-08-20 事故回归：快照落仓库 output/ 下，SKILL.md 镜像经
+        # ~/.hermes/skills/powerelf 软链暴露 → skill 同名冲突 → 全题秒败。
+        # 快照目录在仓库内必须直接报错，不得静默落盘。
+        with self.assertRaises(ValueError):
+            hr.snapshot_guarded_state(snapshot_dir=self.repo / "output" / "freeze-baseline")
+
     # ---------- 报告去污染 ----------
 
     def test_report_excludes_mutated_and_dryrun(self):

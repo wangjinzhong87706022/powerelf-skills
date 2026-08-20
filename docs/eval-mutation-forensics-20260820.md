@@ -41,3 +41,26 @@
 
 1. `interpolate.py`/`missing_detector.py` 不检测时间断档（30 天窗口 244h 空窗漏检）——已记 feedback-log；修复属人工开发工作。
 2. hermes 平台提示词鼓励「发现 skill 有错立即 patch」+ `skill_manage` 对软链注册的 skill 名解析失败 → agent 降级裸写。平台侧问题，本仓库以写拦截 hook 防御。
+
+## 五、事后追记：护栏升级自身引入的 skill 同名冲突（2026-08-20 当日）
+
+**现象**：阶段3 实跑验证 3 题（output/verify-freeze-real-20260820-160809）全部秒败
+「FAIL（session 未写入）」，state.db 零新增 session；手工复现
+`hermes chat -s powerelf-data-governance` 报 `Unknown skill(s)`。
+
+**根因**：内容快照镜像原设计落盘在仓库内 `{out-dir}/freeze-baseline/`。仓库经
+`~/.hermes/skills/powerelf` 软链整体暴露给 hermes 技能扫描器，镜像里的
+`powerelf-data-governance/SKILL.md`、`powerelf-inspection/SKILL.md` 副本与真 skill
+**同名** → 扫描器报 `Skill name collision`（3 candidates）→ `-s` 裸名解析全部失败。
+时间线：15:39 dry-run 引入第一份镜像 → 16:08 实跑 3 题全灭。即**护栏自己毒死了被测对象**。
+
+**修复**：
+1. 清除仓库内镜像目录（output/verify-freeze-dry、output/verify-freeze-real-*），裸名解析立即恢复；
+2. 快照目录固定为仓库兄弟目录 `powerelf-eval-freeze/<out目录名>-<时间戳>/`（跨重启留存、不进 git、不在技能扫描范围），报告 JSON/MD 留痕 `freeze_baseline_dir`；
+3. `snapshot_guarded_state` 加 fail-fast 断言：快照目录位于仓库内直接 raise（不降级为"护栏关闭"，防症状被掩盖）；单测 `test_snapshot_dir_inside_repo_rejected` 回归。
+
+**普适教训**：任何会经 `~/.hermes/skills/` 软链可见的路径下出现 `SKILL.md`（评测产物
+镜像、备份、worktree 副本）都会造成同名冲突。另：`early-warning` 裸名存在**存量** 4 路
+冲突（本仓库 early-warning/ + early-warning-v3/ 旧目录 + SmartTwinRes-skills 两份副本），
+runner SET_TO_SKILL 用的是 `early-warning-v3`（可正常解析），不受影响；人工调用时避免
+用 `early-warning` 裸名即可。

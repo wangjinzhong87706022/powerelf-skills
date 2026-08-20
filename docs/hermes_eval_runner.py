@@ -87,7 +87,10 @@ _OUT_DIR = _HERE
 #     恢复失败或重试再犯 → 该题 verdict 强制 CODE-MUTATED（score=0），
 #     顶层记录 code_freeze_violations（含恢复/重试结果）
 #   - 基线 = 评测启动时的工作树【内容】快照（含人工未提交修改），镜像落盘到
-#     {out-dir}/freeze-baseline/；恢复 = 回写快照内容而非 git checkout——不丢人工改动
+#     仓库外旁路目录 powerelf-eval-freeze/<run>/（⚠️ 不得进仓库：仓库经
+#     ~/.hermes/skills/powerelf 软链暴露给技能扫描器，SKILL.md 镜像会造成
+#     同名 skill 冲突 → 全部 -s 裸名解析失败）；恢复 = 回写快照内容而非
+#     git checkout——不丢人工改动
 #   - 2026-08-19 hermes-eval-20260819-183116 实证升级：旧版只检测不恢复，一次
 #     突变让后续 104 题级联判 CODE-MUTATED（详见 docs/eval-mutation-forensics-20260820.md）
 #
@@ -146,7 +149,22 @@ def snapshot_guarded_state(snapshot_dir=None):
     供 restore_guarded_state 自动恢复（git checkout 会丢人工未提交修改，不可用）。
 
     无法计算（非 git 仓库 / git 失败）返回 None（护栏降级关闭，run_eval 打印 WARN）。
+    快照目录位于仓库内时直接 raise（编程错误 fail-fast，不降级——降级会把
+    评测跑在无护栏状态还掩盖症状）。
     """
+    # ⚠️ 快照目录必须在仓库外：仓库经 ~/.hermes/skills/powerelf 软链暴露给
+    # hermes 技能扫描器，快照镜像里的 SKILL.md 会与真 skill 同名冲突 →
+    # 全部 -s 裸名解析失败（2026-08-20 verify-run 3 题全秒败实测）。
+    # 放在 try 外：这是调用方配置错误，不允许降级为"护栏关闭"。
+    if snapshot_dir is not None:
+        try:
+            Path(snapshot_dir).resolve().relative_to(_PROJECT_ROOT.resolve())
+        except ValueError:
+            pass
+        else:
+            raise ValueError(
+                f"快照目录不得位于仓库内：{snapshot_dir}——SKILL.md 镜像经技能软链"
+                f"暴露会造成 skill 同名冲突（docs/eval-mutation-forensics-20260820.md）")
     try:
         ls = subprocess.run(
             ["git", "-C", str(_PROJECT_ROOT), "ls-files", "-z"],
@@ -1425,6 +1443,8 @@ def generate_markdown_report(json_report):
                  f"（排除 CODE-MUTATED/DRY-RUN 共 {json_report['excluded_from_score']} 题） |")
     lines.append(f"| 总体得分 | **{json_report['overall_score']}**（有效题均分） |")
     lines.append(f"| 总体结论 | **{json_report['overall_verdict']}** |")
+    if json_report.get("freeze_baseline_dir"):
+        lines.append(f"| 冻结基线快照 | `{json_report['freeze_baseline_dir']}`（仓库外） |")
     lines.append("")
 
     # 跳过统计
@@ -1550,21 +1570,28 @@ def run_eval(args):
     print(f"      已加载 {len(schema_tables)} 个规范表名")
 
     # 2.5 代码冻结基线（护栏：防评测 agent 就地修改被测代码）
-    # 内容快照落盘到 {out-dir}/freeze-baseline/，供突变后自动恢复（不 git checkout）
+    # ⚠️ 内容快照必须放在仓库外（snapshot_guarded_state 内有断言兜底）：
+    # 仓库经 ~/.hermes/skills/powerelf 软链暴露给 hermes 技能扫描器，快照镜像
+    # 里的 SKILL.md 会与真 skill 同名冲突 → 全部 -s 裸名解析失败
+    # （2026-08-20 verify-run 实测 3 题全秒败 Unknown skill）。
+    # 固定旁路目录：仓库兄弟目录 powerelf-eval-freeze/<out目录名>-<时间戳>/，
+    # 跨重启留存、不进 git、不在技能扫描范围。
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    eval_run_id = f"hermes-eval-{timestamp}"
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    baseline = snapshot_guarded_state(snapshot_dir=out_dir / "freeze-baseline")
+    freeze_dir = (_PROJECT_ROOT.parent / "powerelf-eval-freeze"
+                  / f"{out_dir.name}-{timestamp}")
+    baseline = snapshot_guarded_state(snapshot_dir=freeze_dir)
     code_freeze_violations = []
     if baseline is None:
         print(f"      [WARN] 代码冻结护栏关闭（基线快照失败，见前述警告）")
     else:
         print(f"      代码冻结基线：{len(baseline['hashes'])} 个 tracked guarded 文件"
               f" + {len(baseline['untracked'])} 个已有 untracked 已快照；"
-              f"内容快照已落盘 {out_dir / 'freeze-baseline'}")
+              f"内容快照已落盘 {freeze_dir}（仓库外，防 skill 同名冲突）")
 
     # 3. 逐题评测
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    eval_run_id = f"hermes-eval-{timestamp}"
     results = []
     skipped_stats = {
         "placeholder_reconstructed": 0,
@@ -1766,6 +1793,8 @@ def run_eval(args):
         results, master, eval_run_id, args.readiness, skipped_stats,
         code_freeze_violations=code_freeze_violations,
     )
+    # 冻结基线快照位置（仓库外）随报告留痕，供事后取证/人工核验恢复来源
+    json_report["freeze_baseline_dir"] = str(freeze_dir) if baseline is not None else None
     json_out = out_dir / f"hermes-eval-results-{timestamp}.json"
     with open(json_out, "w", encoding="utf-8") as f:
         json.dump(json_report, f, ensure_ascii=False, indent=2)
