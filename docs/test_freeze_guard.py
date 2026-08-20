@@ -16,6 +16,7 @@ tearDown 恢复——runner 本体无需参数化。
 """
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -206,6 +207,29 @@ class FreezeGuardTest(unittest.TestCase):
         # 快照目录在仓库内必须直接报错，不得静默落盘。
         with self.assertRaises(ValueError):
             hr.snapshot_guarded_state(snapshot_dir=self.repo / "output" / "freeze-baseline")
+
+    def test_prune_freeze_snapshots(self):
+        # 旧快照清理：只保留最近 keep 个 run；无 manifest.json 的目录不得被碰
+        root = Path(tempfile.mkdtemp(prefix="freeze-guard-root-"))
+        try:
+            for i, age in enumerate((100.0, 200.0, 300.0, 400.0)):  # run-0 最老
+                d = root / f"run-{i}"
+                (d / "tree").mkdir(parents=True)
+                (d / "manifest.json").write_text("{}")
+                (d / "tree" / "x").write_text("x" * 100)
+                os.utime(d, (age, age))
+            (root / "not-a-snapshot").mkdir()  # 非快照目录（无 manifest）
+            removed, freed = hr.prune_freeze_snapshots(
+                root, keep=3, current_dir=root / "run-3")
+            self.assertEqual(removed, 1)
+            self.assertGreater(freed, 0)
+            self.assertFalse((root / "run-0").exists(), "最老的应被删")
+            for name in ("run-1", "run-2", "run-3", "not-a-snapshot"):
+                self.assertTrue((root / name).exists(), f"{name} 应保留")
+            # keep=0 = 不清理
+            self.assertEqual(hr.prune_freeze_snapshots(root, keep=0), (0, 0))
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
 
     # ---------- 报告去污染 ----------
 

@@ -470,6 +470,33 @@ D3_OVERHEAD_WARNING = 10      # 开销调用 ≥10 → 0.0（实测 P90=10；>10
 # 工具函数（桩函数实现，INFO #12: 所有被引用符号均有实现）
 # ============================================================================
 
+def prune_freeze_snapshots(freeze_root, keep=3, current_dir=None):
+    """
+    清理旧冻结快照：powerelf-eval-freeze/ 下只保留最近 keep 个 run（含本次），
+    防止每 run 约 2M 的内容快照无限累积。
+
+    只删 freeze_root 直接子目录中含 manifest.json 的（快照目录特征），
+    其它任何内容一律不碰；current_dir（本次刚落的快照）显式排除，防误删。
+    keep<=0 视为不清理。返回 (删除数, 释放字节数)。
+    """
+    root = Path(freeze_root)
+    if keep <= 0 or not root.is_dir():
+        return 0, 0
+    snaps = [d for d in root.iterdir()
+             if d.is_dir() and (d / "manifest.json").is_file()]
+    if current_dir is not None:
+        cur = Path(current_dir).resolve()
+        snaps = [d for d in snaps if d.resolve() != cur]
+    # 新→旧；当前 run 不占名额，旧的保留 keep-1 个
+    snaps.sort(key=lambda d: (d.stat().st_mtime, d.name), reverse=True)
+    removed, freed = 0, 0
+    for d in snaps[keep - 1:]:
+        freed += sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
+        shutil.rmtree(d)
+        removed += 1
+    return removed, freed
+
+
 def load_master_json(master_path):
     """加载 master JSON，返回解析后的 dict。"""
     with open(master_path, encoding="utf-8") as f:
@@ -1590,6 +1617,12 @@ def run_eval(args):
         print(f"      代码冻结基线：{len(baseline['hashes'])} 个 tracked guarded 文件"
               f" + {len(baseline['untracked'])} 个已有 untracked 已快照；"
               f"内容快照已落盘 {freeze_dir}（仓库外，防 skill 同名冲突）")
+        _rm, _freed = prune_freeze_snapshots(
+            _PROJECT_ROOT.parent / "powerelf-eval-freeze",
+            keep=args.freeze_keep, current_dir=freeze_dir)
+        if _rm:
+            print(f"      旧快照清理：删除 {_rm} 个，保留最近 {args.freeze_keep} 个 run"
+                  f"（释放 {_freed / 1024:.0f} KB）")
 
     # 3. 逐题评测
     results = []
@@ -1895,6 +1928,11 @@ def main():
         "--no-freeze-retry", action="store_true",
         help="代码冻结护栏检测到突变并自动恢复后，不同题重试"
              "（默认重试一次，source_tag 加 -r2 后缀；重试作答有效则该题不计 CODE-MUTATED）",
+    )
+    ap.add_argument(
+        "--freeze-keep", type=int, default=3, metavar="N",
+        help="冻结快照目录 powerelf-eval-freeze/ 保留最近 N 个 run（默认 3；"
+             "0=不清理）。每个 run 约 2M，防无限累积",
     )
     ap.add_argument(
         "--analyze-only", action="store_true",
