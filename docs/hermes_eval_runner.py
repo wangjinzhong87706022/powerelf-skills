@@ -459,11 +459,18 @@ D5_LATENCY_EXCELLENT = 85     # P50 档（全量161题 P50≈85.6s；旧50s 低�
 D5_LATENCY_WARNING = 370      # P90 档（全量161题 P90≈371s；旧180s 偏紧）
 # D3 工具效率：按任务复杂度归一化（不再用扁平 tool_call_count 阈值）
 # 生产性调用（terminal=DB查询 / execute_code=分析）随任务复杂度增长，属合理成本，不计入效率惩罚；
-# 只对"开销调用"（search_files/read_file/patch/write_file/todo/clarify 等探索编辑）评分。
+# 只对"开销调用"（search_files/read_file/skill_view/todo/clarify 等纯探索）评分。
 # 阈值用全量(161题)开销分布标定：P50=1, P90=10。
-D3_PRODUCTIVE_TOOLS = ("terminal", "execute_code")
-D3_OVERHEAD_EXCELLENT = 1     # 开销调用 ≤1 → 1.0（实测 P50=1）
-D3_OVERHEAD_WARNING = 10      # 开销调用 ≥10 → 0.0（实测 P90=10；>10 属真·探索冗余）
+#
+# bug#12（20260820 rescore 发现 D3=0.33题/avg 0.677 维度垫底）：
+# write_file/patch 原归 overhead 罚，但本 skill 域里它们是「生成产物 / 外科修补」
+# —— data-governance 产出日报/脚本、inspection 写报告，write_file 即交付物本身；
+# patch 是定点修复。把它们当效率惩罚 = 罚 agent 干活，致 DG-P24(D1=1.0)等 D3=0.0。
+# rescore 模拟：并入 productive 后 D3 0.677→0.842、总体 0.748→0.773、FAIL 3→1，
+# 残留 12 题 D3=0 全是真·探索冗余（read_file/search_files/skill_view ≥10）合理判 0。
+D3_PRODUCTIVE_TOOLS = ("terminal", "execute_code", "write_file", "patch")
+D3_OVERHEAD_EXCELLENT = 1     # 纯探索开销 ≤1 → 1.0（实测 P50=1）
+D3_OVERHEAD_WARNING = 10      # 纯探索开销 ≥10 → 0.0（实测 P90=10；>10 属真·探索冗余）
 
 
 # ============================================================================
@@ -826,6 +833,25 @@ ALIAS_D1 = {
     "MAD统计异常": ["MAD统计异常", "MAD异常", "MAD统计", "MAD"],
     # 告警级别表述：agent 写"一级告警/一级"，expected 用"I级告警/CRITICAL"，应互认
     "I级告警": ["I级告警", "一级告警", "1级告警", "Ⅰ级告警", "一级"],
+    # EVAL9 类：expected pass_keyword="OK"（表"无异常/正常"），agent 常写"正常/🟢/无异常"
+    # 不写英文 OK → 字面不命中 → all() 整题 D1=0（实测 EVAL9 答案实质全对却判 0.372）
+    "OK": ["OK", "ok", "Ok", "正常", "无异常", "未发现异常", "无告警", "🟢", "绿色"],
+    # EVAL2 类：expected="闸门"，agent 写繁体"閘門" → 字面不命中。criteria 关键词繁简互认
+    "闸门": ["闸门", "閘門", "闸门站", "閘"],
+    # bug#13/A5：inspection_struct 字段值同义词（空数据三态/质量闸/诊断链类用例）
+    # diagnosis_root_cause / root_cause：agent 常写"根因/诊断为/原因"
+    "diagnosis_root_cause": ["diagnosis_root_cause", "root_cause", "根因", "诊断为", "诊断结论"],
+    "root_cause": ["root_cause", "根因", "诊断为", "诊断结论"],
+    # detail_contains="已查"：agent 常写"已排除/已检/已核查"
+    "已查": ["已查", "已排除", "已检", "已核查", "已检查", "已排查"],
+    # quality_issues_contains="占位"：agent 常写"哨兵值/sentinel/填充值/缺测标记"
+    "占位": ["占位", "哨兵", "sentinel", "填充值", "填充", "缺测标记", "缺失标记"],
+    # 状态码大小写变体（status_code 检查器已做大小写不敏感，此处补中文等价表述）
+    "NOT_APPLICABLE": ["NOT_APPLICABLE", "not_applicable", "不适用"],
+    "NO_DATA": ["NO_DATA", "no_data", "无数据", "数据为空"],
+    "QUERY_FAILED": ["QUERY_FAILED", "query_failed", "查询失败", "查询异常"],
+    "inconclusive": ["inconclusive", "INCONCLUSIVE", "无法结论", "不足以下结论", "难以下结论"],
+    "INCONCLUSIVE": ["INCONCLUSIVE", "inconclusive", "无法结论", "不足以下结论", "难以下结论"],
 }
 
 # 一级/I级=最高级=CRITICAL（水利应急惯例 level_r='1' 即 I 级；ALERT-POS-1 expected
@@ -855,6 +881,26 @@ def _negated(text, term):
     return False
 
 
+def _affirmative_present(text, term):
+    """term 在 text 中至少有一次出现不在否定/排除语境里。
+
+    用于 status_code / finding_has 类正向断言：agent 写"没有 QUERY_FAILED"虽含
+    token 但属否定（asserting ABSENCE），不应判 hit。term 的每次出现都在否定窗口
+    内（或根本不出现）→ False；存在至少一次非否定出现 → True。"""
+    t = re.sub(r"\s", "", text or "")
+    term_c = re.sub(r"\s", "", term or "")
+    if not term_c:
+        return False
+    found = False
+    for m in re.finditer(re.escape(term_c), t):
+        found = True
+        lo = max(0, m.start() - 12)
+        hi = min(len(t), m.end() + 12)
+        if not any(w in t[lo:hi] for w in _NEG_WORDS):
+            return True
+    return False and found  # 出现过但全被否定 → False
+
+
 def _syn_hit(answer, phrase):
     """忽略空白后的子串命中（agent 答案常夹空白/换行）。"""
     if not phrase:
@@ -865,6 +911,20 @@ def _syn_hit(answer, phrase):
 def _alias_hit(answer, key):
     """key 经 ALIAS_D1 别名组命中 answer 任一同义词。"""
     return any(a and a in (answer or "") for a in ALIAS_D1.get(key, [key]))
+
+
+def _kw_hit(kw, actual_answer):
+    """单个关键词是否命中回答语料：字面 / 复合词拆半 / 别名兜底。
+
+    D1（pass_keywords）与 D2（A4 pass_keywords 同源判路由方向）共用，
+    故提为模块级。actual_answer 由调用方传入（D1/D2 语料构造口径一致）。"""
+    if kw in actual_answer:
+        return True
+    if len(kw) >= 4:
+        mid = len(kw) // 2
+        if kw[:mid] in actual_answer and kw[mid:] in actual_answer:
+            return True
+    return _alias_hit(actual_answer, kw)
 
 
 def parse_expected(set_id, expected_str):
@@ -892,8 +952,24 @@ def parse_expected(set_id, expected_str):
     # bug#9：此分支原只在 rescore_eval.py 有，全量跑 runner 缺失 → 47 题整串落
     # DG 方法短语 fallback，"理由"文本里的"阈值"二字母匹配成 methods=['threshold']
     # 代理判分（与真实断言无关）。现统一进单一 parse。
-    if any(k in s for k in ("min_level", "message_contains", "no_finding_contains",
-                            "no_diagnosis", "not_no_data", "pattern=")):
+    #
+    # bug#13/A5（20260820 评测 7 题落 manual_judge 0.5 地板根因）：trigger 词表
+    # 只认 6 个字段名（min_level/message_contains/no_finding_contains/no_diagnosis/
+    # not_no_data/pattern=），而 cases.json 的空数据三态/质量闸/诊断链类用例用的是
+    # status_code / finding_has / finding_not_has / detail_contains /
+    # quality_issues_contains / dimension_status / envelope_status / exit_code /
+    # next_steps_contains / no_fabricated_values / envelope_category / note_contains
+    # 等 12 个字段名 → 整串 None → 落 manual_judge 0.5 地板（实测 QG-RED-1 等 7 题
+    # 答案实质全对却拿不到 D1）。补全字段词表 + 对应 D1 检查器。
+    _INSP_FIELD_KEYS = (
+        "min_level", "message_contains", "no_finding_contains",
+        "no_diagnosis", "not_no_data", "pattern=",
+        "status_code", "finding_has", "finding_not_has", "detail_contains",
+        "quality_issues_contains", "dimension_status", "envelope_status",
+        "exit_code", "next_steps_contains", "no_fabricated_values",
+        "envelope_category", "note_contains",
+    )
+    if any(k in s for k in _INSP_FIELD_KEYS):
         out = {"_kind": "inspection_struct"}
         m = re.search(r"min_level\s*=\s*(\w+)", s)
         if m:
@@ -911,6 +987,42 @@ def parse_expected(set_id, expected_str):
         m = re.search(r"pattern\s*=\s*(\w+)", s)
         if m:
             out["pattern"] = m.group(1)
+        # bug#13/A5：空数据三态/质量闸/诊断链类字段
+        m = re.search(r"status_code\s*=\s*([A-Za-z_]+)", s)
+        if m:
+            out["status_code"] = m.group(1)
+        m = re.search(r"finding_has\s*=\s*(\w+)", s)
+        if m:
+            out["finding_has"] = m.group(1)
+        m = re.search(r"finding_not_has\s*=\s*(\w+)", s)
+        if m:
+            out["finding_not_has"] = m.group(1)
+        m = re.search(r"detail_contains\s*=\s*([^|;]+)", s)
+        if m:
+            out["detail_contains"] = m.group(1).strip()
+        m = re.search(r"quality_issues_contains\s*=\s*([^|;]+)", s)
+        if m:
+            out["quality_issues_contains"] = m.group(1).strip()
+        m = re.search(r"dimension_status\s*=\s*(\w+)", s)
+        if m:
+            out["dimension_status"] = m.group(1)
+        m = re.search(r"envelope_status\s*=\s*(\w+)", s)
+        if m:
+            out["envelope_status"] = m.group(1)
+        m = re.search(r"exit_code\s*=\s*(\d+)", s)
+        if m:
+            out["exit_code"] = m.group(1)
+        m = re.search(r"next_steps_contains\s*=\s*([^|;]+)", s)
+        if m:
+            out["next_steps_contains"] = m.group(1).strip()
+        if re.search(r"no_fabricated_values\s*=\s*True", s, re.I):
+            out["no_fabricated_values"] = True
+        m = re.search(r"envelope_category\s*=\s*(\w+)", s)
+        if m:
+            out["envelope_category"] = m.group(1)
+        m = re.search(r"note_contains\s*=\s*([^|;]+)", s)
+        if m:
+            out["note_contains"] = m.group(1).strip()
         return out
 
     # ---- routing-evals-v2 英文：Provider calls <skill> to analyze <anomaly> ----
@@ -937,6 +1049,30 @@ def parse_expected(set_id, expected_str):
         if m:
             out["should_not_report"] = m.group(1)
         return out if out else None
+
+    # bug#14/A6（20260820 评测 DG-P39~P46 共 8 题 D1 全落 manual_judge 0.5 地板
+    # 根因）：expected 是反引号包裹的函数名，如 `generate_daily_report()` /
+    # `fix_anomaly()` / `fill_missing()`。既无"路由到"也无 method_patterns 命中
+    # （"日报"/"报告"等中文词不在反引号串里）→ parse=None → D1 吃 0.5 地板。
+    # agent 实际答案里报出了函数名（create_offline_record / batch_fix_anomalies
+    # 等），判分器却看不到。修复：把反引号内函数名提取为 pass_keywords，复用
+    # 已有 _kw_hit 路径判 D1（函数名在 answer 出现即命中；update_device_status(0)
+    # 这种带参数的取主名）。
+    if "`" in s and "(" in s:
+        fns = re.findall(r"`([^`]+)`", s)
+        fn_names = []
+        for fn in fns:
+            base = re.sub(r"\(.*", "", fn).strip()  # 去掉 () 及参数
+            if base and base not in fn_names:
+                fn_names.append(base)
+        if fn_names:
+            # 多个函数名用 " / " 分隔时（如 `fix_anomaly()` / `fill_missing()`）
+            # 语义是 OR（任一命中即可），与 inspection-criteria 的 AND 不同。
+            # 标记 _kw_any=True，judge 据此用 any() 而非 all()。
+            out = {"pass_keywords": fn_names, "raw": s}
+            if len(fn_names) > 1 and " / " in s:
+                out["_kw_any"] = True
+            return out
 
     # routing-evals-v2 / data-governance-routing-list：应路由到 X / 路由到 X
     # 支持多目标 "路由到 A / B"（任一命中即可），并去掉反引号避免字面不匹配
@@ -1030,8 +1166,9 @@ def judge(ev, trace, set_, schema_tables):
     维度（权重）：
       D1 功能性正确 (30%) - actual 是否满足 expected_output 的核心断言
       D2 路由命中 (15%) - hermes 是否加载了正确的 rules/*.md
-      D3 工具效率 (15%) - 按复杂度归一化：生产性调用(terminal/execute_code)不罚，
-                          仅对"开销调用"(search/read/patch/write/todo)线性评分
+      D3 工具效率 (15%) - 按复杂度归一化：生产性调用(terminal/execute_code/
+                          write_file/patch)不罚，仅对纯探索开销(search/read/
+                          skill_view/todo/clarify)线性评分
       D4 Token 效率 (10%) - input_tokens <15K 且 output_tokens <3K 为达标
       D5 响应时延 (10%) - duration_sec <30s 优秀；30-60s 预警；>60s 失败
       D6 幻觉抑制 (10%) - final_answer 引用的表名全部可在 schema.md 中溯源
@@ -1072,15 +1209,13 @@ def judge(ev, trace, set_, schema_tables):
             # inspection-eval-criteria：提取引号内关键词，全部命中即 D1=1.0。
             # 复合词（如"渗压突变"）拆半都算（回答里"渗压""突变"常不连写）。
             kws = parsed["pass_keywords"]
-            def _kw_hit(kw):
-                if kw in actual_answer:
-                    return True
-                if len(kw) >= 4:
-                    mid = len(kw) // 2
-                    if kw[:mid] in actual_answer and kw[mid:] in actual_answer:
-                        return True
-                return _alias_hit(actual_answer, kw)  # 别名兜底（同义表述互认）
-            d1 = 1.0 if all(_kw_hit(k) for k in kws) else 0.0
+            # bug#14/A6：DG 反引号多函数名 "A / B" 语义是 OR（任一命中），
+            # 其余 pass_keywords（inspection-criteria）是 AND（全部命中）。
+            # _kw_hit 已提为模块级（A4 D2 同源复用）。
+            if parsed.get("_kw_any"):
+                d1 = 1.0 if any(_kw_hit(k, actual_answer) for k in kws) else 0.0
+            else:
+                d1 = 1.0 if all(_kw_hit(k, actual_answer) for k in kws) else 0.0
             d1_note = f"pass_keywords={kws}"
         elif parsed.get("_kind") == "inspection_struct":
             # bug#9 移植自 rescore compute_d1：结构化断言逐项判（此前 runner 缺失，
@@ -1109,6 +1244,93 @@ def judge(ev, trace, set_, schema_tables):
             if "no_diagnosis" in parsed:
                 tot += 1
                 if not re.search(r"根因|诊断结论|诊断为|原因[是为]", actual_answer):
+                    hits += 1
+            # bug#13/A5：空数据三态/质量闸/诊断链类字段检查器
+            # 状态码类（NOT_APPLICABLE/NO_DATA/QUERY_FAILED）——大小写不敏感，含
+            # 下划线变体（agent 常写小写 no_data）。status_code 为核心断言，漏报即 miss。
+            # 否定感知：agent 写"没有 QUERY_FAILED"虽含 token 但是在 assert 缺席，
+            # 不应判 hit（实测 EMPTY-NA-1/QF-1 答案含 NOT_APPLICABLE/QUERY_FAILED 但
+            # 全在"无/没有"否定语境 → 旧字面匹配会误判 D1=1.0 假通过）。
+            if "status_code" in parsed:
+                tot += 1
+                sc = parsed["status_code"]
+                sc_variants = {sc, sc.upper(), sc.lower(),
+                               sc.replace("_", ""), sc.upper().replace("_", "")}
+                hit = False
+                for v in sc_variants:
+                    if _affirmative_present(actual_answer, v) or \
+                       _affirmative_present(final_strict, v):
+                        hit = True
+                        break
+                if hit or _alias_hit(actual_answer, sc):
+                    hits += 1
+            # finding_has=X：最终结论应报出 X 类发现（如 diagnosis_root_cause）。
+            # X 取别名组命中即可（root_cause↔根因；diagnosis_root_cause↔根因/诊断为）。
+            # 否定感知：仅肯定出现算报出。
+            if "finding_has" in parsed:
+                tot += 1
+                fh = parsed["finding_has"]
+                if _affirmative_present(final_strict, fh) or \
+                   _affirmative_present(actual_answer, fh) or \
+                   _alias_hit(actual_answer, fh):
+                    hits += 1
+            # finding_not_has=X：最终结论不应把 X 当发现报出。与 no_finding_contains 同
+            # 语义但 X 是方法名而非短语——查 final_strict 不含 X（或被否定语境修饰）。
+            if "finding_not_has" in parsed:
+                tot += 1
+                fh = parsed["finding_not_has"]
+                if not _alias_hit(final_strict, fh) or _negated(final_strict, fh):
+                    hits += 1
+            # detail_contains=X：corpus（含中间分析）应提及 X。同义兜底（已查↔已排除）。
+            if "detail_contains" in parsed:
+                tot += 1
+                dc = parsed["detail_contains"]
+                if dc in actual_answer or _syn_hit(actual_answer, dc) or _alias_hit(actual_answer, dc):
+                    hits += 1
+            # quality_issues_contains=X：应把占位/哨兵值计入质量 issues。同义兜底
+            # （占位↔哨兵/sentinel/填充/缺测）。
+            if "quality_issues_contains" in parsed:
+                tot += 1
+                qi = parsed["quality_issues_contains"]
+                if qi in actual_answer or _syn_hit(actual_answer, qi) or _alias_hit(actual_answer, qi):
+                    hits += 1
+            # dimension_status=X / envelope_status=X：状态字命中（大小写不敏感 + 别名）
+            for _f in ("dimension_status", "envelope_status"):
+                if _f in parsed:
+                    tot += 1
+                    val = parsed[_f]
+                    if val in actual_answer or val.lower() in actual_answer.lower() \
+                       or _alias_hit(actual_answer, val):
+                        hits += 1
+            # exit_code=N：退出码数字出现即可（agent 常写"退出码 4"/"exit 4"/"exit_code=4"）
+            if "exit_code" in parsed:
+                tot += 1
+                ec = parsed["exit_code"]
+                if ec in actual_answer or re.search(rf"exit[_\s]*code?\s*[=:]\s*{ec}", actual_answer) \
+                   or re.search(rf"退出码\s*{ec}", actual_answer):
+                    hits += 1
+            # next_steps_contains=X：next_steps 部分应含 X（短语字面或同义）
+            if "next_steps_contains" in parsed:
+                tot += 1
+                ns = parsed["next_steps_contains"]
+                if ns in actual_answer or _syn_hit(actual_answer, ns) or _alias_hit(actual_answer, ns):
+                    hits += 1
+            # envelope_category=X：应把 finding 归类为 X（如 root_cause）
+            if "envelope_category" in parsed:
+                tot += 1
+                if _alias_hit(actual_answer, parsed["envelope_category"]):
+                    hits += 1
+            # note_contains=X：报告 note/status_note 应提及 X（短语字面或同义）
+            if "note_contains" in parsed:
+                tot += 1
+                nc = parsed["note_contains"]
+                if nc in actual_answer or _syn_hit(actual_answer, nc) or _alias_hit(actual_answer, nc):
+                    hits += 1
+            # no_fabricated_values=True：不应以 0/空充数掩盖无数据。正向断言难自动证伪——
+            # 仅当 agent 明文"以0充数/填0/用空值代替/补0"才判 miss；否则默认通过。
+            if "no_fabricated_values" in parsed:
+                tot += 1
+                if not re.search(r"以\s*0\s*充数|填\s*0\s*充|用空值代替|补\s*0\s*掩盖|拿\s*0\s*顶", actual_answer):
                     hits += 1
             d1 = hits / tot if tot else 0.5
             d1_note = "inspection_struct"
@@ -1154,6 +1376,17 @@ def judge(ev, trace, set_, schema_tables):
         d1_note = f"{d1_note};clarify_floor"
 
     # ---- D2 路由命中 ----
+    # A4（20260820 评测 D2=0.5 地板 126/156 题根因）：D2 原只在 expected_route /
+    # methods+task_type 两条分支实质判分，其余全落 else 0.5 中位。实测 110 题
+    # D1 已实质判（pass_keywords/routing_en/inspection_struct）但 D2 仍吃 0.5，
+    # 维度无区分度。修复：
+    #  (1) pass_keywords 题：D1 已判功能，D2 同源判"回答命中 expected 关键词→
+    #      路由/技能方向正确"。复用 _kw_hit（A6 已对 _kw_any 做 OR）。
+    #  (2) routing_en 题：expected 含 "calls powerelf-X to analyze Y"，路由目标
+    #      即 powerelf-X。判 system/final 是否提到该 skill 名。
+    #  (3) inspection_struct / 真 manual：无路由目标，给 neutral_floor 并标注，
+    #      报告单列，不再与实质判分混统计。
+    d2_note = ""
     routes = (parsed.get("expected_routes") if parsed else None) or (
         [parsed["expected_route"]] if parsed and "expected_route" in parsed else []
     )
@@ -1168,43 +1401,64 @@ def judge(ev, trace, set_, schema_tables):
         r.replace("`", "") in sys_clean or r.replace("`", "") in ans_clean for r in routes
     ):
         d2 = 1.0
+        d2_note = f"route_hit={routes}"
     elif routes:
         d2 = 0.0
+        d2_note = f"route_miss={routes}"
     elif parsed and ("methods" in parsed or "task_type" in parsed):
         # P1 修复：方法名短语格式无明确 expected_route，
         # 但若 hermes 回答中命中了 expected 的方法/任务类型关键词，说明路由正确
+        # bug#11（20260820 评测 D2=0.497 维度垫底根因）：局部 ALIAS_D2 仅覆盖
+        # 10 个 key，而 parse_expected 能产出 21+ 个 method/task_type key
+        # （interpolation/scoring/report/trend/…），缺失 key 回退英文字面量 →
+        # 中文回答一律漏判 → D2 批量掉 0。D2 与 D1 的关键词匹配语义完全一致，
+        # 直接复用模块级 ALIAS_D1（已被 test_judge_sync 锁全 key 覆盖），
+        # 彻底消除两张别名表漂移。
         methods = parsed.get("methods") or []
         task_type = parsed.get("task_type")
-        ALIAS_D2 = {
-            "MAD": ["MAD", "中位数绝对偏差", "修正Z"],
-            "IQR": ["IQR", "四分位距"],
-            "percentile": ["percentile", "百分位"],
-            "change_rate": ["变化率", "变率", "波动"],
-            "threshold": ["阈值", "门限"],
-            "time_window": ["时间窗口", "指定时间", "日期范围", "日期", "每日", "每日摘要", "按天", "YYYY-MM-DD", "2026-"],
-            "missing": ["缺失", "漏", "missing", "空值"],
-            "anomaly_detection": ["异常", "离群", "outlier"],
-            "missing_detection": ["缺失检测", "缺测"],
-            "detection": ["检测", "分析", "判定"],
-        }
         def _d2_hit(key):
-            aliases = ALIAS_D2.get(key, [key])
-            return any(a in actual_answer for a in aliases)
+            return _alias_hit(actual_answer, key)
         method_hits = sum(1 for m in methods if _d2_hit(m))
         task_hit = _d2_hit(task_type) if task_type else True
         if methods and method_hits == len(methods) and task_hit:
             d2 = 1.0
+            d2_note = f"method_hit_all={methods}"
         elif method_hits > 0 or task_hit:
             d2 = 0.75  # 部分命中
+            d2_note = f"method_hit_partial={methods}"
         else:
             d2 = 0.0
+            d2_note = f"method_miss={methods}"
+    elif parsed and "pass_keywords" in parsed:
+        # A4(1)：pass_keywords 题（DG 反引号函数名 / inspection-criteria 关键词）。
+        # D1 已判功能正确性；D2 同源判"回答是否命中 expected 关键词"——命中说明
+        # agent 路由到了正确技能并产出对路内容，未命中说明方向错。复用 _kw_hit。
+        kws = parsed["pass_keywords"]
+        if parsed.get("_kw_any"):
+            d2 = 1.0 if any(_kw_hit(k, actual_answer) for k in kws) else 0.0
+        else:
+            d2 = 1.0 if all(_kw_hit(k, actual_answer) for k in kws) else 0.0
+        d2_note = f"pass_keywords={kws}"
+    elif parsed and parsed.get("_kind") == "routing_en":
+        # A4(2)：routing-evals-v2 英文 expected，形如 "Provider calls powerelf-X
+        # to analyze Y"。路由发生在 hermes 编排层，agent 最终回答反映的是「技能
+        # 产出的分析」而非「回答里复述技能名」。故 D2 不查 skill 名字面命中
+        # （实测 45 题中 30 题 D1≥0.7 即路由落地且产出正确，但回答不含
+        # 'powerelf-data-governance' 字面 → 旧 skill-name 检查一律判 D2=0，
+        # 与 D1 严重不一致）。路由是否正确 = 异常是否被正确处置，这正是 D1
+        # routing_en 分支已判的内容，故 D2 镜像 D1 的实质路由结论。
+        d2 = float(d1)
+        d2_note = f"routing_en_mirror_d1={d1:.2f}"
     else:
         d2 = 0.5  # 无明确 expected_route，给中位
+        d2_note = "neutral_floor"
 
     # ---- D3 工具效率（按任务复杂度归一化）----
-    # 生产性调用(terminal/execute_code)随复杂度增长，不计惩罚；
-    # 只对"开销调用"(其余工具)线性评分。扁平 tool_call_count>5=0 会把
-    # 合理的多表 DB 查询题全判 0（实测 P50=6），故改为开销口径。
+    # 生产性调用(terminal/execute_code/write_file/patch)随复杂度增长，不计惩罚；
+    # 只对"纯探索开销"(search/read/skill_view/todo/clarify)线性评分。扁平
+    # tool_call_count>5=0 会把合理的多表 DB 查询题全判 0（实测 P50=6），故改为
+    # 开销口径。write_file/patch 是产物生成/定点修复，20260820 rescore 实证应归
+    # 生产性（详见 D3_PRODUCTIVE_TOOLS 注释 bug#12）。
     chain = trace.get("tool_chain", []) or []
     _tn = lambda t: t.get("tool") if isinstance(t, dict) else t  # 兼容 dict/fresh 与 string/重判
     overhead = sum(1 for t in chain if _tn(t) not in D3_PRODUCTIVE_TOOLS)
@@ -1354,6 +1608,7 @@ def judge(ev, trace, set_, schema_tables):
             "D7_completeness": round(d7, 3),
         },
         "d1_note": d1_note,
+        "d2_note": d2_note,
         "hallucinated_tables": hallucinated,
         "trace_summary": {
             "session_id": trace["session_id"],

@@ -1,6 +1,6 @@
 ---
 name: early-warning
-description: "智慧水利预警系统智能体：告警分析、诊断、预测、问答。读操作直连数据库，写操作走后端 API。"
+description: "智慧水利预警系统智能体：告警分发与通知、告警分析、诊断、预测、问答。读操作直连数据库，写操作走后端 API。"
 version: 5.2.0
 author: SmartTwinRes Team
 license: MIT
