@@ -455,8 +455,14 @@ D4_INPUT_EXCELLENT = 34000     # P75 档（全量161题 P75≈34.2K；旧30题�
 D4_OUTPUT_EXCELLENT = 5600     # P75 档（全量161题 P75≈5.6K；旧3K偏紧）
 D4_INPUT_WARNING = 65000       # P95 档（全量161题 P95≈65.3K；旧36K偏紧）
 D4_OUTPUT_WARNING = 12000      # P95 档（全量161题 P95≈11.8K；旧7K偏紧）
-D5_LATENCY_EXCELLENT = 85     # P50 档（全量161题 P50≈85.6s；旧50s 低于中位数）
-D5_LATENCY_WARNING = 370      # P90 档（全量161题 P90≈371s；旧180s 偏紧）
+D5_LATENCY_EXCELLENT = 110    # 2026-08-23 重标（P2#2 Phase2）：0821 run 156 题 P50=115.3s
+                                # 旧值 85（全量161题 P50=85.6s）已落后于当前 infra 基线，
+                                # 致高效题被地板归零。110 吸收 infra 漂移但 < 115，保留回归信号
+                                # （P50 仍 < 1.0；infra 再退化→P50>115 时 D5 会显式下沉）。
+D5_LATENCY_WARNING = 430      # 0821 run P90=426.9s；旧值 370 偏紧。430 抬升使 [370,430)s
+                                # 的"复杂但非螺旋"题（21~32 工具，如 DG-P11/P21/P26）脱离硬零；
+                                # >600s 螺旋题（#23/#40/#17/DG-P38/P43 等 34~51 工具）仍吃地板——
+                                # 那些由反螺旋纪律（SKILL.md）在源头修，不靠阈值掩盖。
 # D3 工具效率：按任务复杂度归一化（不再用扁平 tool_call_count 阈值）
 # 生产性调用（terminal=DB查询 / execute_code=分析）随任务复杂度增长，属合理成本，不计入效率惩罚；
 # 只对"开销调用"（search_files/read_file/skill_view/todo/clarify 等纯探索）评分。

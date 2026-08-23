@@ -46,12 +46,18 @@ metadata:
 | 环比/趋势分析 | ⚠️ profiler.py **没有** `--compare-days` / `--trend` 参数（实测报 unrecognized arguments）；实际参数仅 `--db --table [--field] [--sample] [--format {json,text}]`。趋势对比改用 `generate_report.py --type anomaly --date <日期>` 跑本周/上周各一天再对比，或按 references/analysis-guide.md 自写（一次写对） | ❌ 调用不存在的 `--compare-days`/`--trend` 参数；❌ 自己拼环比 SQL |
 | 设备筛选/较差等级（"低于60分"类） | **评分分级口径：≥90 A优秀 / ≥80 B良好 / ≥60 C一般 / <60 D较差（需维护、重点关注）**。全库一键扫描**没有现成命令**（不存在 `--filter-grade`/`--top` 参数）：先对目标表用 `missing_detector`/`offline_detector` 按站聚合指标，再按上表分级筛出 <60 的站；少量重点站可逐站用 `quality_scorer.py` 算精确总分。回答时先给分级口径、再列设备清单 | ❌ 自己写全库扫描大脚本反复 patch（10 次收敛纪律适用）；❌ 调用不存在的 `--db --filter-grade --top` 参数 |
 | MTTR/时长计算 | `python3 impl/offline_detector.py --db "$DB_URL" --table <T> --st-id <ID> --mttr`（含 MTTR 输出） | ❌ 自己写时长 SQL |
-| 插值/缺失补全 | `python3 impl/interpolate.py --db "$DB_URL" --table <T> --field <F> [--st-id <ID>] [--days 7]`（四策略自适应：线性/二次/样条/滑动平均，输出所选策略+逐点填补值+缺失率；只报告不写回库）。**用户未指明测站/字段/窗口时禁止先 clarify**——直接跑缺省（如 `--table st_rsvr_r --field rz --days 7`），先报告"哪个站缺失最多+缺失率 TOP"，末尾再问要不要深挖某站；要快速定位缺哪站可先跑 `impl/missing_detector.py`。⚠️ 已知限制：interpolate.py 和 missing_detector.py 都**不检测时间断档**（设备停报/恢复造成的整段空窗）——它们只检查已存数据里是否有 NULL 值或时间戳不连续。st_rsvr_r 实测：7 天窗口全设备零缺失，但 30 天窗口下 eq_id=NULL 源存在 244h 断档（08-06→08-16）。用户报告"水位有缺失"时，先按 eq_id 分组检测时间断档（间隔>2h），再判断是否需要插值（详见 evolution/feedback-log.md 2026-08-20 条目） | ❌ 自己写 `/tmp/interpolate_xxx.py` 反复 patch；❌ 开工前先问"缺失的具体情况"（先跑缺省再问，不空转） |
+| 插值/缺失补全 | `python3 impl/interpolate.py --db "$DB_URL" --table <T> --field <F> [--st-id <ID>] [--days 7] [--gap-hours 2] [--writeback]`（四策略自适应：线性/二次/样条/滑动平均，输出所选策略+逐点填补值+缺失率；**同时检测时间断档**——设备停报/恢复造成的整段缺失时间戳按推断频率重采样为占位并一并填补，报告断档起止/时长）。默认只报告不写库；落库加 `--writeback`（写回行带 `creator='data-governance-interpolation'`）。**用户未指明测站/字段/窗口时禁止先 clarify**——直接跑缺省（如 `--table st_rsvr_r --field rz --days 7`），先报告"哪个站缺失最多+缺失率 TOP"，末尾再问要不要深挖某站；要快速定位缺哪站可先跑 `impl/missing_detector.py`。时间断档阈值默认 2h，可用 `--gap-hours` 调 | ❌ 自己写 `/tmp/interpolate_xxx.py` 反复 patch；❌ 开工前先问"缺失的具体情况"（先跑缺省再问，不空转） |
 | 连续相同值检测 | ⚠️ 暂无内置脚本，允许参考 `references/analysis-guide.md` 自写，但**必须一次写对** | ❌ 反复 patch 重跑 |
 | 趋势分析（改善/恶化） | ⚠️ 同上：profiler.py 无 `--trend` 参数；用 generate_report.py 跑两周同日期对比，或自写趋势 SQL（一次写对） | ❌ 调用不存在的 `--trend 30d` 参数；❌ 自己写趋势 SQL 反复 patch |
 | 异常明细 + 设备关联 | `python3 impl/anomaly_detector.py --db "$DB_URL" --table <T> --field <F> --detail full --format csv --output /tmp/xxx.csv`（**CSV 已含 st_id 设备列**，一次拿全异常+设备维度，无需再查关联表） | ❌ 用 `execute_code` 自己写代码串联（沙箱会 scrub `.env` 的 `DB_URL` 导致脚本报错，且会触发 `code_retry_guard` 插件 bug 杀进程） |
 
 **自写豁免的收敛纪律**：表中仍标 ⚠️"暂无内置脚本"的任务（如连续相同值检测）确需自写时，先读 schema.md 确认字段、**一次写对**；若 10 次工具调用内仍未跑通，**必须停下，先输出已得到的中间结论**（已发现什么、卡在哪、建议下一步）再决定是否继续——禁止让最终回答停在"让我检查一下…"式的半成品中间态。
+
+**"问答被当开发任务"反螺旋纪律（最高优先级之一）**：0821 评测发现多题把"一句能答的问答"当成了"开发任务"——写 12~18 个文件、跑 30~51 次工具调用、撞 898s 超时。判别与拦截：
+- **路由类问题**（"数据治理能做什么 X / 哪个 skill 负责 Y / 走什么流程"）：这是**问流程归属不是要你执行**。命中判定流程 step 0 的，一行路由建议即停（见 step 0 禁令）。**禁止** `skill_view` 加载、`terminal` 跑脚本、`write_file` 写报告——路由题的正确答案是"用 powerelf-data-governance 做 Y"，不是真把 Y 做一遍。
+- **能力类问题**（"怎么检测缺失 / 怎么插值 / 用什么方法"）：这是**问方法不是要你出全量报告**。答法=点名内置脚本 + 一两句方法说明（如"`impl/interpolate.py` 四策略自适应插值，含时间断档检测"），**不要**真跑全库检测再贴一份大报告。
+- **执行类问题**（"检测某站某表的缺失/异常并修复"）：这才是真要跑脚本的。但也遵守：先跑缺省（不先 clarify），一个内置脚本能解决的不要拆成 5 个自写脚本。
+- **硬上限（自检闸）**：任何**非执行类问题**，若工具调用已达 **5 次仍未收敛**，强制停下——你几乎肯定把它当开发任务了，回头检查是不是该一句话答完。执行类问题 10 次未跑通见上条收敛纪律。
 
 **判定流程**（每次对话第一步必须执行）：
 
