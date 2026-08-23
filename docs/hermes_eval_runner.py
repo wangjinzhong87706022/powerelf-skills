@@ -915,6 +915,43 @@ def _fn_exec_hit(kw, tool_corpus):
     return False
 
 
+# P2 修复（20260821 评测 P16 prose 反问根因，评审附注错误4）：
+# clarified 仅认 role==tool+tool_name=='clarify' 消息。但 agent 常用**散文反问**
+# 识别歧义（P16："你说的'XX 设备'我需要确认一下...请告诉我设备名称/编码/eq_id"），
+# 不调 clarify 工具 → clarified=False → clarify_floor 不触发 → D1 硬零虚低。
+# 修法：补一个 prose-clarify 探测，命中即把 clarified 置 True，复用既有 clarify_floor
+# （统一 `if clarified and d1<0.5: d1=0.5`，不新开 floor 逻辑）。
+#
+# 探测须**精确**——不能把"直答题"（POS/NEG 0 工具直接给判定：RAIN-POS-1 "判定结果
+# 属于大暴雨级别"）或"拒答题"（DG-N01 "不属于数据治理范畴，请改用 chatbi"）误判成
+# clarify。三者都是 0 工具短回答，区别在：
+#   真 clarify  → 反问用户要**标识符**（编码/名称/eq_id/哪台），不给判定
+#   直答        → 给出**判定结论**（级别/正常/异常），不问标识符
+#   拒答        → 说明**不属于范围**并指向他 skill，不问标识符
+# 故信号=【疑问标点】+【要标识符短语】+【低工具数（未真干活）】三重合取。
+_PROSE_CLARIFY_ID_REQUEST = (
+    "编码", "名称", "eq_id", "eqid", "设备名", "哪台", "哪个", "哪一",
+    "哪一台", "哪一个", "具体是哪", "具体设备", "具体哪", "指定", "明确到",
+    "是哪台", "是哪个", "设备编码", "测点编码", "站点编码",
+)
+
+
+def _is_prose_clarify(final_answer, tool_call_count):
+    """散文反问是否构成一次澄清（识别歧义而非瞎答）。
+
+    三重合取，缺一不可：
+    1. 疑问标点（？或?）——是反问不是陈述；
+    2. 要标识符短语（编码/名称/eq_id/哪台…）——请用户补具体实体，非给判定；
+    3. tool_call_count<=1——未真跑分析，否则可能是"分析后顺带追问深挖"。
+    实测 P16 三条全中；RAIN-POS-1/DG-N01/PUMP-NEG-1 直答与拒答均无标识符请求→不中。"""
+    fa = final_answer or ""
+    if not ("？" in fa or "?" in fa):
+        return False
+    if tool_call_count is not None and tool_call_count > 1:
+        return False
+    return any(tok in fa for tok in _PROSE_CLARIFY_ID_REQUEST)
+
+
 def _negated(text, term):
     """term 在 text 的每次出现，前后 12 字窗口内是否含否定/排除词。命中一次即 True。
     先 strip 空白再匹配——agent 常写"离线率 `== 0.3` 严格不触发"，空格会把"不触发"
@@ -1238,6 +1275,11 @@ def judge(ev, trace, set_, schema_tables):
                            if m.get("role") == "tool" and m.get("tool_name") == "clarify")
     clarified = bool(clarify_text)
     final_strict = trace.get("final_answer_strict") or trace.get("final_answer") or ""
+    # P2 修复：散文反问（不调 clarify 工具）也计入 clarified——agent 用自然语言请
+    # 用户补标识符（编码/名称/eq_id）是识别歧义而非瞎答，与调 clarify 工具同义，
+    # 应吃 clarify_floor 而非硬零。详见 _is_prose_clarify 注释（三重合取防误抬直答/拒答）。
+    if not clarified:
+        clarified = _is_prose_clarify(final_strict, trace.get("tool_call_count", 0))
     actual_answer = trace.get("answer_corpus")
     if actual_answer is None:
         assistant_text = "".join((m.get("content") or "") for m in msgs
