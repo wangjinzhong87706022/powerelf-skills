@@ -966,6 +966,75 @@ def test_equip_abnormal_any_triggers_warning(monkeypatch):
 # ============================================================
 # 入口（兼容旧版直接调用）
 # ============================================================
+# analyze_correlation 降级披露（EVAL9 复盘 P0-②）
+# Why: 辅助表（渗压/雨量）窗口空时关联检查被静默跳过，末尾 OK 兜底声称
+# "未发现指标间矛盾"——假全覆盖。修复要求：逐项 INFO 披露 + 不整体 no_data。
+# ============================================================
+
+def _corr_water_df():
+    pd = pytest.importorskip("pandas")
+    n = 8
+    return pd.DataFrame({
+        "st_id": [97] * n,
+        "rz": [461.00, 461.10, 461.02, 461.08, 460.99, 461.05, 460.97, 461.03],
+        "inq": [50.0] * n,
+        "otq": [50.0] * n,
+        "tm": pd.date_range("2026-08-16", periods=n, freq="h"),
+    })
+
+
+def test_correlation_aux_empty_degrades_loudly(monkeypatch):
+    """渗压/雨量窗口空：主表有数据 → 不整体 NO_DATA，逐项 INFO 披露，保留 OK。"""
+    pd = pytest.importorskip("pandas")
+    import inspection_analyzer as _ia
+
+    empty = pd.DataFrame()
+
+    def fake_read(engine, table, fields, days=7, **kw):
+        if table == "st_rsvr_r":
+            return _corr_water_df()
+        return empty
+
+    monkeypatch.setattr(_ia, "read_sensor_data", fake_read)
+    r = _ia.analyze_correlation(None, days=7)
+
+    assert r.get("status") != "无数据"          # 主表有数据，不得整体 no_data
+    degraded = [f for f in r["findings"]
+                if f.get("level") == "INFO" and "部分降级" in f.get("message", "")]
+    assert len(degraded) == 2                   # 渗压、雨量两项都要披露
+    assert any(f.get("level") == "OK" for f in r["findings"])
+
+
+def test_correlation_full_data_no_degradation_note(monkeypatch):
+    """辅助表齐全 + 数据平稳：无降级注记、无 WARNING，行为与旧版一致。"""
+    pd = pytest.importorskip("pandas")
+    import inspection_analyzer as _ia
+
+    n = 8
+    water = _corr_water_df()
+    pressure = pd.DataFrame({
+        "st_id": [97] * n,
+        "water_pressure": [30.0 + (0.3 if i % 2 else 0.0) for i in range(n)],
+        "tm": pd.date_range("2026-08-16", periods=n, freq="h"),
+    })
+    rainfall = pd.DataFrame({
+        "st_id": [127] * n,
+        "p": [0.5] * n,
+        "tm": pd.date_range("2026-08-16", periods=n, freq="h"),
+    })
+
+    def fake_read(engine, table, fields, days=7, **kw):
+        return {"st_rsvr_r": water, "st_pressure_r": pressure, "st_pptn_r": rainfall}[table]
+
+    monkeypatch.setattr(_ia, "read_sensor_data", fake_read)
+    r = _ia.analyze_correlation(None, days=7)
+
+    assert not any("部分降级" in f.get("message", "") for f in r["findings"])
+    assert not any(f.get("level") == "WARNING" for f in r["findings"])
+    assert any(f.get("level") == "OK" for f in r["findings"])
+
+
+# ============================================================
 
 def run_tests():
     """兼容旧版 CLI 入口"""

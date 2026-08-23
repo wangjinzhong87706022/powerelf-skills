@@ -1500,8 +1500,27 @@ def analyze_correlation(engine, days=7, thresholds=None):
                             "detail": "需检查是否有泄洪操作或雨量站是否准确"
                         })
 
-    if not findings:
-        findings.append({"level": "OK", "message": "多指标关联分析正常", "detail": "未发现指标间矛盾"})
+    # 降级披露（EVAL9 复盘 P0-②）：辅助表窗口空时分析2/分析3 被上面的守卫静默
+    # 跳过——必须逐项 INFO 声明，否则末尾"未发现指标间矛盾"是假全覆盖。
+    # 主表(st_rsvr_r)有数据时不整体 no_data：可用检查照跑，缺失项显式降级。
+    degraded = []
+    if pressure.empty:
+        degraded.append("渗压-水位关联检查（渗压窗口无数据）")
+    if rainfall.empty:
+        degraded.append("降雨-水位关联检查（雨量窗口无数据）")
+    had_core = bool(findings)
+    for note in degraded:
+        findings.append({
+            "level": "INFO",
+            "message": f"部分降级: {note}已跳过",
+            "detail": "该表窗口内无数据，非指标间矛盾；数据恢复后检查自动补全"
+        })
+
+    if not had_core:
+        detail = "未发现指标间矛盾"
+        if degraded:
+            detail += "；部分关联检查因辅助表无数据跳过（见上方降级说明）"
+        findings.append({"level": "OK", "message": "多指标关联分析正常", "detail": detail})
 
     return {"category": "关联异常", "findings": findings}
 
